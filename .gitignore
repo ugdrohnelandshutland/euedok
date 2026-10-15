@@ -6,3 +6,5 @@
 /*.pdf
 .DS_Store
 Thumbs.db
+# Release-Builds
+/build/
