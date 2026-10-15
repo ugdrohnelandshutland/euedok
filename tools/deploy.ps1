@@ -1,7 +1,8 @@
 ﻿<#
   EÜDOK – Deploy auf den LIVE-Server (Netcup, SFTP via WinSCP)
   Lädt public/, app/, vendor/ aus build\euedok-<Version>\ hoch. data/ auf dem Server wird NIE angefasst.
-  Das Passwort wird beim Verbinden abgefragt und nirgends gespeichert.
+  Anmeldung per Deploy-Schlüssel (~\.ssh\euedok_deploy.ppk, siehe tools\setup-deploy-key.ps1);
+  ohne Schlüssel wird das Passwort beim Verbinden abgefragt und nirgends gespeichert.
 
   Vorschau (nichts wird geändert):
     powershell -ExecutionPolicy Bypass -File tools\deploy.ps1 -Version 1.0.0 -Preview
@@ -14,7 +15,9 @@ param(
     [string]$User = 'deploy-user',
     [string]$RemoteBase = '/euedok',
     [string]$WinScp = 'C:\Program Files (x86)\WinSCP\WinSCP.com',
-    [switch]$Preview
+    [string]$KeyFile = "$env:USERPROFILE\.ssh\euedok_deploy.ppk",
+    [switch]$Preview,
+    [switch]$Yes
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -24,17 +27,19 @@ if (-not (Test-Path $WinScp)) { throw "WinSCP nicht gefunden: $WinScp" }
 
 Write-Host "EÜDOK $Version → LIVE  sftp://$User@$SftpHost$RemoteBase" -ForegroundColor Yellow
 if ($Preview) { Write-Host "Vorschau – es wird nichts verändert." -ForegroundColor Cyan }
-else {
+elseif (-not $Yes) {
     $ok = Read-Host "Wirklich auf das Live-System hochladen? (ja/nein)"
     if ($ok -ne 'ja') { Write-Host "Abgebrochen."; exit 1 }
 }
 
 $flag = if ($Preview) { ' -preview' } else { '' }
 $log = Join-Path $root "build\deploy-$Version-$(Get-Date -Format yyyyMMdd-HHmmss).log"
+$useKey = Test-Path $KeyFile
+$open = if ($useKey) { "option batch abort`nopen sftp://$User@$SftpHost/ -privatekey=`"$KeyFile`"" } else { "option batch off`nopen sftp://$User@$SftpHost/" }
+Write-Host ($(if ($useKey) { 'Anmeldung per Schlüssel' } else { 'Anmeldung per Passwort (Abfrage folgt)' }))
 $script = @"
-option batch off
 option confirm off
-open sftp://$User@$SftpHost/
+$open
 option batch continue
 mkdir "$RemoteBase"
 mkdir "$RemoteBase/public"
