@@ -1,6 +1,7 @@
 ﻿<#
   EÜDOK – Deploy auf den LIVE-Server (Netcup, FTPS = FTP mit expliziter TLS-Verschlüsselung, via WinSCP)
-  Lädt public/, app/, vendor/ aus build\euedok-<Version>\ hoch. data/ auf dem Server wird NIE angefasst.
+  Lädt public/, app/, vendor/ aus build\euedok-<Version>\ direkt ins FTP-Root. data/ auf dem Server wird NIE angefasst.
+  Plesk: Dokumentstamm der Domain muss auf den Ordner public/ zeigen.
   Das Passwort wird beim Verbinden abgefragt und nirgends gespeichert.
 
   Vorschau (nichts wird geändert):
@@ -12,7 +13,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Version,
     [string]$FtpHost = 'ftp.example.org',
     [string]$User = 'deploy-user',
-    [string]$RemoteBase = '/euedok',
+    [string]$RemoteBase = '',
     [string]$WinScp = 'C:\Program Files (x86)\WinSCP\WinSCP.com',
     [switch]$Preview
 )
@@ -22,7 +23,7 @@ $src = Join-Path $root "build\euedok-$Version"
 if (-not (Test-Path $src)) { throw "Release fehlt – zuerst: tools\build-release.ps1 -Version $Version" }
 if (-not (Test-Path $WinScp)) { throw "WinSCP nicht gefunden: $WinScp" }
 
-Write-Host "EÜDOK $Version → LIVE  ftpes://$User@$FtpHost$RemoteBase" -ForegroundColor Yellow
+Write-Host "EÜDOK $Version → LIVE  ftpes://$User@$FtpHost$RemoteBase/  (public, app, vendor)" -ForegroundColor Yellow
 if ($Preview) { Write-Host "Vorschau – es wird nichts verändert." -ForegroundColor Cyan }
 else {
     $ok = Read-Host "Wirklich auf das Live-System hochladen? (ja/nein)"
@@ -35,7 +36,6 @@ $log = Join-Path $root "build\deploy-$Version-$(Get-Date -Format yyyyMMdd-HHmmss
 # Vorschau legt keine Ordner an und läuft bei fehlenden Ordnern weiter
 $mkdirs = if ($Preview) { '' } else { @"
 option batch continue
-mkdir "$RemoteBase"
 mkdir "$RemoteBase/public"
 mkdir "$RemoteBase/app"
 mkdir "$RemoteBase/vendor"

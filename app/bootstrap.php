@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Lädt Bibliotheken, setzt Pfade, startet die Sitzung.
  */
 
-const EUEDOK_VERSION = '1.0.0';
+const EUEDOK_VERSION = '1.0.1';
 
 define('EUEDOK_ROOT', dirname(__DIR__));
 define('EUEDOK_DATA', EUEDOK_ROOT . '/data');
@@ -67,6 +67,21 @@ register_shutdown_function(static function (): void {
         ]);
     }
 });
+
+// Schutz: Läuft EÜDOK unter …/public/, zeigt der Dokumentstamm auf den Projektordner –
+// dann wären data/ (Berichte, Schlüssel) und app/ per URL erreichbar. Lokal (localhost) erlaubt.
+$reqHost = strtolower((string) preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+if (PHP_SAPI !== 'cli' && str_ends_with(rtrim(base_url(), '/'), '/public') && !in_array($reqHost, ['localhost', '127.0.0.1', '::1', '[::1]'], true)) {
+    \Euedok\Log::error('app', 'docroot_wrong', 'Dokumentstamm zeigt nicht auf public/ – Start verweigert', ['path' => $_SERVER['REQUEST_URI'] ?? null]);
+    http_response_code(503);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!doctype html><meta charset="utf-8"><title>EÜDOK – Einrichtung unvollständig</title>'
+        . '<div style="font-family:system-ui;max-width:560px;margin:40px auto;padding:0 16px;line-height:1.5">'
+        . '<h1>Einrichtung unvollständig</h1><p>Der Dokumentstamm der Domain zeigt auf den Projektordner. '
+        . 'Damit wären Berichte und Schlüssel öffentlich erreichbar, deshalb startet EÜDOK nicht.</p>'
+        . '<p><b>Lösung:</b> In Plesk unter <i>Hosting-Einstellungen → Dokumentstamm</i> den Ordner <code>public</code> eintragen.</p></div>';
+    exit;
+}
 
 $installed = \Euedok\Settings::isInstalled();
 date_default_timezone_set($installed ? (string) (\Euedok\Settings::unit()['timezone'] ?? 'Europe/Berlin') : 'Europe/Berlin');

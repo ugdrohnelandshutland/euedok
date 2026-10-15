@@ -50,6 +50,9 @@ Write-Host "3/5 Nicht benötigte PDF-Schriften entfernen (nur DejaVu bleibt) ...
 $fonts = Join-Path $target 'vendor\mpdf\mpdf\ttfonts'
 Get-ChildItem $fonts -File | Where-Object { $_.Name -notlike 'DejaVu*' } | Remove-Item -Force
 
+# Rückfallebene: vendor/ per Apache sperren (Hauptschutz ist der Dokumentstamm public/)
+Set-Content -Path (Join-Path $target 'vendor\.htaccess') -Value "Require all denied`nDeny from all" -Encoding ASCII
+
 Write-Host "4/5 Prüfen: Syntax und Test-PDF ..."
 Get-ChildItem $target -Recurse -Filter *.php | Where-Object { $_.FullName -notlike '*\vendor\*' } | ForEach-Object {
     $out = & $Php -l $_.FullName 2>&1
