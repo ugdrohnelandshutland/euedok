@@ -48,6 +48,26 @@ final class Mailer
     private static function deliver(PHPMailer $mail, array $to): array
     {
         $m = Settings::mail();
+        $ctx = [
+            'to' => $to,
+            'subject' => $mail->Subject,
+            'transport' => $m['transport'],
+            'host' => $m['transport'] === 'smtp' ? $m['smtp_host'] . ':' . $m['smtp_port'] . ' (' . $m['smtp_security'] . ')' : null,
+            'attachments' => array_map(static fn ($a) => $a[2], $mail->getAttachments()),
+        ];
+        // SMTP-Dialog mitschneiden (ohne Anmeldedaten), nur bei Fehlern ins Protokoll
+        $transcript = [];
+        if ($m['transport'] === 'smtp') {
+            $mail->SMTPDebug = 2;
+            $mail->Debugoutput = static function (string $line) use (&$transcript): void {
+                $line = trim($line);
+                if (preg_match('/AUTH|^CLIENT -> SERVER: [A-Za-z0-9+\/=]{8,}$/', $line)) {
+                    $line = preg_replace('/(CLIENT -> SERVER: ).*/', '$1***', $line);
+                }
+                $transcript[] = mb_substr($line, 0, 300);
+            };
+        }
+        $t0 = microtime(true);
         try {
             foreach ($to as $addr) {
                 $mail->addAddress($addr);
@@ -56,13 +76,18 @@ final class Mailer
                 $mail->preSend();
                 $name = date('Ymd-His') . '-' . bin2hex(random_bytes(3)) . '.eml';
                 Storage::writeRaw('mail-outbox/' . $name, $mail->getSentMIMEMessage());
+                $ctx['file'] = $name;
             } else {
                 $mail->send();
             }
+            Log::info('mail', 'sent', 'Mail versendet', $ctx + ['ms' => (int) round((microtime(true) - $t0) * 1000)]);
             return ['success' => true, 'to' => $to];
         } catch (MailException $e) {
             $err = $mail->ErrorInfo ?: $e->getMessage();
-            Log::error('Mail: ' . $err);
+            Log::error('mail', 'failed', $err, $ctx + [
+                'ms' => (int) round((microtime(true) - $t0) * 1000),
+                'smtp_transcript' => array_slice($transcript, -40),
+            ]);
             return ['success' => false, 'to' => $to, 'error' => $err];
         }
     }
@@ -114,6 +139,7 @@ final class Mailer
             }
             $mail->addAttachment($jsonFile, $fileBase . '.json', PHPMailer::ENCODING_BASE64, 'application/json');
         } catch (MailException $e) {
+            Log::error('mail', 'prepare_failed', $e->getMessage(), ['report' => $r['report_number']]);
             return ['success' => false, 'to' => $m['recipients'], 'error' => $e->getMessage()];
         }
         return self::deliver($mail, $m['recipients']);
@@ -126,6 +152,7 @@ final class Mailer
             $mail->Subject = $subject;
             $mail->Body = $body;
         } catch (MailException $e) {
+            Log::error('mail', 'prepare_failed', $e->getMessage(), ['subject' => $subject]);
             return ['success' => false, 'to' => $to, 'error' => $e->getMessage()];
         }
         return self::deliver($mail, $to);

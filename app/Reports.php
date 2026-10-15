@@ -163,6 +163,7 @@ final class Reports
             'qr_label' => $actor['qr_label'] ?? null,
             'qr_device' => $actor['qr_device'] ?? null,
         ] + self::summary($report));
+        Log::info('report', 'created', $number . ' angelegt', ['type' => $type['id'], 'by' => $actor['by'], 'source' => $actor['source'] ?? null]);
         return $report;
     }
 
@@ -364,6 +365,7 @@ final class Reports
                 return ['ok' => false, 'error' => 'Bericht ist bereits abgeschlossen.', 'closed' => true];
             }
             if ($rev !== (int) $meta['rev']) {
+                Log::warning('report', 'save_conflict', $number . ': Revision veraltet', ['client_rev' => $rev, 'server_rev' => (int) $meta['rev'], 'last_editor' => $meta['last_editor'] ?? null]);
                 return ['ok' => false, 'conflict' => true, 'error' => 'Der Bericht wurde inzwischen auf einem anderen Gerät geändert.'];
             }
             $report = self::applyInput($report, $input);
@@ -408,6 +410,7 @@ final class Reports
                 }
             }
             $report['divera'] = $import['divera'];
+            Log::info('report', 'divera_imported', $number . ': Divera-Daten übernommen', ['divera' => $import['divera']['type'] . ':' . $import['divera']['id'], 'persons' => count($import['personnel']), 'vehicles' => count($import['vehicles'])]);
             $report['history'][] = self::historyEntry('divera_imported', $actor, ['divera_id' => $import['divera']['id']]);
             Storage::write(self::jsonPath($meta), $report);
             $newRev = (int) $meta['rev'] + 1;
@@ -507,6 +510,7 @@ final class Reports
             $report = self::applyInput($report, $input);
             $missing = self::validate($report, $quickEntry);
             if ($missing) {
+                Log::debug('report', 'close_incomplete', $number . ': Pflichtangaben fehlen', ['missing' => array_keys($missing)]);
                 return ['ok' => false, 'missing' => $missing];
             }
             $correction = 0;
@@ -525,6 +529,7 @@ final class Reports
                 'closed_by' => $actor['by_name'] ?? $actor['by'],
                 'correction' => $correction,
             ] + self::summary($report));
+            Log::info('report', $wasClosed ? 'corrected' : 'closed', $number . ($wasClosed ? ' korrigiert (' . $correction . ')' : ' abgeschlossen'), ['by' => $actor['by_name'] ?? $actor['by'], 'source' => $actor['source'] ?? null, 'persons' => count($report['personnel'])]);
             return ['ok' => true, 'report' => $report, 'meta' => self::meta($number), 'correction' => $correction];
         });
         if (!$result['ok']) {
@@ -535,7 +540,7 @@ final class Reports
         try {
             Pdf::writeReport($result['report'], self::pdfPath($result['meta']));
         } catch (\Throwable $e) {
-            Log::error('PDF ' . $number . ': ' . $e->getMessage());
+            Log::error('pdf', 'failed', $e->getMessage(), ['report' => $number, 'file' => $e->getFile() . ':' . $e->getLine()]);
             return ['ok' => true, 'pdf' => false, 'mail' => ['status' => 'failed', 'error' => 'PDF konnte nicht erzeugt werden.'], 'correction' => $result['correction']];
         }
         $mail = self::sendMail($number, $result['correction'], $actor);
@@ -578,6 +583,7 @@ final class Reports
                 return false;
             }
             @unlink(Storage::path(self::jsonPath($meta)));
+            Log::info('report', 'discarded', $number . ': Entwurf verworfen');
             self::updateIndex($number, null);
             return true;
         });

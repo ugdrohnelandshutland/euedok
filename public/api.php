@@ -57,6 +57,7 @@ switch ($action) {
                 json_out(['ok' => false, 'error' => 'Korrekturen sind nur nach Anmeldung möglich.'], 403);
             }
             if (QrAccess::rateLimitReached($qr['entry'])) {
+                \Euedok\Log::warning('qr', 'rate_limited', 'Zu viele Berichte über QR in einer Stunde', ['qr' => $qr['entry']['label'], 'report' => $number]);
                 json_out(['ok' => false, 'error' => 'Zu viele Berichte über diesen QR-Code in der letzten Stunde. Bitte später erneut versuchen oder anmelden.'], 429);
             }
         }
@@ -81,7 +82,7 @@ switch ($action) {
         try {
             json_out(['ok' => true, 'items' => Divera::candidates($source), 'window' => (int) \Euedok\Settings::divera()['window_hours']]);
         } catch (\Throwable $e) {
-            \Euedok\Log::error('Divera: ' . $e->getMessage());
+            \Euedok\Log::warning('divera', 'lookup_failed', $e->getMessage(), ['report' => $number, 'action' => $action]);
             json_out(['ok' => false, 'unreachable' => true, 'error' => 'Divera nicht erreichbar – bitte manuell ausfüllen.']);
         }
 
@@ -93,7 +94,7 @@ switch ($action) {
         try {
             $import = Divera::importData($source, (string) ($in['id'] ?? ''));
         } catch (\Throwable $e) {
-            \Euedok\Log::error('Divera: ' . $e->getMessage());
+            \Euedok\Log::warning('divera', 'lookup_failed', $e->getMessage(), ['report' => $number, 'action' => $action]);
             json_out(['ok' => false, 'error' => 'Divera nicht erreichbar – bitte manuell ausfüllen.']);
         }
         if ($import === null) {

@@ -50,8 +50,17 @@ data/
   settings/   Einstellungen (nur über die Einstellungsseite bearbeiten)
   keys/       Verschlüsselungsschlüssel – mit sichern!
   reports/    <Jahr>/Einsatzbericht_E-2026-001.json|.pdf
-  logs/       settings-audit.log, error.log
+  logs/       Protokolle je Bereich (JSON-Zeilen), settings-audit.log
+    divera-raw/  Divera-Rohantworten bei Fehlern/Übernahmen (30 Tage)
 ```
+
+## Protokolle
+
+Einstellungen → Protokolle zeigt die Einträge je Bereich (Anwendung, Anmeldung, Berichte,
+Mailversand, PDF, Divera247, QR, Fehler) mit Filter und Details; „Alle als ZIP“ lädt alles herunter.
+Jede Zeile trägt eine Anfrage-ID, über die zusammengehörige Einträge gefunden werden.
+Rotation bei 20 MB je Datei, 5 alte Dateien bleiben. Passwörter, PINs, QR- und API-Schlüssel
+werden vor dem Schreiben unkenntlich gemacht. Stufe „Debug“ protokolliert zusätzlich jede Anfrage.
 
 Sicherung: `data/` komplett sichern (inkl. `keys/`, sonst sind SMTP-Passwort und Divera-Schlüssel
 nicht mehr lesbar). Nach dem Zurückspielen: Einstellungen → Protokoll → „Übersicht neu aufbauen“.

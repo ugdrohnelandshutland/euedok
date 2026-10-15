@@ -19,7 +19,8 @@ final class SettingsPage
         'divera' => ['Divera247', 'radio'],
         'users' => ['Zugänge', 'user'],
         'qr' => ['QR-Zugänge', 'qr'],
-        'audit' => ['Protokoll', 'list'],
+        'logs' => ['Protokolle', 'server'],
+        'audit' => ['Änderungsprotokoll', 'list'],
     ];
 
     /** Welche Schlüssel haben sich geändert? (für das Protokoll, ohne Werte von Geheimnissen) */
@@ -60,6 +61,7 @@ final class SettingsPage
             'mail' => self::saveMail(),
             'divera' => self::saveDivera(),
             'users' => self::saveUsers(),
+            'logs' => self::saveLogLevel(),
             default => 'Unbekannter Bereich.',
         };
     }
@@ -81,6 +83,16 @@ final class SettingsPage
         $u['timezone'] = in_array($tz, \DateTimeZone::listIdentifiers(), true) ? $tz : $old['timezone'];
         Settings::save('unit', $u, 'Einheit: ' . self::diff($old, $u));
         return 'Einheit gespeichert.';
+    }
+
+    private static function saveLogLevel(): string
+    {
+        $u = Settings::unit();
+        $level = in_array(post_str('log_level'), ['debug', 'info', 'warning', 'error'], true) ? post_str('log_level') : 'info';
+        $old = $u['log_level'] ?? 'info';
+        $u['log_level'] = $level;
+        Settings::save('unit', $u, 'Protokollstufe: ' . $old . ' → ' . $level);
+        return 'Protokollstufe gespeichert.';
     }
 
     private static function saveTypes(): string
@@ -316,6 +328,12 @@ final class SettingsPage
         foreach ((array) ($_POST['attendance'] ?? []) as $sid) {
             $sid = (string) $sid;
             $statuses[] = ['id' => $sid, 'label' => is_array($labels) ? mb_substr(trim((string) ($labels[$sid] ?? '')), 0, 80) : ''];
+        }
+        // Antwortoptionen am Alarm („JA zur Drohne“) haben eigene IDs – frei eintragbar
+        foreach (preg_split('/[\s,;]+/', post_str('attendance_extra')) ?: [] as $extra) {
+            if ($extra !== '' && preg_match('/^\d{1,12}$/', $extra) && !in_array($extra, array_column($statuses, 'id'), true)) {
+                $statuses[] = ['id' => $extra, 'label' => 'Antwort-ID ' . $extra];
+            }
         }
         $d['attendance_statuses'] = $statuses;
         $audit = self::diff(array_diff_key($old, ['api_key_enc' => 1]), array_diff_key($d, ['api_key_enc' => 1]));

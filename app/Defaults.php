@@ -32,6 +32,7 @@ final class Defaults
             'required_fields' => ['type', 'start', 'end', 'location', 'subject', 'personnel', 'lead'],
             'defects_hint' => 'Defekte sind sofort dem Leiter zu melden.',
             'remember_days' => 30,
+            'log_level' => 'info',
         ];
     }
 

@@ -32,6 +32,7 @@ $format = ($_GET['f'] ?? 'pdf') === 'json' ? 'json' : 'pdf';
 /* QR-Zugang: nur das eben abgeschlossene PDF */
 if (!Auth::user() && isset($_GET['qr'])) {
     if ($format !== 'pdf' || !QrAccess::pdfAllowed($number)) {
+        \Euedok\Log::warning('qr', 'download_denied', 'Download über QR verweigert', ['report' => $number, 'format' => $format]);
         http_response_code(403);
         exit('Dieses PDF ist über den QR-Zugang nicht (mehr) abrufbar.');
     }

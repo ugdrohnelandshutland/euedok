@@ -169,6 +169,7 @@ final class QrAccess
         }
         $k = $device . '|' . $entry['id'];
         if (preg_match('/^\d{4,6}$/', $pin) && password_verify($pin, (string) $entry['pin_hash'])) {
+            Log::info('qr', 'pin_ok', 'PIN korrekt', ['qr' => $entry['label'], 'device' => substr($device, 0, 12)]);
             Storage::locked('qr-pin', static function () use ($k, $device, $entry) {
                 $attempts = Storage::read('auth/qr-pin-attempts.json', []);
                 unset($attempts[$k]);
@@ -182,6 +183,7 @@ final class QrAccess
             });
             return null;
         }
+        Log::warning('qr', 'pin_failed', 'Falsche PIN', ['qr' => $entry['label'], 'device' => substr($device, 0, 12)]);
         $locked = Storage::locked('qr-pin', static function () use ($k) {
             $attempts = Storage::read('auth/qr-pin-attempts.json', []);
             $a = $attempts[$k] ?? ['count' => 0, 'until' => 0];
@@ -204,7 +206,7 @@ final class QrAccess
 
     private static function notifyLockout(array $entry): void
     {
-        Log::error('QR-PIN-Sperre ausgelöst: ' . $entry['label']);
+        Log::warning('qr', 'pin_lockout', 'PIN-Sperre ausgelöst (5 Fehlversuche)', ['qr' => $entry['label']]);
         if (Mailer::enabled()) {
             Mailer::sendText(
                 Settings::mail()['recipients'],

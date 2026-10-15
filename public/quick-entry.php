@@ -10,6 +10,7 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 
 use Euedok\Divera;
 use Euedok\FormConfig;
+use Euedok\Log;
 use Euedok\QrAccess;
 use Euedok\Reports;
 use Euedok\Settings;
@@ -29,6 +30,7 @@ function qr_page(string $title, string $view, array $vars = []): never
 
 function qr_fail(string $text): never
 {
+    Log::info('qr', 'denied', $text, ['path' => $_SERVER['REQUEST_URI'] ?? null]);
     http_response_code(403);
     qr_page('Schnellerfassung', 'quick-message', ['text' => $text]);
 }
@@ -38,13 +40,18 @@ $key = is_string($_GET['key'] ?? null) ? $_GET['key'] : '';
 if ($key !== '') {
     $entry = QrAccess::findByKey($key);
     if (!$entry || empty($entry['active'])) {
+        Log::warning('qr', 'invalid_key', $entry ? 'Gesperrter QR-Zugang aufgerufen' : 'Unbekannter QR-Schlüssel aufgerufen', [
+            'qr' => $entry['label'] ?? null, 'key_hint' => substr($key, 0, 4), 'user_agent' => mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 160),
+        ]);
         qr_fail('Dieser QR-Code ist nicht (mehr) gültig. Bitte bei der Leitung melden.');
     }
     $device = QrAccess::deviceId();
     if (!empty($entry['pin_enabled']) && !QrAccess::pinRemembered($entry, $device)) {
         $_SESSION['qr_pending'] = $entry['id'];
+        Log::info('qr', 'pin_required', 'QR geöffnet, PIN-Abfrage', ['qr' => $entry['label'], 'device' => substr($device, 0, 12)]);
         redirect('quick-entry.php?pin=1');
     }
+    Log::info('qr', 'opened', 'QR-Schnellerfassung geöffnet', ['qr' => $entry['label'], 'device' => substr($device, 0, 12)]);
     QrAccess::startSession($entry, $device);
     redirect('quick-entry.php');
 }

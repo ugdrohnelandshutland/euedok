@@ -103,6 +103,7 @@ final class Auth
         $attempts = Storage::read('auth/login-attempts.json', []);
         $entry = $attempts[$key] ?? ['count' => 0, 'until' => 0];
         if ($entry['until'] > time()) {
+            Log::info('auth', 'login_blocked', 'Anmeldeversuch während Sperre', ['username' => $username]);
             $min = (int) ceil(($entry['until'] - time()) / 60);
             return "Zu viele Fehlversuche. Bitte in {$min} Minuten erneut versuchen.";
         }
@@ -111,8 +112,10 @@ final class Auth
         $ok = $u && !empty($u['active']) && !empty($u['password_hash']) && password_verify($password, $u['password_hash']);
         if (!$ok) {
             $entry['count']++;
+            Log::warning('auth', 'login_failed', 'Anmeldung fehlgeschlagen', ['username' => $username, 'known_user' => (bool) $u, 'attempt' => $entry['count']]);
             if ($entry['count'] >= self::MAX_ATTEMPTS) {
                 $entry = ['count' => 0, 'until' => time() + self::LOCK_SECONDS];
+                Log::warning('auth', 'login_locked', 'Anmeldung 15 Minuten gesperrt', ['username' => $username]);
             }
             $attempts[$key] = $entry;
             Storage::write('auth/login-attempts.json', self::pruneAttempts($attempts));
@@ -125,6 +128,7 @@ final class Auth
             self::updateUser($u['id'], ['password_hash' => password_hash($password, PASSWORD_DEFAULT)]);
         }
         self::login($u, $remember);
+        Log::info('auth', 'login', 'Angemeldet: ' . $u['username'], ['remember' => $remember]);
         return null;
     }
 
@@ -142,6 +146,7 @@ final class Auth
 
     public static function logout(): void
     {
+        Log::info('auth', 'logout', 'Abgemeldet: ' . (self::user()['username'] ?? '?'));
         $cookie = $_COOKIE[self::REMEMBER_COOKIE] ?? '';
         if (is_string($cookie) && str_contains($cookie, ':')) {
             [$selector] = explode(':', $cookie, 2);
@@ -182,9 +187,11 @@ final class Auth
         $tokens = Storage::read('auth/remember.json', []);
         $t = $tokens[$selector] ?? null;
         if (!$t || $t['expires'] < time() || !hash_equals($t['hash'], hash('sha256', $validator))) {
+            Log::info('auth', 'remember_rejected', $t ? 'Gerät-Anmeldung abgelaufen oder ungültig' : 'Unbekannte Gerät-Anmeldung');
             self::setCookie(self::REMEMBER_COOKIE, '', time() - 3600);
             return null;
         }
+        Log::debug('auth', 'remember_restored', 'Anmeldung über gemerktes Gerät', ['user_id' => $t['user_id']]);
         session_regenerate_id(true);
         $_SESSION['uid'] = $t['user_id'];
         return $t['user_id'];

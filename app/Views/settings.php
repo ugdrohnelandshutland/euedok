@@ -317,6 +317,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($sw
             <?php endif; endforeach; ?>
           <?php endif; ?>
           <p class="hint">Mehrfachauswahl. UG-Drohne: „JA zur Drohne“ und „JA zur ES“.</p>
+          <label class="f">Weitere Antwort-IDs (mit Komma) <input class="in" name="attendance_extra" inputmode="numeric" placeholder="z. B. 123456, 123457"><span class="hint">Eigene Antwortoptionen am Alarm erscheinen erst, wenn jemand so geantwortet hat. Der Testabruf zeigt dann ihre IDs unter „Rückmeldungen in Alarmen“.</span></label>
           <?= $toggle('event_accept_counts', (bool) $d['event_accept_counts'], 'Übungen: Zusage zählt als eingesetzt') ?>
           <label class="f">Antwort-IDs für „Zusage“ bei Terminen (mit Komma) <input class="in" name="event_accept_ids" value="<?= e(implode(', ', $d['event_accept_ids'])) ?>"><span class="hint">Nach dem Testabruf oben ablesbar („Rückmeldungen in Terminen“).</span></label>
         </section>
@@ -412,6 +413,58 @@ $listEditor = static function (string $name, array $items, array $cols) use ($sw
         <?= $toggle('divera', Divera::configured(), 'Divera-Abfrage über diesen QR-Code') ?>
         <p class="hint">Über den QR-Code kann man nur neue Berichte erstellen und das eigene PDF 24 h abrufen. Höchstens <?= QrAccess::RATE_LIMIT_PER_HOUR ?> Berichte pro Stunde. Aufkleber nur innen anbringen.</p>
         <button class="btn pri"><?= icon('qr') ?>Anlegen</button>
+      </form>
+
+<?php elseif ($section === 'logs'):
+    $ch = is_string($_GET['ch'] ?? null) && isset(Log::CHANNELS[$_GET['ch']]) ? $_GET['ch'] : 'error';
+    $lv = in_array($_GET['lv'] ?? '', ['debug', 'info', 'warning', 'error'], true) ? $_GET['lv'] : 'debug';
+    $q = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
+    $rows = Log::tail($ch, 300, $lv, $q);
+    $lvClass = ['debug' => 'dr', 'info' => 'ok', 'warning' => 'wa', 'error' => 'er'];
+    $lvText = ['debug' => 'Debug', 'info' => 'Info', 'warning' => 'Warnung', 'error' => 'Fehler'];
+    $sizes = [];
+    foreach (Log::CHANNELS as $k => $l) {
+        $f = \Euedok\Storage::path('logs/' . $k . '.log');
+        $sizes[$k] = is_file($f) ? filesize($f) : 0;
+    }
+    ?>
+      <section class="card stack">
+        <h3><?= icon('server') ?>Protokolle <span class="r"><a class="btn sm" href="<?= e(base_url('settings.php?logs-zip=1')) ?>"><?= icon('archive') ?>Alle als ZIP</a></span></h3>
+        <form method="get" class="toolbar" data-autosubmit>
+          <input type="hidden" name="s" value="logs">
+          <select class="in" name="ch" aria-label="Bereich">
+            <?php foreach (Log::CHANNELS as $k => $l): ?><option value="<?= e($k) ?>"<?= $k === $ch ? ' selected' : '' ?>><?= e($l) ?> (<?= e(number_format($sizes[$k] / 1024, 0, ',', '.')) ?> KB)</option><?php endforeach; ?>
+          </select>
+          <select class="in" name="lv" aria-label="ab Stufe">
+            <?php foreach ($lvText as $k => $l): ?><option value="<?= $k ?>"<?= $k === $lv ? ' selected' : '' ?>>ab <?= e($l) ?></option><?php endforeach; ?>
+          </select>
+          <input class="in" type="search" name="q" value="<?= e($q) ?>" placeholder="Text, Berichtsnummer, Anfrage-ID …">
+          <button class="btn sm"><?= icon('search') ?>Anzeigen</button>
+        </form>
+        <?php if (!$rows): ?><p class="hint">Keine Einträge.</p><?php else: ?>
+        <table class="tbl audit"><thead><tr><th>Zeit</th><th>Stufe</th><th>Ereignis</th><th>Meldung</th><th>Wer</th></tr></thead><tbody>
+          <?php foreach ($rows as $row): ?>
+          <tr>
+            <td style="white-space:nowrap"><?= e(substr(str_replace('T', ' ', (string) $row['at']), 0, 19)) ?><br><span class="muted mono small"><?= e($row['request'] ?? '') ?></span></td>
+            <td><span class="bd <?= $lvClass[$row['level']] ?? 'dr' ?>"><?= e($lvText[$row['level']] ?? $row['level']) ?></span></td>
+            <td class="mono small"><?= e(($row['channel'] !== $ch ? $row['channel'] . '.' : '') . $row['event']) ?></td>
+            <td><?= e($row['message']) ?>
+              <?php if (!empty($row['context'])): ?><details><summary class="muted small" style="cursor:pointer">Details</summary><pre class="mono small" style="white-space:pre-wrap;word-break:break-word;margin-top:4px"><?= e(json_encode($row['context'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></pre></details><?php endif; ?></td>
+            <td class="small"><?= e((string) ($row['user'] ?? '')) ?><br><span class="muted"><?= e((string) ($row['ip'] ?? '')) ?></span></td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody></table>
+        <?php endif; ?>
+      </section>
+      <form method="post" action="<?= $action('save') ?>" class="card stack">
+        <?= csrf_field() ?>
+        <h3><?= icon('sliders') ?>Protokollstufe</h3>
+        <label class="f">Was wird mitgeschrieben? <select class="in" name="log_level">
+          <?php foreach (['debug' => 'Debug – alles inkl. jeder Anfrage (nur zur Fehlersuche)', 'info' => 'Info – normaler Betrieb (empfohlen)', 'warning' => 'nur Warnungen und Fehler', 'error' => 'nur Fehler'] as $k => $l): ?>
+          <option value="<?= $k ?>"<?= ($unit['log_level'] ?? 'info') === $k ? ' selected' : '' ?>><?= e($l) ?></option>
+          <?php endforeach; ?></select></label>
+        <p class="hint">Je Datei höchstens <?= Log::MAX_BYTES / 1048576 ?> MB, danach wird umbenannt (<?= Log::KEEP ?> alte Dateien bleiben). Divera-Rohdaten bei Fehlern und Übernahmen werden nach <?= Log::RAW_DAYS ?> Tagen gelöscht. Passwörter, PINs und Schlüssel werden nie geschrieben.</p>
+        <button class="btn pri"><?= icon('check') ?>Speichern</button>
       </form>
 
 <?php elseif ($section === 'audit'): $rows = Log::readAudit(300); ?>

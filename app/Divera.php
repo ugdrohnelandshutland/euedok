@@ -62,6 +62,13 @@ final class Divera
         if (!$key) {
             throw new \RuntimeException('Kein Divera-API-Schlüssel hinterlegt.');
         }
+        // Nach einem Ausfall 60 s nicht erneut warten lassen – Seiten öffnen sofort mit Puffer
+        $down = Storage::read('cache/divera-down.json');
+        if ($key === self::apiKey() && is_array($down) && ($down['until'] ?? 0) > time()) {
+            Log::debug('divera', 'skipped', 'Divera kürzlich nicht erreichbar – Abruf übersprungen', ['path' => $path, 'until' => date('H:i:s', $down['until'])]);
+            throw new \RuntimeException((string) ($down['error'] ?? 'Divera nicht erreichbar.'));
+        }
+
         $d = Settings::divera();
         $url = rtrim((string) $d['base_url'], '/') . $path . (str_contains($path, '?') ? '&' : '?') . 'accesskey=' . rawurlencode($key);
         $ch = curl_init($url);
@@ -73,23 +80,49 @@ final class Divera
             CURLOPT_HTTPHEADER => ['Accept: application/json'],
             CURLOPT_USERAGENT => 'EUEDOK/' . EUEDOK_VERSION,
         ]);
+        $t0 = microtime(true);
         $body = curl_exec($ch);
+        $ms = (int) round((microtime(true) - $t0) * 1000);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err = curl_error($ch);
+        $errno = curl_errno($ch);
         curl_close($ch);
+
+        $ctx = ['path' => $path, 'http' => $status, 'ms' => $ms, 'bytes' => is_string($body) ? strlen($body) : 0];
+        $fail = static function (string $msg, bool $markDown) use ($ctx, $body, $path, $key): never {
+            $raw = is_string($body) && $body !== '' ? Log::raw('error' . str_replace('/', '-', $path), $body) : null;
+            Log::error('divera', 'request_failed', $msg, $ctx + ($raw ? ['raw_file' => $raw] : []));
+            if ($markDown && $key === self::apiKey()) {
+                Storage::write('cache/divera-down.json', ['until' => time() + 60, 'error' => $msg]);
+            }
+            throw new \RuntimeException($msg);
+        };
+
         if ($body === false) {
-            throw new \RuntimeException('Divera nicht erreichbar (' . $err . ').');
+            $ctx['curl_errno'] = $errno;
+            $fail('Divera nicht erreichbar (' . $err . ').', true);
         }
         $json = json_decode((string) $body, true);
         if ($status === 403 || $status === 401) {
-            throw new \RuntimeException('Divera lehnt den API-Schlüssel ab (HTTP ' . $status . ').');
+            $fail('Divera lehnt den API-Schlüssel ab (HTTP ' . $status . ').', false);
         }
         if ($status >= 400 || !is_array($json)) {
-            throw new \RuntimeException('Divera antwortet mit Fehler (HTTP ' . $status . ').');
+            $fail('Divera antwortet mit Fehler (HTTP ' . $status . ($json === null ? ', keine gültige JSON-Antwort' : '') . ').', $status >= 500);
         }
         if (isset($json['success']) && $json['success'] === false) {
-            throw new \RuntimeException('Divera meldet einen Fehler: ' . (is_string($json['message'] ?? null) ? $json['message'] : 'unbekannt'));
+            $fail('Divera meldet einen Fehler: ' . (is_string($json['message'] ?? null) ? $json['message'] : json_encode($json['errors'] ?? 'unbekannt', JSON_UNESCAPED_UNICODE)), false);
         }
+
+        $data = $json['data'] ?? null;
+        $ctx['items'] = is_array($data) ? (isset($data['items']) && is_array($data['items']) ? count($data['items']) : count($data)) : null;
+        if (is_array($data) && !isset($data['items']) && str_contains($path, 'pull/all')) {
+            $ctx['top_level_keys'] = array_keys($data);
+        }
+        Log::info('divera', 'request', 'Abruf ' . $path . ' ok', $ctx);
+        if ($ms > $timeout * 1000 * 0.8) {
+            Log::warning('divera', 'slow', 'Divera antwortet langsam (' . $ms . ' ms)', ['path' => $path]);
+        }
+        @unlink(Storage::path('cache/divera-down.json'));
         return $json;
     }
 
@@ -145,6 +178,11 @@ final class Divera
             return ['items' => $parser($data), 'stale' => false, 'fetched_at' => now_iso(), 'error' => null];
         } catch (\Throwable $e) {
             $buf = Storage::read($bufferFile, []);
+            Log::warning('divera', 'buffer_used', 'Puffer verwendet: ' . basename($bufferFile), [
+                'error' => $e->getMessage(),
+                'buffer_from' => $buf['fetched_at'] ?? null,
+                'items' => count($buf['items'] ?? []),
+            ]);
             return [
                 'items' => $buf['items'] ?? [],
                 'stale' => true,
@@ -222,12 +260,26 @@ final class Divera
 
     private static function alarms(array $data): array
     {
-        return self::items($data['alarm'] ?? []);
+        // pull/all enthält je nach Schlüssel-Art keine Alarme → eigener Endpunkt
+        return self::items($data['alarm'] ?? self::endpoint('/api/v2/alarms', 'cache/divera-alarms.json'));
     }
 
     private static function events(array $data): array
     {
-        return self::items($data['events'] ?? ($data['event'] ?? []));
+        return self::items($data['events'] ?? $data['event'] ?? self::endpoint('/api/v2/events', 'cache/divera-events.json'));
+    }
+
+    /** Abruf eines Listen-Endpunkts, 60 s zwischengespeichert. */
+    private static function endpoint(string $path, string $cacheFile): array
+    {
+        $cached = Storage::read($cacheFile);
+        if (is_array($cached) && ($cached['fetched'] ?? 0) > time() - self::PULL_TTL) {
+            return $cached['data'];
+        }
+        $data = self::request($path)['data'] ?? [];
+        $data = is_array($data) ? $data : [];
+        Storage::write($cacheFile, ['fetched' => time(), 'data' => $data]);
+        return $data;
     }
 
     private static function ts(mixed $v): ?int
@@ -313,6 +365,9 @@ final class Divera
             ];
         }
         usort($list, static fn ($a, $b) => strcmp($b['start'], $a['start']));
+        Log::info('divera', 'candidates', count($list) . ' ' . ($source === 'alarm' ? 'Alarme' : 'Termine') . ' im Zeitfenster', [
+            'source' => $source, 'total' => count($items), 'in_window' => count($list), 'window_h' => $window / 3600,
+        ]);
         return $list;
     }
 
@@ -329,6 +384,7 @@ final class Divera
             }
         }
         if ($item === null) {
+            Log::warning('divera', 'import_not_found', 'Eintrag nicht mehr in Divera gefunden', ['source' => $source, 'id' => $id, 'available' => count($items)]);
             return null;
         }
         $consumers = [];
@@ -336,10 +392,29 @@ final class Divera
             $consumers[(string) $p['divera_id']] = $p;
         }
         $personnel = [];
-        foreach (self::attendingIds($item, $source) as $ucr) {
+        $unknown = [];
+        $attending = self::attendingIds($item, $source);
+        foreach ($attending as $ucr) {
             if (isset($consumers[$ucr])) {
                 $personnel[] = MasterData::matchPerson($consumers[$ucr]);
+            } else {
+                $unknown[] = $ucr;
             }
+        }
+        // Für die Analyse: welche Antworten gab es, was wurde als „eingesetzt“ gewertet?
+        $answerSummary = array_map('count', self::answers($item));
+        $rawFile = Log::raw('import-' . $source . '-' . $id, (string) json_encode($item, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        Log::info('divera', 'import', 'Übernahme ' . ($source === 'alarm' ? 'Alarm' : 'Termin') . ' ' . $id, [
+            'answers_by_id' => $answerSummary,
+            'counted_ids' => $source === 'event' ? Settings::divera()['event_accept_ids'] : array_column(Settings::divera()['attendance_statuses'], 'id'),
+            'attending' => count($attending),
+            'matched_persons' => count($personnel),
+            'unknown_ucr_ids' => $unknown,
+            'vehicles_in_alarm' => count((array) ($item['vehicle'] ?? [])),
+            'raw_file' => $rawFile,
+        ]);
+        if ($answerSummary && !$attending) {
+            Log::warning('divera', 'no_attendance_match', 'Es gibt Rückmeldungen, aber keine passt zu den als „eingesetzt“ markierten IDs', ['answers_by_id' => $answerSummary]);
         }
 
         $vehicles = [];
@@ -388,6 +463,10 @@ final class Divera
     public static function test(?string $key = null): array
     {
         $data = self::pull(true, $key);
+        if ($key === null) {
+            @unlink(Storage::path('cache/divera-alarms.json'));
+            @unlink(Storage::path('cache/divera-events.json'));
+        }
         $answerKeys = ['alarm' => [], 'event' => []];
         foreach (['alarm' => self::alarms($data), 'event' => self::events($data)] as $src => $items) {
             foreach ($items as $it) {

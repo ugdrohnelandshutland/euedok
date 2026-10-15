@@ -263,12 +263,19 @@ final class Pdf
 
     public static function writeReport(array $r, string $file): void
     {
+        $t0 = microtime(true);
         $mpdf = self::make();
         $mpdf->SetTitle(Reports::documentTitle($r['type']) . ' ' . $r['report_number']);
         $mpdf->SetAuthor((string) (Settings::unit()['name'] ?: 'EÜDOK'));
         $mpdf->WriteHTML(self::reportHtml($r));
         Storage::ensureDir(dirname($file));
         $mpdf->Output($file, \Mpdf\Output\Destination::FILE);
+        Log::info('pdf', 'generated', 'PDF erzeugt: ' . basename($file), [
+            'report' => $r['report_number'],
+            'pages' => $mpdf->page,
+            'kb' => (int) round(filesize($file) / 1024),
+            'ms' => (int) round((microtime(true) - $t0) * 1000),
+        ]);
     }
 
     /** Druckvorlage für den QR-Aufkleber (A6). */

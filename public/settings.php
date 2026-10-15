@@ -37,6 +37,25 @@ if (isset($_GET['sticker'])) {
     exit;
 }
 
+/* Alle Protokolle als ZIP (zur Analyse oder Weitergabe) */
+if (isset($_GET['logs-zip'])) {
+    $tmp = tempnam(sys_get_temp_dir(), 'eul');
+    $zip = new ZipArchive();
+    $zip->open($tmp, ZipArchive::OVERWRITE);
+    foreach (Log::files() as $f) {
+        $zip->addFile($f, (str_contains(str_replace('\\', '/', $f), '/divera-raw/') ? 'divera-raw/' : '') . basename($f));
+    }
+    $zip->addFromString('info.txt', 'EÜDOK ' . EUEDOK_VERSION . "\nPHP " . PHP_VERSION . "\nErstellt " . date('c') . ' von ' . $user['username'] . "\n");
+    $zip->close();
+    Log::audit('logs', 'Protokolle heruntergeladen');
+    header('Content-Type: application/zip');
+    header('Content-Length: ' . filesize($tmp));
+    header('Content-Disposition: attachment; filename="EUEDOK_Protokolle_' . date('Y-m-d_His') . '.zip"');
+    readfile($tmp);
+    @unlink($tmp);
+    exit;
+}
+
 $testResult = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
