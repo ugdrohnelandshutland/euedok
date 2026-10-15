@@ -1,0 +1,413 @@
+<?php
+declare(strict_types=1);
+
+namespace Euedok;
+
+/**
+ * Divera247-API v2 – nur lesend, nur serverseitig. Der API-Schlüssel verlässt den Server nie.
+ * Alle Feldzugriffe sind defensiv, weil Divera Strukturen je nach Einheit leicht abweichen.
+ */
+final class Divera
+{
+    private const PULL_CACHE = 'cache/divera-pull.json';
+    private const PULL_TTL = 60;
+
+    public static function configured(): bool
+    {
+        $d = Settings::divera();
+        return !empty($d['enabled']) && !empty($d['api_key_enc']);
+    }
+
+    public static function apiKey(): ?string
+    {
+        return Crypto::decrypt(Settings::divera()['api_key_enc'] ?? '');
+    }
+
+    public static function personnelFromDivera(): bool
+    {
+        return self::configured() && (Settings::divera()['personnel_source'] ?? 'local') === 'divera';
+    }
+
+    public static function vehiclesFromDivera(): bool
+    {
+        return self::configured() && !empty(Settings::divera()['vehicles_from_divera']);
+    }
+
+    /** Darf für diese Berichtsart (und ggf. QR) in Divera nachgesehen werden? */
+    public static function lookupAllowed(string $typeId, bool $quickEntry): ?string
+    {
+        if (!self::configured()) {
+            return null;
+        }
+        $d = Settings::divera();
+        if ($quickEntry && empty($d['quick_entry_enabled'])) {
+            return null;
+        }
+        $source = Settings::reportType($typeId)['divera_source'] ?? null;
+        if ($source === 'alarm' && !empty($d['incident_enabled'])) {
+            return 'alarm';
+        }
+        if ($source === 'event' && !empty($d['exercise_enabled'])) {
+            return 'event';
+        }
+        return null;
+    }
+
+    /* ---------- HTTP ---------- */
+
+    /** @throws \RuntimeException wenn Divera nicht erreichbar ist oder ablehnt */
+    private static function request(string $path, ?string $key = null): array
+    {
+        $key ??= self::apiKey();
+        if (!$key) {
+            throw new \RuntimeException('Kein Divera-API-Schlüssel hinterlegt.');
+        }
+        $d = Settings::divera();
+        $url = rtrim((string) $d['base_url'], '/') . $path . (str_contains($path, '?') ? '&' : '?') . 'accesskey=' . rawurlencode($key);
+        $ch = curl_init($url);
+        $timeout = max(1, (int) $d['timeout_seconds']);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => $timeout,
+            CURLOPT_TIMEOUT => $timeout + 2,
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+            CURLOPT_USERAGENT => 'EUEDOK/' . EUEDOK_VERSION,
+        ]);
+        $body = curl_exec($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($body === false) {
+            throw new \RuntimeException('Divera nicht erreichbar (' . $err . ').');
+        }
+        $json = json_decode((string) $body, true);
+        if ($status === 403 || $status === 401) {
+            throw new \RuntimeException('Divera lehnt den API-Schlüssel ab (HTTP ' . $status . ').');
+        }
+        if ($status >= 400 || !is_array($json)) {
+            throw new \RuntimeException('Divera antwortet mit Fehler (HTTP ' . $status . ').');
+        }
+        if (isset($json['success']) && $json['success'] === false) {
+            throw new \RuntimeException('Divera meldet einen Fehler: ' . (is_string($json['message'] ?? null) ? $json['message'] : 'unbekannt'));
+        }
+        return $json;
+    }
+
+    /** Gesamtabruf (Einheit, Personal, Status, Fahrzeuge, Alarme, Termine), 60 s zwischengespeichert. */
+    public static function pull(bool $fresh = false, ?string $key = null): array
+    {
+        if (!$fresh && $key === null) {
+            $cached = Storage::read(self::PULL_CACHE);
+            if (is_array($cached) && ($cached['fetched'] ?? 0) > time() - self::PULL_TTL) {
+                return $cached['data'];
+            }
+        }
+        $json = self::request('/api/v2/pull/all', $key);
+        $data = $json['data'] ?? [];
+        if ($key === null) {
+            Storage::write(self::PULL_CACHE, ['fetched' => time(), 'data' => $data]);
+            self::refreshBuffers($data);
+        }
+        return $data;
+    }
+
+    /** Reiner Puffer für Ausfälle: zuletzt erfolgreich abgerufene Listen. */
+    private static function refreshBuffers(array $data): void
+    {
+        $stamp = now_iso();
+        Storage::write('cache/divera-personnel.json', ['fetched_at' => $stamp, 'items' => self::parsePersonnel($data)]);
+        Storage::write('cache/divera-vehicles.json', ['fetched_at' => $stamp, 'items' => self::parseVehicles($data)]);
+        Storage::write('cache/divera-statuses.json', ['fetched_at' => $stamp, 'items' => self::parseStatuses($data)]);
+    }
+
+    /* ---------- Listen ---------- */
+
+    /** @return array{items: array, stale: bool, fetched_at: ?string, error: ?string} */
+    public static function personnel(): array
+    {
+        return self::listWithBuffer('cache/divera-personnel.json', [self::class, 'parsePersonnel']);
+    }
+
+    public static function vehicles(): array
+    {
+        return self::listWithBuffer('cache/divera-vehicles.json', [self::class, 'parseVehicles']);
+    }
+
+    public static function statuses(): array
+    {
+        return self::listWithBuffer('cache/divera-statuses.json', [self::class, 'parseStatuses']);
+    }
+
+    private static function listWithBuffer(string $bufferFile, callable $parser): array
+    {
+        try {
+            $data = self::pull();
+            return ['items' => $parser($data), 'stale' => false, 'fetched_at' => now_iso(), 'error' => null];
+        } catch (\Throwable $e) {
+            $buf = Storage::read($bufferFile, []);
+            return [
+                'items' => $buf['items'] ?? [],
+                'stale' => true,
+                'fetched_at' => $buf['fetched_at'] ?? null,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    private static function items(mixed $node): array
+    {
+        if (!is_array($node)) {
+            return [];
+        }
+        if (isset($node['items']) && is_array($node['items'])) {
+            $node = $node['items'];
+        }
+        $out = [];
+        foreach ($node as $k => $v) {
+            if (is_array($v)) {
+                $v['id'] ??= $k;
+                $out[] = $v;
+            }
+        }
+        return $out;
+    }
+
+    public static function parsePersonnel(array $data): array
+    {
+        $out = [];
+        foreach (self::items($data['cluster']['consumer'] ?? []) as $c) {
+            $last = trim((string) ($c['lastname'] ?? ''));
+            $first = trim((string) ($c['firstname'] ?? ''));
+            $name = $last !== '' ? trim($last . ($first !== '' ? ', ' . $first : '')) : trim((string) ($c['stdformat_name'] ?? $c['name'] ?? $first));
+            if ($name === '') {
+                continue;
+            }
+            $out[] = ['id' => 'div-' . $c['id'], 'name' => $name, 'divera_id' => (int) $c['id'], 'active' => true];
+        }
+        usort($out, static fn ($a, $b) => strcasecmp($a['name'], $b['name']));
+        return $out;
+    }
+
+    public static function parseVehicles(array $data): array
+    {
+        $out = [];
+        foreach (self::items($data['cluster']['vehicle'] ?? []) as $v) {
+            $label = trim((string) ($v['fullname'] ?? '')) ?: trim((string) ($v['name'] ?? '')) ?: trim((string) ($v['shortname'] ?? ''));
+            if ($label === '') {
+                continue;
+            }
+            $out[] = [
+                'id' => 'div-veh-' . $v['id'],
+                'divera_id' => (int) $v['id'],
+                'label' => $label,
+                'radio_call_sign' => trim((string) ($v['shortname'] ?? $v['name'] ?? '')),
+                'license_plate' => trim((string) ($v['number'] ?? $v['license_plate'] ?? '')),
+                'source' => 'divera',
+                'active' => true,
+            ];
+        }
+        return $out;
+    }
+
+    public static function parseStatuses(array $data): array
+    {
+        $out = [];
+        foreach (self::items($data['cluster']['status'] ?? []) as $s) {
+            $out[] = ['id' => (string) $s['id'], 'label' => trim((string) ($s['name'] ?? ('Status ' . $s['id'])))];
+        }
+        return $out;
+    }
+
+    /* ---------- Alarme & Termine ---------- */
+
+    private static function alarms(array $data): array
+    {
+        return self::items($data['alarm'] ?? []);
+    }
+
+    private static function events(array $data): array
+    {
+        return self::items($data['events'] ?? ($data['event'] ?? []));
+    }
+
+    private static function ts(mixed $v): ?int
+    {
+        if (is_numeric($v) && (int) $v > 0) {
+            return (int) $v;
+        }
+        if (is_string($v) && ($t = strtotime($v))) {
+            return $t;
+        }
+        return null;
+    }
+
+    /** ucr_answered: {antwortId: {ucrId: {...}}} oder {antwortId: [ucrId, …]} → [antwortId => [ucrIds]] */
+    private static function answers(array $item): array
+    {
+        $out = [];
+        foreach ((array) ($item['ucr_answered'] ?? []) as $answerId => $people) {
+            if (!is_array($people)) {
+                continue;
+            }
+            $ids = array_is_list($people) ? array_map(static fn ($p) => is_array($p) ? ($p['id'] ?? null) : $p, $people) : array_keys($people);
+            $out[(string) $answerId] = array_values(array_filter(array_map('strval', array_filter($ids, static fn ($x) => $x !== null))));
+        }
+        return $out;
+    }
+
+    private static function attendingIds(array $item, string $source): array
+    {
+        $d = Settings::divera();
+        if ($source === 'event') {
+            if (empty($d['event_accept_counts'])) {
+                return [];
+            }
+            $accept = array_map('strval', (array) $d['event_accept_ids']);
+        } else {
+            $accept = array_map(static fn ($s) => (string) ($s['id'] ?? $s), (array) $d['attendance_statuses']);
+        }
+        $ids = [];
+        foreach (self::answers($item) as $answerId => $ucrIds) {
+            if (in_array($answerId, $accept, true)) {
+                array_push($ids, ...$ucrIds);
+            }
+        }
+        return array_values(array_unique($ids));
+    }
+
+    /** Kandidaten im Zeitfenster, neuester zuerst. */
+    public static function candidates(string $source): array
+    {
+        $data = self::pull();
+        $window = max(1, (int) Settings::divera()['window_hours']) * 3600;
+        $now = time();
+        $imported = Reports::diveraImports();
+        $list = [];
+        $items = $source === 'alarm' ? self::alarms($data) : self::events($data);
+        foreach ($items as $it) {
+            if ($source === 'alarm') {
+                $start = self::ts($it['date'] ?? $it['ts_create'] ?? null);
+                $end = !empty($it['closed']) ? self::ts($it['ts_close'] ?? $it['ts_update'] ?? null) : null;
+                if (!$start || $start < $now - $window || $start > $now + 3600) {
+                    continue;
+                }
+            } else {
+                $start = self::ts($it['start'] ?? null);
+                $end = self::ts($it['end'] ?? null);
+                $relevantEnd = $end ?? $start;
+                // Termine, die im Zeitfenster begonnen haben oder gerade laufen
+                if (!$start || $start > $now + 3600 || $relevantEnd < $now - $window) {
+                    continue;
+                }
+            }
+            $key = $source . ':' . $it['id'];
+            $list[] = [
+                'source' => $source,
+                'id' => (string) $it['id'],
+                'title' => trim((string) ($it['title'] ?? '')) ?: '(ohne Stichwort)',
+                'address' => trim((string) ($it['address'] ?? '')),
+                'start' => date('Y-m-d\TH:i', $start),
+                'end' => $end ? date('Y-m-d\TH:i', $end) : null,
+                'attending' => count(self::attendingIds($it, $source)),
+                'imported_in' => $imported[$key] ?? null,
+            ];
+        }
+        usort($list, static fn ($a, $b) => strcmp($b['start'], $a['start']));
+        return $list;
+    }
+
+    /** Daten zur Übernahme in einen Bericht. */
+    public static function importData(string $source, string $id): ?array
+    {
+        $data = self::pull();
+        $items = $source === 'alarm' ? self::alarms($data) : self::events($data);
+        $item = null;
+        foreach ($items as $it) {
+            if ((string) $it['id'] === $id) {
+                $item = $it;
+                break;
+            }
+        }
+        if ($item === null) {
+            return null;
+        }
+        $consumers = [];
+        foreach (self::parsePersonnel($data) as $p) {
+            $consumers[(string) $p['divera_id']] = $p;
+        }
+        $personnel = [];
+        foreach (self::attendingIds($item, $source) as $ucr) {
+            if (isset($consumers[$ucr])) {
+                $personnel[] = MasterData::matchPerson($consumers[$ucr]);
+            }
+        }
+
+        $vehicles = [];
+        if ($source === 'alarm' && Settings::moduleOn('vehicles')) {
+            $byId = [];
+            foreach (self::parseVehicles($data) as $v) {
+                $byId[(string) $v['divera_id']] = $v;
+            }
+            foreach ((array) ($item['vehicle'] ?? []) as $vid) {
+                $vid = (string) (is_array($vid) ? ($vid['id'] ?? '') : $vid);
+                if (isset($byId[$vid])) {
+                    $vehicles[] = MasterData::matchVehicle($byId[$vid]);
+                }
+            }
+        }
+
+        if ($source === 'alarm') {
+            $start = self::ts($item['date'] ?? $item['ts_create'] ?? null);
+            $end = !empty($item['closed']) ? self::ts($item['ts_close'] ?? $item['ts_update'] ?? null) : null;
+        } else {
+            $start = self::ts($item['start'] ?? null);
+            $end = self::ts($item['end'] ?? null);
+        }
+        $typeKey = $source === 'alarm' ? 'incident' : 'exercise';
+        $alertId = (string) (Settings::divera()['default_alert_source'][$typeKey] ?? '');
+
+        return [
+            'start' => $start ? date('Y-m-d\TH:i', $start) : null,
+            'end' => $end ? date('Y-m-d\TH:i', $end) : null,
+            'subject' => trim((string) ($item['title'] ?? '')),
+            'location' => trim((string) ($item['address'] ?? '')),
+            'alert_source' => $alertId !== '' ? MasterData::alertSource($alertId) : null,
+            'personnel' => array_values(array_filter($personnel)),
+            'vehicles' => array_values(array_filter($vehicles)),
+            'divera' => [
+                'type' => $source,
+                'id' => is_numeric($item['id']) ? (int) $item['id'] : (string) $item['id'],
+                'title' => trim((string) ($item['title'] ?? '')),
+                'text' => trim((string) ($item['text'] ?? '')),
+                'imported_at' => now_iso(),
+            ],
+        ];
+    }
+
+    /** Testabruf für die Einstellungsseite – zeigt nur Zählwerte und Strukturen, keine Namen. */
+    public static function test(?string $key = null): array
+    {
+        $data = self::pull(true, $key);
+        $answerKeys = ['alarm' => [], 'event' => []];
+        foreach (['alarm' => self::alarms($data), 'event' => self::events($data)] as $src => $items) {
+            foreach ($items as $it) {
+                foreach (self::answers($it) as $aid => $ids) {
+                    $answerKeys[$src][$aid] = ($answerKeys[$src][$aid] ?? 0) + count($ids);
+                }
+            }
+        }
+        if ($key === null) {
+            self::refreshBuffers($data);
+        }
+        return [
+            'unit' => trim((string) ($data['cluster']['name'] ?? '')),
+            'personnel' => count(self::parsePersonnel($data)),
+            'vehicles' => count(self::parseVehicles($data)),
+            'statuses' => self::parseStatuses($data),
+            'alarms' => count(self::alarms($data)),
+            'events' => count(self::events($data)),
+            'answer_keys' => $answerKeys,
+            'top_level_keys' => array_keys($data),
+        ];
+    }
+}

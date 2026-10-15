@@ -1,0 +1,31 @@
+# EÜDOK – Web-Root (in Plesk als Dokumentstamm eintragen)
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Nur HTTPS (lokal ausgenommen)
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # QR-Schnellerfassung: /q/<key>
+  RewriteRule ^q/([0-9A-Za-z-]{20,64})/?$ quick-entry.php?key=$1 [L,QSA]
+</IfModule>
+
+# Versteckte Dateien sperren
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 30 days"
+  ExpiresByType application/javascript "access plus 30 days"
+  ExpiresByType image/svg+xml "access plus 30 days"
+</IfModule>

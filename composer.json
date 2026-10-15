@@ -1,0 +1,29 @@
+{
+    "name": "ugdrohnelandshutland/euedok",
+    "description": "EÜDOK – Einsatz- & Übungsdokumentation",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-sodium": "*",
+        "ext-zip": "*",
+        "mpdf/mpdf": "^8.2",
+        "mpdf/qrcode": "^1.2",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "config": {
+        "platform": {
+            "php": "8.1.0"
+        },
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "Euedok\\": "app/"
+        }
+    }
+}

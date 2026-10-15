@@ -1,0 +1,8 @@
+# Laufzeitdaten (Berichte, Einstellungen, Schlüssel) – nie ins Repo
+/data/
+# Bibliotheken – per Composer installiert
+/vendor/
+# Entwurfs-PDFs
+/*.pdf
+.DS_Store
+Thumbs.db
