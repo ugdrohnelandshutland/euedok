@@ -330,7 +330,8 @@ final class Divera
         }
         $ids = [];
         foreach (self::answers($item) as $answerId => $ucrIds) {
-            if (in_array($answerId, $accept, true)) {
+            // PHP macht numerische Schlüssel („69605“) zu int – daher als Text vergleichen
+            if (in_array((string) $answerId, $accept, true)) {
                 array_push($ids, ...$ucrIds);
             }
         }
