@@ -54,10 +54,14 @@ if ($action === 'discard' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $n = post_str('n');
     if (Reports::discardDraft($n)) {
-        \Euedok\Log::audit('reports', 'Entwurf verworfen: ' . $n);
-        flash('Entwurf ' . $n . ' verworfen.');
+        \Euedok\Log::audit('reports', 'Entwurf gelöscht: ' . $n);
+        flash('Entwurf ' . $n . ' gelöscht.');
+    } else {
+        flash('Entwurf ' . $n . ' konnte nicht gelöscht werden (nicht gefunden oder bereits abgeschlossen).', 'err');
     }
-    redirect('index.php');
+    // Zurück zur aufrufenden Seite (nur interne Ziele)
+    $back = post_str('back');
+    redirect(preg_match('#^index\.php(\?[\w=&%.\-]*)?$#', $back) ? $back : 'index.php');
 }
 if ($action === 'resend' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();

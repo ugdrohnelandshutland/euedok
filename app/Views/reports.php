@@ -40,14 +40,18 @@ $mailLabels = ['sent' => ['ok', 'versendet'], 'failed' => ['wa', 'Fehler'], 'off
         $type = Settings::reportType($r['type']);
         $alert = ($type['style'] ?? '') === 'alert';
         $m = $mailLabels[$r['mail']['status'] ?? ''] ?? null; ?>
-      <tr>
+      <tr class="link-row" data-href="<?= e(base_url('report.php?n=' . rawurlencode($r['number']))) ?>">
         <td><span class="bd <?= $alert ? 'e' : 'u' ?>"><?= e($r['type_label']) ?></span> <a class="num" href="<?= e(base_url('report.php?n=' . rawurlencode($r['number']))) ?>"><?= e($r['number']) ?></a>
           <?php if (!empty($r['qr_access_id'])): ?> <span class="bd qr">QR</span><?php endif; ?></td>
-        <td><?= e(fmt_datetime($r['start'] ?? null)) ?></td>
-        <td><b><?= e($r['subject'] ?: '–') ?></b><br><span class="muted small"><?= e($r['location']) ?></span></td>
-        <td><?= $r['status'] === 'draft' ? '<span class="bd dr">Entwurf</span>' : '<span class="bd ok">Abgeschlossen</span>' . (!empty($r['correction']) ? ' <span class="muted small">Korr. ' . (int) $r['correction'] . '</span>' : '') ?></td>
-        <td><?php if ($m): ?><span class="bd <?= $m[0] ?>" title="<?= e($r['mail']['error'] ?? '') ?>"><?= e($m[1]) ?></span><?php endif; ?></td>
+        <td data-label="Beginn"><?= e(fmt_datetime($r['start'] ?? null)) ?></td>
+        <td data-label="Thema / Ort"><span><b><?= e($r['subject'] ?: '(noch ohne Thema)') ?></b><br><span class="muted small"><?= e($r['location']) ?></span></span></td>
+        <td data-label="Status"><?= $r['status'] === 'draft' ? '<span class="bd dr">Entwurf</span>' : '<span><span class="bd ok">Abgeschlossen</span>' . (!empty($r['correction']) ? ' <span class="muted small">Korr. ' . (int) $r['correction'] . '</span>' : '') . '</span>' ?></td>
+        <td data-label="Mail"<?= $m ? '' : ' class="empty-cell"' ?>><?php if ($m): ?><span class="bd <?= $m[0] ?>" title="<?= e($r['mail']['error'] ?? '') ?>"><?= e($m[1]) ?></span><?php endif; ?></td>
         <td class="act">
+          <?php if ($r['status'] === 'draft'): ?>
+            <a class="btn sm" href="<?= e(base_url('report.php?n=' . rawurlencode($r['number']))) ?>"><?= icon('edit') ?>Bearbeiten</a>
+            <?php render('partials/discard-button', ['number' => $r['number'], 'back' => 'index.php?' . http_build_query(['view' => 'reports'] + array_filter($filter))]); ?>
+          <?php endif; ?>
           <?php if ($r['status'] === 'closed'): ?>
             <a class="btn sm" href="<?= e(base_url('download.php?n=' . rawurlencode($r['number']) . '&f=pdf')) ?>"><?= icon('file') ?>PDF</a>
             <a class="btn sm" href="<?= e(base_url('download.php?n=' . rawurlencode($r['number']) . '&f=json')) ?>"><?= icon('json') ?>JSON</a>

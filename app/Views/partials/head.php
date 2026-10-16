@@ -44,9 +44,9 @@ $apiBase = $apiBase ?? base_url('api.php');
   <?php endif; ?>
   <div class="right">
     <?php if ($user): ?><span class="usr"><?= e($user['display_name']) ?></span><?php endif; ?>
-    <button type="button" class="ib" data-theme-toggle title="Tag / Nacht umschalten" aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?></button>
+    <button type="button" class="ib lbl" data-theme-toggle title="Tag / Nacht umschalten" aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?><span class="ib-l">Tag/Nacht</span></button>
     <?php if ($user): ?>
-    <form method="post" action="<?= e(base_url('index.php?action=logout')) ?>"><?= csrf_field() ?><button class="ib" title="Abmelden" aria-label="Abmelden"><?= icon('logout') ?></button></form>
+    <form method="post" action="<?= e(base_url('index.php?action=logout')) ?>"><?= csrf_field() ?><button class="ib lbl" title="Abmelden"><?= icon('logout') ?><span class="ib-l">Abmelden</span></button></form>
     <?php endif; ?>
   </div>
 </header>

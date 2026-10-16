@@ -76,7 +76,10 @@ final class SettingsPage
         $u['accent_color'] = preg_match('/^#[0-9a-fA-F]{6}$/', $color) ? $color : $old['accent_color'];
         $url = post_str('public_url');
         $u['public_url'] = ($url === '' || filter_var($url, FILTER_VALIDATE_URL)) ? rtrim($url, '/') : $old['public_url'];
-        $u['footer'] = ['lead' => post_str('footer_lead'), 'address' => post_str('footer_address'), 'contact' => post_str('footer_contact')];
+        $u['footer'] = [];
+        foreach (array_keys(Footer::POSITIONS) as $pos) {
+            $u['footer'][$pos] = Footer::clean((string) ($_POST['footer_' . $pos] ?? ''));
+        }
         $u['remember_days'] = max(1, min(365, (int) post_str('remember_days', '30')));
         $u['defects_hint'] = post_str('defects_hint');
         $tz = post_str('timezone');

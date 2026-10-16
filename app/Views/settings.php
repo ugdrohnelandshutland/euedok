@@ -12,22 +12,26 @@ $action = static fn (string $a) => e(base_url('settings.php?s=' . $section . '&a
 $sw = static fn (string $name, bool $on, string $extra = '') => '<span class="sw"><input type="checkbox" name="' . e($name) . '" value="1"' . ($on ? ' checked' : '') . $extra . '><span></span></span>';
 $toggle = static fn (string $name, bool $on, string $title, string $sub = '') => '<label class="toggle-row"><span class="tx"><b>' . e($title) . '</b>' . ($sub !== '' ? '<span>' . e($sub) . '</span>' : '') . '</span>' . $sw($name, $on) . '</label>';
 $mv = '<span class="mv"><button type="button" data-move="up" aria-label="nach oben" style="transform:rotate(-90deg)">' . icon('cr') . '</button><button type="button" data-move="down" aria-label="nach unten">' . icon('cd') . '</button></span>';
+// Zellen der Listen-Editoren: Beschriftung am Handy sichtbar (am PC steht sie in der Kopfzeile)
+$cell = static fn (string $label, string $control, string $cls = '') => '<label class="cell ' . $cls . '"><span class="cl">' . e($label) . '</span>' . $control . '</label>';
+$swCell = static fn (string $label, string $name, bool $on, string $extra = '') => '<label class="cell sw-cell" title="' . e($label) . '"><span class="cl">' . e($label) . '</span>' . $sw($name, $on, $extra) . '</label>';
+$mvCell = '<div class="cell mv-cell"><span class="cl">Reihenfolge</span>' . $mv . '</div>';
 
 /**
  * Einfache Liste: Bezeichnung (+ Zusatzspalten) + aktiv + Reihenfolge.
  * @param array<string,string> $cols Schlüssel → Überschrift (erste Spalte = Bezeichnung)
  */
-$listEditor = static function (string $name, array $items, array $cols) use ($sw, $mv): string {
+$listEditor = static function (string $name, array $items, array $cols) use ($cell, $swCell, $mvCell): string {
     $grid = 'grid-template-columns:' . implode(' ', array_fill(0, count($cols), 'minmax(0,1fr)')) . ' 64px 80px';
-    $row = static function ($idx, array $it) use ($cols, $name, $sw, $mv, $grid): string {
+    $row = static function ($idx, array $it) use ($cols, $name, $cell, $swCell, $mvCell, $grid): string {
         $h = '<div class="ed-row' . (empty($it['active']) && isset($it['id']) ? ' inactive' : '') . '" style="' . $grid . '">';
         $h .= '<input type="hidden" name="' . $name . '[' . $idx . '][id]" value="' . e($it['id'] ?? '') . '">';
         $first = true;
         foreach ($cols as $k => $title) {
-            $h .= '<input class="in' . ($first ? ' wide' : '') . '" name="' . $name . '[' . $idx . '][' . $k . ']" value="' . e($it[$k] ?? '') . '" placeholder="' . e($title) . '" aria-label="' . e($title) . '">';
+            $h .= $cell($title, '<input class="in" name="' . $name . '[' . $idx . '][' . $k . ']" value="' . e($it[$k] ?? '') . '" placeholder="' . e($title) . '">', $first ? 'wide' : '');
             $first = false;
         }
-        $h .= '<label title="aktiv">' . $sw($name . '[' . $idx . '][active]', !isset($it['id']) || !empty($it['active'])) . '</label>' . $mv . '</div>';
+        $h .= $swCell('aktiv', $name . '[' . $idx . '][active]', !isset($it['id']) || !empty($it['active'])) . $mvCell . '</div>';
         return $h;
     };
     $out = '<div class="ed-head" style="' . $grid . '">';
@@ -66,11 +70,27 @@ $listEditor = static function (string $name, array $items, array $cols) use ($sw
           <label class="f">Öffentliche Adresse (für QR-Links, optional) <input class="in" name="public_url" value="<?= e($unit['public_url']) ?>" placeholder="https://berichte.example.de"></label>
         </div>
         <h3 style="margin-top:8px"><?= icon('file') ?>Fußzeile im PDF</h3>
-        <div class="row">
-          <label class="f">Leitung <input class="in" name="footer_lead" value="<?= e($unit['footer']['lead']) ?>"></label>
-          <label class="f">Adresse <input class="in" name="footer_address" value="<?= e($unit['footer']['address']) ?>"></label>
-          <label class="f">Kontakt <input class="in" name="footer_contact" value="<?= e($unit['footer']['contact']) ?>"></label>
+        <p class="hint">Drei frei gestaltbare Bereiche. Text markieren und mit <b>F</b>, <i>K</i> oder <u>U</u> formatieren; Platzhalter werden im PDF ersetzt.</p>
+        <?php $fp = \Euedok\Footer::parts($unit); ?>
+        <div class="foot-ed">
+          <?php foreach (\Euedok\Footer::POSITIONS as $pos => $posLabel): ?>
+          <div class="foot-col">
+            <label class="f" for="footer_<?= $pos ?>"><?= e($posLabel) ?></label>
+            <div class="fmt-bar" role="toolbar" aria-label="Formatierung <?= e($posLabel) ?>">
+              <button type="button" data-fmt="**" data-fmt-target="footer_<?= $pos ?>" title="Fett"><b>F</b></button>
+              <button type="button" data-fmt="*" data-fmt-target="footer_<?= $pos ?>" title="Kursiv"><i>K</i></button>
+              <button type="button" data-fmt="__" data-fmt-target="footer_<?= $pos ?>" title="Unterstrichen"><u>U</u></button>
+              <select data-insert-target="footer_<?= $pos ?>" aria-label="Platzhalter einfügen">
+                <option value="">{…} einfügen</option>
+                <?php foreach (\Euedok\Footer::PLACEHOLDERS as $ph => $phLabel): ?><option value="<?= e($ph) ?>"><?= e($phLabel) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <textarea class="in foot-ta" id="footer_<?= $pos ?>" name="footer_<?= $pos ?>" rows="4" data-footer-part="<?= $pos ?>"><?= e($fp[$pos]) ?></textarea>
+          </div>
+          <?php endforeach; ?>
         </div>
+        <div class="sec-t" style="margin-top:4px">Vorschau</div>
+        <div class="foot-prev" id="footer-preview" data-unit="<?= e($unit['name']) ?>"><div data-prev="left"></div><div data-prev="center"></div><div data-prev="right"></div></div>
         <div class="row">
           <label class="f">Hinweis unter „Defekte / Vorfälle“ <input class="in" name="defects_hint" value="<?= e($unit['defects_hint']) ?>"></label>
           <label class="f">Angemeldet bleiben (Tage) <input class="in" type="number" min="1" max="365" name="remember_days" value="<?= (int) $unit['remember_days'] ?>"></label>
@@ -87,18 +107,18 @@ $listEditor = static function (string $name, array $items, array $cols) use ($sw
         <p class="hint">Nummernformat: {YYYY} = Jahr, {YY} = Jahr zweistellig, {NNN} = laufende Nummer (Zählung je Art und Jahr). „Laut“ = roter Block wie beim Einsatz.</p>
         <?php
         $grid = 'grid-template-columns:minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.1fr) 110px 120px 64px 80px';
-        $typeRow = static function ($i, array $t) use ($sw, $mv, $grid): string {
+        $typeRow = static function ($i, array $t) use ($cell, $swCell, $mvCell, $grid): string {
             $isNew = !isset($t['id']);
             $sel = static fn ($v, $cur) => $v === $cur ? ' selected' : '';
             return '<div class="ed-row" style="' . $grid . '">'
                 . '<input type="hidden" name="types[' . $i . '][id]" value="' . e($t['id'] ?? '') . '">'
-                . '<input class="in wide" name="types[' . $i . '][label]" value="' . e($t['label'] ?? '') . '" placeholder="Bezeichnung, z. B. Ausbildung">'
-                . '<input class="in" name="types[' . $i . '][number_format]" value="' . e($t['number_format'] ?? '') . '" placeholder="A-{YYYY}-{NNN}">'
-                . '<input class="in" name="types[' . $i . '][lead_label]" value="' . e($t['lead_label'] ?? '') . '" placeholder="Leitung">'
-                . '<select class="in" name="types[' . $i . '][style]"><option value="calm"' . $sel('calm', $t['style'] ?? 'calm') . '>ruhig</option><option value="alert"' . $sel('alert', $t['style'] ?? '') . '>laut</option></select>'
-                . '<select class="in" name="types[' . $i . '][divera_source]"><option value="">kein Divera</option><option value="alarm"' . $sel('alarm', $t['divera_source'] ?? '') . '>Alarme</option><option value="event"' . $sel('event', $t['divera_source'] ?? '') . '>Termine</option></select>'
-                . '<label>' . $sw('types[' . $i . '][active]', $isNew || !empty($t['active'])) . '</label>' . $mv
-                . ($isNew ? '<input class="in wide" name="types[' . $i . '][new_id]" placeholder="Technische ID (Englisch, z. B. training)" style="grid-column:1/4">' : '')
+                . $cell('Bezeichnung', '<input class="in" name="types[' . $i . '][label]" value="' . e($t['label'] ?? '') . '" placeholder="z. B. Ausbildung">', 'wide')
+                . $cell('Nummernformat', '<input class="in" name="types[' . $i . '][number_format]" value="' . e($t['number_format'] ?? '') . '" placeholder="A-{YYYY}-{NNN}">')
+                . $cell('Bezeichnung Leitung', '<input class="in" name="types[' . $i . '][lead_label]" value="' . e($t['lead_label'] ?? '') . '" placeholder="Leitung">')
+                . $cell('Farbe', '<select class="in" name="types[' . $i . '][style]"><option value="calm"' . $sel('calm', $t['style'] ?? 'calm') . '>ruhig</option><option value="alert"' . $sel('alert', $t['style'] ?? '') . '>laut</option></select>')
+                . $cell('Divera', '<select class="in" name="types[' . $i . '][divera_source]"><option value="">kein Divera</option><option value="alarm"' . $sel('alarm', $t['divera_source'] ?? '') . '>Alarme</option><option value="event"' . $sel('event', $t['divera_source'] ?? '') . '>Termine</option></select>')
+                . $swCell('aktiv', 'types[' . $i . '][active]', $isNew || !empty($t['active'])) . $mvCell
+                . ($isNew ? $cell('Technische ID', '<input class="in" name="types[' . $i . '][new_id]" placeholder="Englisch, z. B. training">', 'wide full') : '')
                 . '</div>';
         };
         ?>
@@ -139,7 +159,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($sw
         <?php
         $types = ['number' => 'Zahl', 'text' => 'Text', 'select' => 'Auswahl', 'checkbox' => 'Haken', 'date' => 'Datum'];
         $grid = 'grid-template-columns:minmax(0,1.3fr) 110px 80px 72px 72px 64px 80px';
-        $fieldRow = static function (string $kind, $i, array $f) use ($sw, $mv, $types, $grid): string {
+        $fieldRow = static function (string $kind, $i, array $f) use ($cell, $swCell, $mvCell, $types, $grid): string {
             $n = 'fields_' . $kind . '[' . $i . ']';
             $isNew = !isset($f['id']);
             $opts = '';
@@ -148,14 +168,14 @@ $listEditor = static function (string $name, array $items, array $cols) use ($sw
             }
             return '<div class="ed-row' . (!$isNew && empty($f['active']) ? ' inactive' : '') . '" style="' . $grid . '">'
                 . '<input type="hidden" name="' . $n . '[id]" value="' . e($f['id'] ?? '') . '">'
-                . '<input class="in wide" name="' . $n . '[label]" value="' . e($f['label'] ?? '') . '" placeholder="Bezeichnung">'
-                . '<select class="in" name="' . $n . '[type]" data-field-type>' . $opts . '</select>'
-                . '<input class="in" name="' . $n . '[unit]" value="' . e($f['unit'] ?? '') . '" placeholder="Einheit">'
-                . '<label title="Pflicht" class="check" style="min-height:0;font-size:12px">' . $sw($n . '[required]', !empty($f['required'])) . '</label>'
-                . '<label title="Summe anzeigen" class="check" style="min-height:0;font-size:12px">' . $sw($n . '[show_total]', !empty($f['show_total'])) . '</label>'
-                . '<label title="aktiv">' . $sw($n . '[active]', $isNew || !empty($f['active'])) . '</label>' . $mv
-                . '<input class="in wide" data-options name="' . $n . '[options]" value="' . e(implode(', ', $f['options'] ?? [])) . '" placeholder="Auswahlwerte, mit Komma getrennt" style="grid-column:1/-1"' . (($f['type'] ?? 'number') === 'select' ? '' : ' hidden') . '>'
-                . ($isNew ? '<input class="in wide" name="' . $n . '[new_id]" placeholder="Technische ID (Englisch, z. B. flight_minutes)" style="grid-column:1/-1">' : '<span class="hint wide" style="grid-column:1/-1">ID: <span class="mono">' . e($f['id']) . '</span></span>')
+                . $cell('Bezeichnung', '<input class="in" name="' . $n . '[label]" value="' . e($f['label'] ?? '') . '" placeholder="z. B. Flugminuten">', 'wide')
+                . $cell('Typ', '<select class="in" name="' . $n . '[type]" data-field-type>' . $opts . '</select>')
+                . $cell('Einheit', '<input class="in" name="' . $n . '[unit]" value="' . e($f['unit'] ?? '') . '" placeholder="z. B. min">')
+                . $swCell('Pflicht', $n . '[required]', !empty($f['required']))
+                . $swCell('Summe', $n . '[show_total]', !empty($f['show_total']))
+                . $swCell('aktiv', $n . '[active]', $isNew || !empty($f['active'])) . $mvCell
+                . '<label class="cell wide full" data-options' . (($f['type'] ?? 'number') === 'select' ? '' : ' hidden') . '><span class="cl" style="display:block">Auswahlwerte (mit Komma getrennt)</span><input class="in" name="' . $n . '[options]" value="' . e(implode(', ', $f['options'] ?? [])) . '"></label>'
+                . ($isNew ? $cell('Technische ID', '<input class="in" name="' . $n . '[new_id]" placeholder="Englisch, z. B. flight_minutes">', 'wide full') : '<span class="hint wide full">ID: <span class="mono">' . e($f['id']) . '</span></span>')
                 . '</div>';
         };
         $kinds = ['report' => ['Berichtsfelder', 'einmal je Bericht', 'file'], 'person' => ['Personenfelder', 'je eingesetzter Person (z. B. Flugminuten)', 'users'], 'vehicle' => ['Fahrzeugfelder', 'je eingesetztem Fahrzeug (z. B. Kilometer)', 'truck']];
@@ -339,7 +359,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($sw
         $people = Divera::personnel()['items'];
     }
     $grid = 'grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1fr) 90px 64px';
-    $userRow = static function ($i, array $u) use ($sw, $people, $grid, $user): string {
+    $userRow = static function ($i, array $u) use ($cell, $swCell, $people, $grid, $user): string {
         $opts = '<option value="">– keine Person –</option>';
         foreach ($people as $p) {
             $opts .= '<option value="' . e($p['id']) . '"' . (($u['person_id'] ?? '') === $p['id'] ? ' selected' : '') . '>' . e($p['name']) . '</option>';
@@ -347,12 +367,12 @@ $listEditor = static function (string $name, array $items, array $cols) use ($sw
         $self = ($u['id'] ?? '') === $user['id'];
         return '<div class="ed-row' . (isset($u['id']) && empty($u['active']) ? ' inactive' : '') . '" style="' . $grid . '">'
             . '<input type="hidden" name="users[' . $i . '][id]" value="' . e($u['id'] ?? '') . '">'
-            . '<input class="in" name="users[' . $i . '][username]" value="' . e($u['username'] ?? '') . '" placeholder="Benutzername" autocapitalize="none" autocomplete="off">'
-            . '<input class="in" name="users[' . $i . '][display_name]" value="' . e($u['display_name'] ?? '') . '" placeholder="Anzeigename">'
-            . '<select class="in" name="users[' . $i . '][person_id]" aria-label="Person im Personal">' . $opts . '</select>'
-            . '<input class="in" type="password" name="users[' . $i . '][password]" placeholder="' . (isset($u['id']) ? 'neues Passwort' : 'Passwort') . '" autocomplete="new-password">'
-            . '<label class="check" style="font-size:12px;min-height:0" title="darf Einstellungen ändern">' . $sw('users[' . $i . '][can_manage_settings]', !empty($u['can_manage_settings']), $self ? ' disabled' : '') . '</label>'
-            . '<label title="aktiv">' . $sw('users[' . $i . '][active]', !isset($u['id']) || !empty($u['active']), $self ? ' disabled' : '') . '</label>'
+            . $cell('Benutzername', '<input class="in" name="users[' . $i . '][username]" value="' . e($u['username'] ?? '') . '" autocapitalize="none" autocomplete="off">', 'wide')
+            . $cell('Anzeigename', '<input class="in" name="users[' . $i . '][display_name]" value="' . e($u['display_name'] ?? '') . '">', 'wide')
+            . $cell('Person im Personal', '<select class="in" name="users[' . $i . '][person_id]">' . $opts . '</select>', 'wide')
+            . $cell(isset($u['id']) ? 'Neues Passwort (leer = unverändert)' : 'Passwort', '<input class="in" type="password" name="users[' . $i . '][password]" autocomplete="new-password">', 'wide')
+            . $swCell('Darf Einstellungen ändern', 'users[' . $i . '][can_manage_settings]', !empty($u['can_manage_settings']), $self ? ' disabled' : '')
+            . $swCell('aktiv', 'users[' . $i . '][active]', !isset($u['id']) || !empty($u['active']), $self ? ' disabled' : '')
             . '</div>';
     };
     ?>

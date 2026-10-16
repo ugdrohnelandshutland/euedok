@@ -31,7 +31,7 @@ render('partials/head', ['title' => 'Einrichtung', 'plain' => true]);
   <div class="brand" style="gap:12px">
     <svg style="width:44px;height:44px"><use href="<?= e(base_url('assets/icons/sprite.svg')) ?>#logo"/></svg>
     <div><div class="wm" style="font-size:26px">EÜ<em>DOK</em></div><div class="kick">Einrichtung</div></div>
-    <button type="button" class="ib" style="margin-left:auto" data-theme-toggle aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?></button>
+    <button type="button" class="ib lbl" style="margin-left:auto" data-theme-toggle aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?><span class="ib-l">Tag/Nacht</span></button>
   </div>
   <p class="muted">Einmalig: Name der Einheit, erster Zugang mit Einstellungsrecht und Startwerte. Alles lässt sich danach auf der Einstellungsseite ändern.</p>
 

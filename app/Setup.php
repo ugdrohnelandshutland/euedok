@@ -68,6 +68,7 @@ final class Setup
         $unit = Defaults::unit();
         $unit['name'] = $name;
         $unit['subtitle'] = trim((string) ($in['subtitle'] ?? ''));
+        $unit['footer'] = ['left' => '', 'center' => '', 'right' => Footer::DEFAULT_RIGHT];
 
         $preset = ($in['preset'] ?? 'drone') === 'drone' ? Defaults::presetDrone() : [];
         Settings::save('unit', $unit);

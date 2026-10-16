@@ -6,7 +6,7 @@ $types = Settings::activeReportTypes();
 ?>
 <header class="top">
   <span class="brand"><svg aria-hidden="true"><use href="<?= e(base_url('assets/icons/sprite.svg')) ?>#logo"/></svg><span class="wm">EÜ<em>DOK</em></span><span class="unit-label"><?= e(Settings::unit()['name']) ?></span></span>
-  <div class="right"><button type="button" class="ib" data-theme-toggle aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?></button></div>
+  <div class="right"><button type="button" class="ib lbl" data-theme-toggle aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?><span class="ib-l">Tag/Nacht</span></button></div>
 </header>
 <main class="wrap narrow">
   <div>
@@ -15,7 +15,7 @@ $types = Settings::activeReportTypes();
   </div>
   <?php if ($draft): ?>
   <a class="rc" href="<?= e(base_url('quick-entry.php?n=' . rawurlencode($draft))) ?>">
-    <span class="blk o"><?= icon('edit') ?></span>
+    <span class="blk o"><?= icon('edit') ?><small>Entwurf</small></span>
     <span class="tx"><b>Entwurf <?= e($draft) ?> fortsetzen</b><span>auf diesem Gerät begonnen</span></span>
   </a>
   <?php endif; ?>
@@ -24,7 +24,7 @@ $types = Settings::activeReportTypes();
     <form method="post" action="<?= e(base_url('quick-entry.php?action=start')) ?>">
       <?= csrf_field() ?><input type="hidden" name="type" value="<?= e($t['id']) ?>">
       <button class="rc big">
-        <span class="blk <?= $alert ? 'e' : 'u' ?>"><?= icon($alert ? 'siren' : 'target') ?></span>
+        <span class="blk <?= $alert ? 'e' : 'u' ?>"><?= icon($alert ? 'siren' : 'target') ?><small><?= e($t['label']) ?></small></span>
         <span class="tx"><b><?= e(Reports::documentTitle($t)) ?></b><span><?= e(Reports::newLabel($t)) ?> erfassen</span></span>
         <span class="go"><span><?= icon('plus') ?></span></span>
       </button>

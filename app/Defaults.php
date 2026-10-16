@@ -17,7 +17,8 @@ final class Defaults
             'accent_color' => '#0f6f68',
             'public_url' => '',
             'timezone' => 'Europe/Berlin',
-            'footer' => ['lead' => '', 'address' => '', 'contact' => ''],
+            // Fußzeile: left/center/right (siehe Footer); leer = Standard, alte Felder werden übernommen
+            'footer' => [],
             'report_types' => [
                 ['id' => 'incident', 'label' => 'Einsatz', 'number_format' => 'E-{YYYY}-{NNN}', 'lead_label' => 'Einsatzleitung', 'style' => 'alert', 'divera_source' => 'alarm', 'active' => true],
                 ['id' => 'exercise', 'label' => 'Übung', 'number_format' => 'U-{YYYY}-{NNN}', 'lead_label' => 'Übungsleitung', 'style' => 'calm', 'divera_source' => 'event', 'active' => true],

@@ -233,13 +233,30 @@ final class Pdf
             . '<td style="text-align:right;vertical-align:bottom"><span style="background:' . $badge . ';color:#fff;font-size:7.5pt;font-weight:bold;letter-spacing:1.2pt;padding:2pt 6pt;text-transform:uppercase">'
             . self::h(mb_strtoupper(Reports::documentTitle($r['type']))) . '</span><br><span style="font-size:15pt;font-weight:bold">' . self::h($r['report_number']) . '</span></td>'
             . '</tr></table>';
-        $f = $unit['footer'];
-        $footLeft = implode(' · ', array_filter([trim((string) $f['lead']), trim((string) $f['address']), trim((string) $f['contact'])]));
-        $footer = '<table width="100%" style="font-size:7pt;color:#6f8597;border-top:0.5pt solid #d3dde6;padding-top:3pt"><tr>'
-            . '<td>' . self::h($footLeft) . '</td><td style="text-align:right;white-space:nowrap">' . self::h($r['report_number']) . ' · Seite {PAGENO} / {nbpg}</td></tr></table>';
+        $footer = self::footerHtml(Footer::parts($unit), [
+            'number' => $r['report_number'],
+            'date' => fmt_date($r['start']),
+            'unit' => $unit['name'],
+        ]);
 
         return '<htmlpageheader name="h">' . $header . '</htmlpageheader><htmlpagefooter name="f">' . $footer . '</htmlpagefooter>'
             . '<sethtmlpageheader name="h" value="on" show-this-page="1" /><sethtmlpagefooter name="f" value="on" />' . $html;
+    }
+
+    /** Dreispaltige Fußzeile (links, Mitte, rechts) aus den Einstellungen. */
+    public static function footerHtml(array $parts, array $vars): string
+    {
+        $cells = '';
+        foreach (['left' => 'left', 'center' => 'center', 'right' => 'right'] as $k => $align) {
+            $cells .= '<td width="33%" style="text-align:' . $align . ';vertical-align:top;padding-top:3pt">' . Footer::toHtml($parts[$k] ?? '', $vars) . '</td>';
+        }
+        return '<table width="100%" style="font-size:7pt;line-height:1.35;color:#3b5063;border-top:0.5pt solid #d3dde6;border-collapse:collapse"><tr>' . $cells . '</tr></table>';
+    }
+
+    /** Unterer Rand passend zur Zeilenzahl der Fußzeile (mm). */
+    private static function bottomMargin(): int
+    {
+        return 14 + 3 * Footer::lineCount(Footer::parts());
     }
 
     private static function totalsRow(array $defs, array $sums, string $scope): string
@@ -264,7 +281,7 @@ final class Pdf
     public static function writeReport(array $r, string $file): void
     {
         $t0 = microtime(true);
-        $mpdf = self::make();
+        $mpdf = self::make(['margin_bottom' => self::bottomMargin(), 'margin_footer' => 8]);
         $mpdf->SetTitle(Reports::documentTitle($r['type']) . ' ' . $r['report_number']);
         $mpdf->SetAuthor((string) (Settings::unit()['name'] ?: 'EÜDOK'));
         $mpdf->WriteHTML(self::reportHtml($r));

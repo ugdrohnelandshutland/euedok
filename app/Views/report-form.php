@@ -10,12 +10,12 @@ $showGear = !empty($cfg['modules']['equipment']) || !empty($cfg['modules']['vehi
 $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
 ?>
 <header class="tb">
-  <a class="ib" href="<?= e($cfg['urls']['back']) ?>" aria-label="Zurück"><?= icon('cl') ?></a>
+  <a class="ib lbl" href="<?= e($cfg['urls']['back']) ?>"><?= icon('cl') ?><span class="ib-l">Zurück</span></a>
   <div class="ttl">
     <b><span class="bd <?= $alert ? 'e' : 'u' ?>"><?= e($cfg['type']['label']) ?></span><?= e($cfg['number']) ?></b>
     <span class="sub"><span class="mode"><?= $cfg['correction'] ? 'Korrektur' : ($quick ? 'QR · ' . e($qrLabel ?? '') : 'Entwurf') ?></span><span class="save" id="save-state" aria-live="polite">Gespeichert</span></span>
   </div>
-  <button type="button" class="ib" data-theme-toggle aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?></button>
+  <button type="button" class="ib lbl" data-theme-toggle aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?><span class="ib-l">Tag/Nacht</span></button>
 </header>
 <div id="banners"></div>
 <nav class="tabs" id="tabs" aria-label="Abschnitte">
@@ -118,6 +118,13 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
       <h3><?= icon('alert') ?>Defekte / Vorfälle</h3>
       <textarea class="in" id="f-defects" rows="4" placeholder="keine"></textarea>
       <?php if ($cfg['defects_hint'] !== ''): ?><span class="hint warn"><?= e($cfg['defects_hint']) ?></span><?php endif; ?>
+    </div>
+    <?php endif; ?>
+    <?php if (!$quick && !$cfg['correction'] && $cfg['status'] === 'draft'): ?>
+    <div class="card fieldset">
+      <h3><?= icon('trash') ?>Entwurf verwerfen</h3>
+      <span class="hint">Löscht diesen Entwurf endgültig, z. B. wenn er versehentlich angelegt wurde.</span>
+      <?php render('partials/discard-button', ['number' => $cfg['number'], 'back' => 'index.php', 'small' => false]); ?>
     </div>
     <?php endif; ?>
     <div class="card fieldset" id="divera-ref" hidden>
