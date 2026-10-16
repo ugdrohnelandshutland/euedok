@@ -30,7 +30,17 @@ final class Divera
 
     public static function vehiclesFromDivera(): bool
     {
-        return self::configured() && !empty(Settings::divera()['vehicles_from_divera']);
+        return self::configured() && self::vehicleSource() === 'divera';
+    }
+
+    /** Fahrzeugquelle wie beim Personal: 'local' (EÜDOK-Liste) oder 'divera' (live). Übernimmt den alten Schalter. */
+    public static function vehicleSource(): string
+    {
+        $d = Settings::divera();
+        if (isset($d['vehicle_source'])) {
+            return $d['vehicle_source'] === 'divera' ? 'divera' : 'local';
+        }
+        return !empty($d['vehicles_from_divera']) ? 'divera' : 'local';
     }
 
     /** Darf für diese Berichtsart (und ggf. QR) in Divera nachgesehen werden? */

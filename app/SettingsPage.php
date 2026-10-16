@@ -257,14 +257,7 @@ final class SettingsPage
 
     private static function saveVehicles(): string
     {
-        $msg = self::saveList('vehicles', 'label', ['radio_call_sign', 'license_plate'], 'Fahrzeuge');
-        $d = Settings::divera();
-        $want = post_bool('vehicles_from_divera');
-        if ($want !== (bool) $d['vehicles_from_divera']) {
-            $d['vehicles_from_divera'] = $want;
-            Settings::save('divera', $d, 'Fahrzeuge aus Divera: ' . ($want ? 'an' : 'aus'));
-        }
-        return $msg;
+        return self::saveList('vehicles', 'label', ['radio_call_sign', 'license_plate'], 'Fahrzeuge');
     }
 
     private static function saveMail(): string
@@ -317,7 +310,8 @@ final class SettingsPage
         $d['exercise_enabled'] = post_bool('exercise_enabled');
         $d['quick_entry_enabled'] = post_bool('quick_entry_enabled');
         $d['personnel_source'] = post_str('personnel_source') === 'divera' ? 'divera' : 'local';
-        $d['vehicles_from_divera'] = post_bool('vehicles_from_divera');
+        $d['vehicle_source'] = post_str('vehicle_source') === 'divera' ? 'divera' : 'local';
+        unset($d['vehicles_from_divera']);
         $d['event_accept_counts'] = post_bool('event_accept_counts');
         $d['event_accept_ids'] = array_values(array_filter(array_map('trim', explode(',', post_str('event_accept_ids')))));
         $d['timeout_seconds'] = max(1, min(10, (int) post_str('timeout_seconds', '3')));

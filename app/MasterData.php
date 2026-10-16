@@ -50,28 +50,23 @@ final class MasterData
         return self::active(Settings::masterData()['alert_sources']);
     }
 
-    /** Eine gemeinsame Liste aus Divera-Fahrzeugen und selbst hinterlegten. */
+    /** @return array{items: array, source: string, stale: bool, fetched_at: ?string, error: ?string} */
     public static function vehicles(): array
     {
         if (self::$vehicleCache !== null) {
             return self::$vehicleCache;
         }
-        $items = [];
-        $stale = false;
-        $fetched = null;
-        $error = null;
+        // Fahrzeugquelle wie beim Personal: entweder Divera live oder die EÜDOK-Liste
         if (Divera::vehiclesFromDivera()) {
             $r = Divera::vehicles();
-            $items = $r['items'];
-            $stale = $r['stale'];
-            $fetched = $r['fetched_at'];
-            $error = $r['error'];
+            return self::$vehicleCache = ['items' => $r['items'], 'source' => 'divera', 'stale' => $r['stale'], 'fetched_at' => $r['fetched_at'], 'error' => $r['error']];
         }
+        $items = [];
         foreach (self::active(Settings::masterData()['vehicles']) as $v) {
             $v['source'] = 'local';
             $items[] = $v;
         }
-        return self::$vehicleCache = ['items' => $items, 'stale' => $stale, 'fetched_at' => $fetched, 'error' => $error];
+        return self::$vehicleCache = ['items' => $items, 'source' => 'local', 'stale' => false, 'fetched_at' => null, 'error' => null];
     }
 
     public static function findPerson(string $id): ?array

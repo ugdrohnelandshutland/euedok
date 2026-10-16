@@ -195,7 +195,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
       <?php if (Divera::personnelFromDivera()): $p = Divera::personnel(); ?>
       <section class="card stack">
         <h3><?= icon('users') ?>Personal</h3>
-        <div class="msg info"><?= icon('radio') ?><span>Wird in Divera247 verwaltet (live, kein Abgleich). Aktuell <?= count($p['items']) ?> Personen<?= $p['stale'] ? ' – Divera nicht erreichbar, Stand ' . e(fmt_datetime($p['fetched_at'])) : '' ?>.</span></div>
+        <div class="msg info"><?= icon('radio') ?><span>Wird in Divera247 verwaltet (live, kein Abgleich). Aktuell <?= count($p['items']) ?> <?= count($p['items']) === 1 ? 'Person' : 'Personen' ?><?= $p['stale'] ? ' – Divera nicht erreichbar, Stand ' . e(fmt_datetime($p['fetched_at'])) : '' ?>.</span></div>
         <p class="hint">Umstellen unter „Divera247 → Personalquelle“.</p>
       </section>
       <?php else: ?>
@@ -217,15 +217,22 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
       </form>
 
 <?php elseif ($section === 'vehicles'): ?>
-      <form method="post" action="<?= $action('save') ?>" class="card stack">
+      <?php if (!Settings::moduleOn('vehicles')): ?><div class="msg warn"><?= icon('alert') ?><span>Das Modul „Fahrzeuge“ ist aus (Pflichtfelder &amp; Module).</span></div><?php endif; ?>
+      <?php if (Divera::vehiclesFromDivera()): $v = Divera::vehicles(); ?>
+      <section class="card stack">
+        <h3><?= icon('truck') ?>Fahrzeuge</h3>
+        <div class="msg info"><?= icon('radio') ?><span>Werden in Divera247 verwaltet (live, kein Abgleich). Aktuell <?= count($v['items']) ?> <?= count($v['items']) === 1 ? 'Fahrzeug' : 'Fahrzeuge' ?><?= $v['stale'] ? ' – Divera nicht erreichbar, Stand ' . e(fmt_datetime($v['fetched_at'])) : '' ?>.</span></div>
+        <p class="hint">Umstellen unter „Divera247 → Fahrzeugquelle“.</p>
+      </section>
+      <?php else: ?>
+      <form method="post" action="<?= $action('save') ?>" class="card">
         <?= csrf_field() ?>
         <h3><?= icon('truck') ?>Fahrzeuge</h3>
-        <?php if (!Settings::moduleOn('vehicles')): ?><div class="msg warn"><?= icon('alert') ?><span>Das Modul „Fahrzeuge“ ist aus (Pflichtfelder &amp; Module).</span></div><?php endif; ?>
-        <?= $toggle('vehicles_from_divera', (bool) Settings::divera()['vehicles_from_divera'], 'Fahrzeuge live aus Divera247', Divera::configured() ? 'zusätzlich zu den selbst hinterlegten' : 'Divera247 ist nicht eingerichtet') ?>
-        <div class="sec-t">Selbst hinterlegte Fahrzeuge</div>
+        <p class="hint" style="margin-bottom:10px">Ausgeschiedene Fahrzeuge deaktivieren statt löschen.</p>
         <?= $listEditor('vehicles', $md['vehicles'], ['label' => 'Bezeichnung', 'radio_call_sign' => 'Funkrufname', 'license_plate' => 'Kennzeichen']) ?>
-        <button class="btn pri"><?= icon('check') ?>Speichern</button>
+        <div style="margin-top:14px"><button class="btn pri"><?= icon('check') ?>Speichern</button></div>
       </form>
+      <?php endif; ?>
 
 <?php elseif ($section === 'alerts'): ?>
       <form method="post" action="<?= $action('save') ?>" class="card">
@@ -319,7 +326,9 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <section class="card stack">
           <h3><?= icon('users') ?>Personal &amp; Fahrzeuge</h3>
           <label class="f">Personalquelle <select class="in" name="personnel_source"><option value="local"<?= $d['personnel_source'] === 'local' ? ' selected' : '' ?>>EÜDOK-Liste</option><option value="divera"<?= $d['personnel_source'] === 'divera' ? ' selected' : '' ?>>Divera247 (live)</option></select></label>
-          <?= $toggle('vehicles_from_divera', (bool) $d['vehicles_from_divera'], 'Fahrzeuge live aus Divera247') ?>
+          <?php $vs = Divera::vehicleSource(); ?>
+          <label class="f">Fahrzeugquelle <select class="in" name="vehicle_source"><option value="local"<?= $vs === 'local' ? ' selected' : '' ?>>EÜDOK-Liste</option><option value="divera"<?= $vs === 'divera' ? ' selected' : '' ?>>Divera247 (live)</option></select></label>
+          <p class="hint">Bei „EÜDOK-Liste“ werden Personen und Fahrzeuge aus einem Divera-Alarm über Name bzw. Funkrufname den eigenen Einträgen zugeordnet.</p>
         </section>
         <section class="card stack">
           <h3><?= icon('check') ?>Rückmeldestatus „war beim Einsatz dabei“</h3>

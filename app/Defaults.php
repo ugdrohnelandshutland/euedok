@@ -75,7 +75,7 @@ final class Defaults
             'exercise_enabled' => true,
             'quick_entry_enabled' => true,
             'personnel_source' => 'local',
-            'vehicles_from_divera' => false,
+            'vehicle_source' => 'local',
             'attendance_statuses' => [],
             'event_accept_counts' => true,
             'event_accept_ids' => ['1'],

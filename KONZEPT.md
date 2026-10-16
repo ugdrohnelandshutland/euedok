@@ -48,7 +48,7 @@ Installation**. Eine Veröffentlichung ist vorerst nicht geplant.
 | QR-Schnellerfassung | QR-Aufkleber im Fahrzeug / Gerätehaus führt **ohne Anmeldung** über einen kryptischen Link direkt zu „Neuer Bericht“ – nur erstellen und verschicken, nichts ansehen (siehe Abschnitt 7b) |
 | Divera247 – Einsatzdaten | Optional, sauber getrennt: **Einsatz** ← Divera-**Alarme**, **Übung** ← Divera-**Termine** der letzten 24 h; gefundene Daten inkl. Personal (Rückmeldung bzw. Zusage) werden nach Rückfrage übernommen – auch über den QR-Zugang (siehe Abschnitt 7c) |
 | Divera247 – Personal | Optional einschaltbar: Personalliste wird **live** aus Divera247 abgerufen statt in EÜDOK gepflegt – kein Sync, keine doppelte Pflege (siehe Abschnitt 7c) |
-| Fahrzeuge | Optionales Modul: eingesetzte Fahrzeuge erfassen, je Fahrzeug **optionale Zusatzfelder** (konfigurierbar; UG-Drohne: nur „Kilometer“ = gefahrene km); Fahrzeuge live aus Divera247 **und/oder** selbst hinterlegt; erscheint auch im PDF (siehe Abschnitt 7d) |
+| Fahrzeuge | Optionales Modul: eingesetzte Fahrzeuge erfassen, je Fahrzeug **optionale Zusatzfelder** (konfigurierbar; UG-Drohne: nur „Kilometer“ = gefahrene km); Fahrzeugquelle wie beim Personal: **EÜDOK-Liste oder Divera247 live**; erscheint auch im PDF (siehe Abschnitt 7d) |
 | Gestaltung | Passend zum bestehenden **Drone Live Stream Hub** der UG-Drohne: Navy/Teal, Schemata „Tag“ und „Nacht“, Systemschriften, gleiche Radien, Linien und Wortmarke (siehe Abschnitt 3a) |
 
 ## 3. Bedienkonzept – schnell und einfach
@@ -164,7 +164,7 @@ Fahrzeuge · Alarmierung · Mailversand · Divera247 · Zugänge · QR-Zugänge
   - **Personal** – Name, aktiv/inaktiv. Entfällt, wenn die
     Personalquelle „Divera247“ eingestellt ist.
   - **Geräte** – Bezeichnung, aktiv/inaktiv
-  - **Fahrzeuge** (optional) – live aus Divera247 und/oder selbst hinterlegt (Bezeichnung,
+  - **Fahrzeuge** (optional) – EÜDOK-Liste oder live aus Divera247 (Bezeichnung,
     Funkrufname, Kennzeichen, aktiv/inaktiv) (Abschnitt 7d)
   - **Alarmierungsquellen** – Schnellauswahl-Liste
 
@@ -204,7 +204,7 @@ Thema/Stichwort · Alarmierung durch
 
 **Eingesetzte Geräte** – Auswahl aus Stammdaten
 
-**Eingesetzte Fahrzeuge** (optional) – Auswahl aus Divera247 und/oder Stammdaten, je
+**Eingesetzte Fahrzeuge** (optional) – Auswahl aus Stammdaten oder live aus Divera247, je
 Fahrzeug die Fahrzeugfelder (UG-Drohne: „Kilometer“, optional)
 
 **Eingesetztes Personal** – Auswahl aus Stammdaten oder live aus Divera247, je Person
@@ -437,13 +437,14 @@ Personalquelle · Fahrzeugquelle · Divera-Abfrage über QR an/aus · Testabruf-
 ## 7d. Fahrzeuge (optionales Modul)
 
 - Modul an/aus; ist es aus, erscheint nirgends etwas von Fahrzeugen.
-- **Fahrzeugquelle (wie beim Personal):** „Divera247 (live)“ und/oder „selbst hinterlegt“.
-  - Aus Divera: Fahrzeugliste wird live abgerufen (Name, Funkrufname, ggf. Kennzeichen);
+- **Fahrzeugquelle (genau wie beim Personal, geändert 16.10.2026):** „EÜDOK-Liste“ (Standard)
+  **oder** „Divera247 (live)“ – keine Mischung.
+  - Divera live: Fahrzeugliste wird live abgerufen (Name, Funkrufname, ggf. Kennzeichen);
     bei Ausfall der zuletzt abgerufene Stand als Puffer – kein Sync, keine doppelte Pflege.
-  - Selbst hinterlegt: zusätzliche Fahrzeuge, die nicht in Divera sind (z. B. Anhänger) –
-    oder alle, wenn eine Einheit kein Divera nutzt.
-  - Im Bericht erscheinen beide in einer gemeinsamen Liste.
-  - Aus einem Divera-Alarm werden die zugeordneten Fahrzeuge vorausgewählt.
+    Die Fahrzeug-Seite in den Einstellungen zeigt dann nur „wird in Divera247 verwaltet“.
+  - EÜDOK-Liste: Fahrzeuge werden in den Einstellungen gepflegt.
+  - Aus einem Divera-Alarm werden die zugeordneten Fahrzeuge vorausgewählt; bei Quelle
+    „EÜDOK-Liste“ über Bezeichnung bzw. Funkrufname zugeordnet.
 - **Stammdaten selbst hinterlegter Fahrzeuge:** Bezeichnung, Funkrufname, Kennzeichen,
   aktiv/inaktiv
 - **Fahrzeugfelder** werden in der Verwaltung konfiguriert (gleiches Prinzip wie die
