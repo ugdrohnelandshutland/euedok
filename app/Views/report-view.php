@@ -48,7 +48,7 @@ $actions = [
 
   <div class="grid2">
     <section class="card">
-      <h3><?= icon('clock') ?>Eckdaten</h3>
+      <h3><?= icon('clock') ?>Basisdaten</h3>
       <dl class="facts">
         <dt>Beginn</dt><dd><?= e(fmt_datetime($r['start'])) ?></dd>
         <dt>Ende</dt><dd><?= e(fmt_datetime($r['end'])) ?></dd>

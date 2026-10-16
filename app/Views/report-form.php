@@ -19,7 +19,7 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
 </header>
 <div id="banners"></div>
 <nav class="tabs" id="tabs" aria-label="Abschnitte">
-  <button type="button" data-pane="basics" class="on">Eckdaten</button>
+  <button type="button" data-pane="basics" class="on">Basisdaten</button>
   <?php if ($showPeople): ?><button type="button" data-pane="people">Personal</button><?php endif; ?>
   <?php if ($showGear): ?><button type="button" data-pane="gear"><?= e($gearLabel) ?></button><?php endif; ?>
   <button type="button" data-pane="text">Bericht</button>

@@ -181,11 +181,6 @@ textarea.in{min-height:140px;resize:vertical;line-height:1.5;font-weight:500}
 .rc .blk{width:64px;border-radius:11px 0 0 11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#fff;flex:none;padding:6px 4px}
 .rc .blk svg.i{width:22px;height:22px}
 .rc .blk small{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rc-line{display:flex;gap:8px;align-items:stretch}
-.rc-line>.rc{flex:1;min-width:0}
-.rc-line>form{display:flex}
-.del-tile{width:64px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--strip);color:var(--fault);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;font-size:11px;font-weight:700}
-@media (hover:hover){.del-tile:hover{border-color:var(--fault)}}
 .discard-form{display:inline-flex}
 tr.link-row{cursor:pointer}
 @media (hover:hover){tr.link-row:hover td{background:var(--accent-soft)}}
@@ -405,7 +400,6 @@ textarea.in.foot-ta{min-height:96px;font-size:14px}
   .rc .tx .st-m{display:flex;gap:8px;align-items:center;margin-top:4px}
   .rc .tx .st-m .bd{font-size:11.5px}
   .rc.big .blk{width:76px}
-  .del-tile{width:56px}
 }
 
 /* Druck */

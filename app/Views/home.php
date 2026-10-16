@@ -37,15 +37,7 @@ $more = array_slice($types, 2);
     <?php if (!$drafts): ?>
       <div class="empty">Keine offenen Entwürfe.</div>
     <?php else: ?>
-      <div class="list"><?php foreach ($drafts as $r): ?>
-        <div class="rc-line">
-          <?php render('partials/report-row', ['r' => $r]); ?>
-          <form method="post" action="<?= e(base_url('index.php?action=discard')) ?>">
-            <?= csrf_field() ?><input type="hidden" name="n" value="<?= e($r['number']) ?>">
-            <button class="del-tile" data-confirm="Entwurf <?= e($r['number']) ?> endgültig löschen? Das lässt sich nicht rückgängig machen." aria-label="Entwurf <?= e($r['number']) ?> löschen"><?= icon('trash') ?><span>Löschen</span></button>
-          </form>
-        </div>
-      <?php endforeach; ?></div>
+      <div class="list"><?php foreach ($drafts as $r) { render('partials/report-row', ['r' => $r]); } ?></div>
     <?php endif; ?>
   </section>
 
