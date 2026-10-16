@@ -48,9 +48,11 @@ pwd
 ls
 $mkdirs
 option batch $(if ($Preview) { 'continue' } else { 'abort' })
+# vendor/ ist groß und ändert sich selten: Größenvergleich reicht. app/ und public/ immer bei Zeit- ODER Größenänderung,
+# sonst gehen Änderungen gleicher Länge verloren (z. B. Versionsnummer).
 synchronize remote$flag -delete -criteria=size "$src\vendor" "$RemoteBase/vendor"
-synchronize remote$flag -delete -criteria=size "$src\app" "$RemoteBase/app"
-synchronize remote$flag -delete -criteria=size "$src\public" "$RemoteBase/public"
+synchronize remote$flag -delete -criteria=either "$src\app" "$RemoteBase/app"
+synchronize remote$flag -delete -criteria=either "$src\public" "$RemoteBase/public"
 exit
 "@
 $scriptFile = Join-Path $env:TEMP "euedok-deploy-$PID.txt"
