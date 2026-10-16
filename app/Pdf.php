@@ -181,6 +181,14 @@ final class Pdf
                 }
             }
             $people = array_values($r['personnel']);
+            // gleiche Namen (z. B. doppeltes Divera-Konto) mit Kennung unterscheidbar machen
+            $count = array_count_values(array_column($people, 'name'));
+            foreach ($people as &$pp) {
+                if (($count[$pp['name']] ?? 0) > 1) {
+                    $pp['name'] .= ' (#' . ($pp['divera_id'] ?? $pp['id']) . ')';
+                }
+            }
+            unset($pp);
             $twoCols = count($people) > 1 && count($pf) <= 2;
             $colsPer = 2 + count($pf);
             $width = $twoCols ? $colsPer * 2 + 1 : $colsPer;
@@ -257,7 +265,7 @@ final class Pdf
 
         /* 7 · Einheitsführer und Abschluss */
         $lead = '';
-        foreach ($r['personnel'] as $p) {
+        foreach ($people ?? $r['personnel'] as $p) {
             if ($p['id'] === $r['lead']) {
                 $lead = $p['name'];
             }

@@ -72,6 +72,24 @@ final class Reports
         return Storage::path('reports/' . $meta['file'] . '.pdf');
     }
 
+    /** Bericht schreiben; leere Objekte bleiben im JSON Objekte ({} statt []) */
+    private static function persist(string $relative, array $report): void
+    {
+        foreach (['custom_fields'] as $k) {
+            if (isset($report[$k]) && $report[$k] === []) {
+                $report[$k] = new \stdClass();
+            }
+        }
+        foreach (['personnel', 'vehicles'] as $list) {
+            foreach ($report[$list] ?? [] as $i => $x) {
+                if (($x['fields'] ?? null) === []) {
+                    $report[$list][$i]['fields'] = new \stdClass();
+                }
+            }
+        }
+        Storage::write($relative, $report);
+    }
+
     public static function load(string $number): ?array
     {
         $meta = self::meta($number);
@@ -149,7 +167,7 @@ final class Reports
         $report['field_definitions'] = self::fieldDefinitions();
 
         $file = $year . '/' . self::fileBase($type, $number);
-        Storage::write('reports/' . $file . '.json', $report);
+        self::persist('reports/' . $file . '.json', $report);
         self::updateIndex($number, [
             'number' => $number,
             'year' => $year,
@@ -369,7 +387,7 @@ final class Reports
                 return ['ok' => false, 'conflict' => true, 'error' => 'Der Bericht wurde inzwischen auf einem anderen Gerät geändert.'];
             }
             $report = self::applyInput($report, $input);
-            Storage::write(self::jsonPath($meta), $report);
+            self::persist(self::jsonPath($meta), $report);
             $newRev = (int) $meta['rev'] + 1;
             self::updateIndex($number, ['rev' => $newRev, 'last_editor' => $actor['by']] + self::summary($report));
             return ['ok' => true, 'rev' => $newRev, 'saved_at' => now_iso()];
@@ -412,7 +430,7 @@ final class Reports
             $report['divera'] = $import['divera'];
             Log::info('report', 'divera_imported', $number . ': Divera-Daten übernommen', ['divera' => $import['divera']['type'] . ':' . $import['divera']['id'], 'persons' => count($import['personnel']), 'vehicles' => count($import['vehicles'])]);
             $report['history'][] = self::historyEntry('divera_imported', $actor, ['divera_id' => $import['divera']['id']]);
-            Storage::write(self::jsonPath($meta), $report);
+            self::persist(self::jsonPath($meta), $report);
             $newRev = (int) $meta['rev'] + 1;
             self::updateIndex($number, ['rev' => $newRev] + self::summary($report));
             return ['ok' => true, 'rev' => $newRev, 'report' => $report];
@@ -521,7 +539,7 @@ final class Reports
                 $report['history'][] = self::historyEntry('closed', $actor);
             }
             $report['status'] = 'closed';
-            Storage::write(self::jsonPath($meta), $report);
+            self::persist(self::jsonPath($meta), $report);
             $newRev = (int) $meta['rev'] + 1;
             self::updateIndex($number, [
                 'rev' => $newRev,
@@ -568,7 +586,7 @@ final class Reports
                 'success' => $res['success'],
                 'error' => $res['error'] ?? null,
             ], static fn ($v) => $v !== null));
-            Storage::write(self::jsonPath($meta), $report);
+            self::persist(self::jsonPath($meta), $report);
         });
         $status = $res['success'] ? 'sent' : 'failed';
         self::updateIndex($number, ['mail' => ['status' => $status, 'at' => now_iso(), 'to' => $res['to'], 'error' => $res['error'] ?? null]]);
