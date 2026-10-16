@@ -254,12 +254,23 @@ body.report{background:var(--ground)}
 .form{width:100%;max-width:1100px;margin:0 auto;padding:14px 14px 120px;flex:1}
 .pane{display:none;flex-direction:column;gap:12px}
 .pane.on{display:flex}
+/* Zwei Spalten am PC: links Basisdaten + Geräte, rechts Personal + Bericht; am Handy wirkungslos */
+.fcol{display:contents}
 @media (min-width:1000px){
   .tabs{justify-content:center}
   .tabs button{flex:0 1 180px}
-  .form{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:18px;align-items:start;max-width:1240px}
+  .fcol{display:flex;flex-direction:column;gap:16px;min-width:0}
   .pane{display:flex}
+  textarea.in.narrative{min-height:260px}
 }
+.defects-box summary{display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none;font-size:12px;text-transform:uppercase;letter-spacing:.15em;color:var(--quiet);font-weight:800;min-height:28px}
+.defects-box summary::-webkit-details-marker{display:none}
+.defects-box summary .hint{text-transform:none;letter-spacing:0;font-weight:600}
+.defects-box:not([open]) summary{color:var(--accent)}
+.defects-box .when-open{display:none}
+.defects-box[open] .when-open{display:block}
+.defects-box[open] .when-closed{display:none}
 .fieldset{display:flex;flex-direction:column;gap:12px}
 .dt-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
 .dur{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--quiet);font-weight:700}
@@ -373,6 +384,7 @@ dl.facts dd{font-weight:600}
   .ed-row>.mv-cell{grid-column:1/-1}
   .card h3{flex-wrap:wrap}
   .card h3 .r{flex-basis:100%;margin-left:0}
+  .card h3>span:not(.r){flex:1 1 0;min-width:0}
 }
 .foot-ed{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .foot-col{display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -404,3 +416,4 @@ textarea.in.foot-ta{min-height:96px;font-size:14px}
 
 /* Druck */
 @media print{.top,.bn,.tb,.tabs,.bb{display:none!important}body{background:#fff}}
+.pid{font-size:11px;font-weight:700;opacity:.7;margin-left:2px}

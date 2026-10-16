@@ -45,6 +45,13 @@
 
   var peopleById = {};
   cfg.lists.personnel.items.forEach(function (p) { peopleById[p.id] = p; });
+  // Gleiche Namen (z. B. doppeltes Divera-Konto) mit Kennung unterscheidbar machen
+  var nameCount = {};
+  cfg.lists.personnel.items.forEach(function (p) { nameCount[p.name] = (nameCount[p.name] || 0) + 1; });
+  function personLabel(p) {
+    if ((nameCount[p.name] || 0) < 2) return esc(p.name);
+    return esc(p.name) + ' <small class="pid">' + esc(p.divera_id ? '#' + p.divera_id : p.id) + '</small>';
+  }
   data.personnel.forEach(function (p) { if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name, divera_id: p.divera_id, frequency: 0, gone: true }; });
   var vehById = {};
   cfg.lists.vehicles.items.forEach(function (v) { vehById[v.id] = v; });
@@ -147,6 +154,8 @@
   bindInput('f-subject', 'subject');
   bindInput('f-narrative', 'narrative');
   bindInput('f-defects', 'defects');
+  function openDefects() { var d = $('defects-box'); if (d && (data.defects || '').trim() !== '') d.open = true; }
+  openDefects();
 
   function fixMidnight() {
     // Ende vor Beginn am selben Tag → über Mitternacht: Ende einen Tag später
@@ -188,7 +197,7 @@
   var cb = $('f-created_by');
   if (cb) {
     cfg.lists.personnel.items.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'de'); }).forEach(function (p) {
-      var o = document.createElement('option'); o.value = p.id; o.textContent = p.name; cb.appendChild(o);
+      var o = document.createElement('option'); o.value = p.id; o.textContent = p.name + ((nameCount[p.name] || 0) > 1 ? ' (' + (p.divera_id ? '#' + p.divera_id : p.id) + ')' : ''); cb.appendChild(o);
     });
     if (!data.created_by) {
       try { var last = localStorage.getItem(LS_PERSON); if (last && peopleById[last]) { data.created_by = last; setTimeout(changed, 0); } } catch (e) { /* egal */ }
@@ -341,7 +350,7 @@
     var items = src.items.filter(function (p) { return !q || p.name.toLowerCase().indexOf(q) > -1; });
     var limit = q ? 60 : 24;
     var html = items.slice(0, limit).map(function (p) {
-      return '<button type="button" class="chip' + (selected[p.id] ? ' on' : '') + '" data-person="' + esc(p.id) + '" aria-pressed="' + (selected[p.id] ? 'true' : 'false') + '"><span class="av">' + esc(initials(p.name)) + '</span>' + esc(p.name) + '</button>';
+      return '<button type="button" class="chip' + (selected[p.id] ? ' on' : '') + '" data-person="' + esc(p.id) + '" aria-pressed="' + (selected[p.id] ? 'true' : 'false') + '"><span class="av">' + esc(initials(p.name)) + '</span>' + personLabel(p) + '</button>';
     }).join('');
     if (items.length > limit) html += '<span class="hint" style="align-self:center">… ' + (items.length - limit) + ' weitere – Suche nutzen</span>';
     if (!items.length) html = '<span class="hint">Keine Person gefunden.</span>';
@@ -350,7 +359,7 @@
     $('people-count').textContent = data.personnel.length;
     $('people-list').innerHTML = data.personnel.map(function (p) {
       var f = cfg.fields.person.map(function (d) { return fieldControl(d, p.fields[d.id], 'person', p.id); }).join('');
-      return '<div class="card pc"><div class="hd"><div class="av2">' + esc(initials(p.name)) + '</div><b>' + esc(p.name) + '</b>' +
+      return '<div class="card pc"><div class="hd"><div class="av2">' + esc(initials(p.name)) + '</div><b>' + personLabel(p) + '</b>' +
         '<button type="button" class="x" data-person-remove="' + esc(p.id) + '" aria-label="' + esc(p.name) + ' entfernen">' + ic('x') + '</button></div>' + f + '</div>';
     }).join('');
     renderLead();
@@ -379,7 +388,7 @@
     var box = $('lead-chips');
     if (!box) return;
     box.innerHTML = data.personnel.map(function (p) {
-      return '<button type="button" class="chip' + (data.lead === p.id ? ' on' : '') + '" data-lead="' + esc(p.id) + '"><span class="av">' + esc(initials(p.name)) + '</span>' + esc(p.name) + '</button>';
+      return '<button type="button" class="chip' + (data.lead === p.id ? ' on' : '') + '" data-lead="' + esc(p.id) + '"><span class="av">' + esc(initials(p.name)) + '</span>' + personLabel(p) + '</button>';
     }).join('');
     $('lead-hint').hidden = data.personnel.length > 0;
   }
@@ -722,7 +731,7 @@
           ['start', 'end', 'location', 'subject', 'narrative', 'defects'].forEach(function (k) { var el = $('f-' + k); if (el) el.value = data[k] || ''; });
           if (cb) cb.value = data.created_by || '';
           data.personnel.forEach(function (p) { if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name, frequency: 0 }; });
-          duration(); renderAlert(); renderReportFields(); renderPeople(); renderEquipment(); renderVehicles(); banner('restore'); changed(); } },
+          duration(); renderAlert(); renderReportFields(); renderPeople(); renderEquipment(); renderVehicles(); openDefects(); banner('restore'); changed(); } },
         { text: 'Verwerfen', fn: function () { clearBackup(); banner('restore'); } }
       ]);
     } else if (bk) {

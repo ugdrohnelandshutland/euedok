@@ -26,6 +26,7 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
 </nav>
 
 <main class="form" id="form">
+ <div class="fcol">
   <section class="pane on" id="pane-basics" data-pane="basics">
     <?php if ($quick): ?>
     <div class="card fieldset" data-req="created_by">
@@ -72,6 +73,25 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
     </div>
   </section>
 
+  <?php if ($showGear): ?>
+  <section class="pane" id="pane-gear" data-pane="gear">
+    <?php if (!empty($cfg['modules']['equipment'])): ?>
+    <div class="card fieldset" data-req="equipment">
+      <h3><?= icon('box') ?><span class="<?= $req('equipment') ?>">Eingesetzte Geräte</span><span class="r" id="equip-count"></span></h3>
+      <div class="chips" id="equip-chips"></div>
+    </div>
+    <?php endif; ?>
+    <?php if (!empty($cfg['modules']['vehicles'])): ?>
+    <div class="card fieldset" data-req="vehicles">
+      <h3><?= icon('truck') ?><span class="<?= $req('vehicles') ?>">Eingesetzte Fahrzeuge</span><span class="r" id="veh-src"></span></h3>
+      <div class="stack" id="veh-list"></div>
+    </div>
+    <div id="veh-sums" class="stack"></div>
+    <?php endif; ?>
+  </section>
+  <?php endif; ?>
+ </div>
+ <div class="fcol">
   <?php if ($showPeople): ?>
   <section class="pane" id="pane-people" data-pane="people">
     <div class="card fieldset" data-req="personnel">
@@ -90,35 +110,18 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
   </section>
   <?php endif; ?>
 
-  <?php if ($showGear): ?>
-  <section class="pane" id="pane-gear" data-pane="gear">
-    <?php if (!empty($cfg['modules']['equipment'])): ?>
-    <div class="card fieldset" data-req="equipment">
-      <h3><?= icon('box') ?><span class="<?= $req('equipment') ?>">Eingesetzte Geräte</span><span class="r" id="equip-count"></span></h3>
-      <div class="chips" id="equip-chips"></div>
-    </div>
-    <?php endif; ?>
-    <?php if (!empty($cfg['modules']['vehicles'])): ?>
-    <div class="card fieldset" data-req="vehicles">
-      <h3><?= icon('truck') ?><span class="<?= $req('vehicles') ?>">Eingesetzte Fahrzeuge</span><span class="r" id="veh-src"></span></h3>
-      <div class="stack" id="veh-list"></div>
-    </div>
-    <div id="veh-sums" class="stack"></div>
-    <?php endif; ?>
-  </section>
-  <?php endif; ?>
 
   <section class="pane" id="pane-text" data-pane="text">
     <div class="card fieldset">
       <h3><?= icon('file') ?><span class="<?= $req('narrative') ?>">Bericht / getroffene Maßnahmen</span></h3>
-      <textarea class="in" id="f-narrative" rows="9" data-req="narrative" placeholder="Was ist passiert, was wurde gemacht?"></textarea>
+      <textarea class="in narrative" id="f-narrative" rows="12" data-req="narrative" placeholder="Was ist passiert, was wurde gemacht?"></textarea>
     </div>
     <?php if (!empty($cfg['modules']['defects'])): ?>
-    <div class="card fieldset">
-      <h3><?= icon('alert') ?>Defekte / Vorfälle</h3>
+    <details class="card fieldset defects-box" id="defects-box"<?= trim((string) ($r['defects'] ?? '')) !== '' ? ' open' : '' ?>>
+      <summary><?= icon('plus', 'when-closed') ?><?= icon('alert', 'when-open') ?>Defekte / Vorfälle <span class="hint">(optional)</span></summary>
       <textarea class="in" id="f-defects" rows="4" placeholder="keine"></textarea>
       <?php if ($cfg['defects_hint'] !== ''): ?><span class="hint warn"><?= e($cfg['defects_hint']) ?></span><?php endif; ?>
-    </div>
+    </details>
     <?php endif; ?>
     <?php if (!$quick && !$cfg['correction'] && $cfg['status'] === 'draft'): ?>
     <div class="card fieldset">
@@ -132,6 +135,7 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
       <div id="divera-ref-text" class="small"></div>
     </div>
   </section>
+ </div>
 </main>
 
 <div class="bb">
