@@ -8,3 +8,6 @@
 Thumbs.db
 # Release-Builds
 /build/
+
+# lokale Deploy-Zugangsdaten (Server, Benutzer, Live-Adresse)
+tools/deploy.local.psd1

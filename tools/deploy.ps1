@@ -3,6 +3,8 @@
   Lädt public/, app/, vendor/ aus build\euedok-<Version>\ direkt ins FTP-Root. data/ auf dem Server wird NIE angefasst.
   Plesk: Dokumentstamm der Domain muss auf den Ordner public/ zeigen.
   Das Passwort wird beim Verbinden abgefragt und nirgends gespeichert.
+  Server, Benutzer und Live-Adresse stehen nur lokal in tools\deploy.local.psd1 (nicht im Repo), z. B.:
+    @{ FtpHost = 'ftp.example.org'; User = 'deploy-user'; RemoteBase = ''; LiveUrl = 'https://dok.example.org/' }
 
   Vorschau (nichts wird geändert):
     powershell -ExecutionPolicy Bypass -File tools\deploy.ps1 -Version 1.0.0 -Preview
@@ -11,13 +13,22 @@
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Version,
-    [string]$FtpHost = 'ftp.example.org',
-    [string]$User = 'deploy-user',
-    [string]$RemoteBase = '',
+    [string]$FtpHost,
+    [string]$User,
+    [string]$RemoteBase,
+    [string]$LiveUrl,
     [string]$WinScp = 'C:\Program Files (x86)\WinSCP\WinSCP.com',
     [switch]$Preview
 )
 $ErrorActionPreference = 'Stop'
+$localCfg = Join-Path $PSScriptRoot 'deploy.local.psd1'
+if (Test-Path $localCfg) {
+    $cfg = Import-PowerShellDataFile $localCfg
+    foreach ($k in 'FtpHost', 'User', 'RemoteBase', 'LiveUrl') {
+        if (-not $PSBoundParameters.ContainsKey($k) -and $cfg.ContainsKey($k)) { Set-Variable -Name $k -Value $cfg[$k] }
+    }
+}
+if (-not $FtpHost -or -not $User) { throw "Server/Benutzer fehlen – tools\deploy.local.psd1 anlegen (siehe Kopf dieser Datei) oder -FtpHost/-User angeben." }
 $root = Split-Path -Parent $PSScriptRoot
 $src = Join-Path $root "build\euedok-$Version"
 if (-not (Test-Path $src)) { throw "Release fehlt – zuerst: tools\build-release.ps1 -Version $Version" }
@@ -70,5 +81,5 @@ if ($Preview) {
     Write-Host "Vorschau fertig. Oben steht, was hochgeladen bzw. gelöscht würde." -ForegroundColor Green
 } else {
     Write-Host "Deploy fertig. Protokoll: $log" -ForegroundColor Green
-    Write-Host "Prüfen: https://dok.example.org/"
+    if ($LiveUrl) { Write-Host "Prüfen: $LiveUrl" }
 }
