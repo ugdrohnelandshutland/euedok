@@ -72,6 +72,7 @@ final class SettingsPage
         $u = $old;
         $u['name'] = post_str('name') ?: $old['name'];
         $u['subtitle'] = post_str('subtitle');
+        $u['app_name'] = mb_substr(post_str('app_name'), 0, 30);
         $color = post_str('accent_color');
         $u['accent_color'] = preg_match('/^#[0-9a-fA-F]{6}$/', $color) ? $color : $old['accent_color'];
         $url = post_str('public_url');

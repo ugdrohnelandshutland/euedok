@@ -10,6 +10,9 @@ DirectoryIndex index.php
   RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
+  # altes statisches Manifest → dynamisch (Name aus den Einstellungen)
+  RewriteRule ^manifest\.webmanifest$ manifest.php [L]
+
   # QR-Schnellerfassung: /q/<key>
   RewriteRule ^q/([0-9A-Za-z-]{20,64})/?$ quick-entry.php?key=$1 [L,QSA]
 </IfModule>

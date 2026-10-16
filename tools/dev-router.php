@@ -18,9 +18,9 @@ if ($path === '/' ) {
     require $public . '/index.php';
     return true;
 }
-if (str_ends_with($path, '.webmanifest') && is_file($public . $path)) {
-    header('Content-Type: application/manifest+json');
-    readfile($public . $path);
+if ($path === '/manifest.webmanifest') {
+    $_SERVER['SCRIPT_NAME'] = '/manifest.php';
+    require $public . '/manifest.php';
     return true;
 }
 return false;

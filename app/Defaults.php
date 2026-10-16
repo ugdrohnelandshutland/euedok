@@ -14,6 +14,7 @@ final class Defaults
         return [
             'name' => '',
             'subtitle' => '',
+            'app_name' => '', // Name unter dem Symbol auf dem Startbildschirm (leer = EÜDOK)
             'accent_color' => '#0f6f68',
             'public_url' => '',
             'timezone' => 'Europe/Berlin',

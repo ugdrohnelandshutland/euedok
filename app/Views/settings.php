@@ -65,6 +65,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
           <label class="f">Name der Einheit <input class="in" name="name" required value="<?= e($unit['name']) ?>"></label>
           <label class="f">Untertitel <input class="in" name="subtitle" value="<?= e($unit['subtitle']) ?>"></label>
         </div>
+        <label class="f">App-Name auf dem Startbildschirm <input class="in" name="app_name" maxlength="30" value="<?= e($unit['app_name'] ?? '') ?>" placeholder="EÜDOK"><span class="hint">Steht unter dem Symbol, wenn EÜDOK am Handy 
         <div class="row">
           <label class="f">Akzentfarbe im PDF <input class="in" type="color" name="accent_color" value="<?= e($unit['accent_color']) ?>" style="padding:4px;max-width:120px"></label>
           <label class="f">Öffentliche Adresse (für QR-Links, optional) <input class="in" name="public_url" value="<?= e($unit['public_url']) ?>" placeholder="https://berichte.example.de"></label>
@@ -96,7 +97,6 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
           <label class="f">Angemeldet bleiben (Tage) <input class="in" type="number" min="1" max="365" name="remember_days" value="<?= (int) $unit['remember_days'] ?>"></label>
           <label class="f">Zeitzone <input class="in" name="timezone" value="<?= e($unit['timezone']) ?>"></label>
         </div>
-        <p class="hint">Logo-Upload folgt mit Stufe 2 – bis dahin steht der Name der Einheit als Schriftzug im PDF.</p>
         <button class="btn pri"><?= icon('check') ?>Speichern</button>
       </form>
 

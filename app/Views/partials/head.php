@@ -15,7 +15,10 @@ $apiBase = $apiBase ?? base_url('api.php');
 <meta name="theme-color" content="#102031">
 <meta name="csrf" content="<?= e(csrf_token()) ?>">
 <title><?= e($title) ?> · EÜDOK</title>
-<link rel="manifest" href="<?= e(base_url('manifest.webmanifest')) ?>">
+<link rel="manifest" href="<?= e(base_url('manifest.php')) ?>">
+<meta name="apple-mobile-web-app-title" content="<?= e(trim((string) ($unit['app_name'] ?? '')) ?: 'EÜDOK') ?>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="<?= e(base_url('assets/icons/icon.svg')) ?>" type="image/svg+xml">
 <link rel="apple-touch-icon" href="<?= e(base_url('assets/icons/icon-192.png')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
