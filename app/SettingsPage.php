@@ -391,8 +391,10 @@ final class SettingsPage
             if ($pw !== '') {
                 $u['password_hash'] = password_hash($pw, PASSWORD_DEFAULT);
                 $u['password_changed_at'] = now_iso();
-                if ($u['id'] !== $me['id']) {
-                    Auth::revokeRememberTokens($u['id']);
+                // alle gemerkten Geräte abmelden; andere laufende Sitzungen enden über password_changed_at
+                Auth::revokeRememberTokens($u['id']);
+                if ($u['id'] === $me['id']) {
+                    $_SESSION['login_at'] = time(); // eigene, gerade aktive Sitzung bleibt bestehen
                 }
                 $notes[] = 'Passwort ' . $username;
             }

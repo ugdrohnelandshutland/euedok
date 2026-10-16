@@ -23,7 +23,7 @@ $self = 'settings.php?s=' . $section;
 /* QR-Aufkleber (nur direkt nach Anlegen/Erneuern – der Schlüssel liegt nur in dieser Sitzung) */
 if (isset($_GET['sticker'])) {
     $id = (string) $_GET['sticker'];
-    $key = $_SESSION['qr_keys'][$id] ?? null;
+    $key = QrAccess::heldKey($id);
     $entry = QrAccess::find($id);
     if (!$key || !$entry) {
         flash('Die Druckvorlage gibt es nur direkt nach dem Anlegen oder Erneuern des Schlüssels.', 'warn');
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redirect($self);
             }
             [$entry, $key] = QrAccess::create($label, post_bool('divera'));
-            $_SESSION['qr_keys'][$entry['id']] = $key;
+            QrAccess::holdNewKey($entry['id'], $key);
             flash('QR-Zugang „' . $label . '“ angelegt. Link und Druckvorlage sind nur jetzt verfügbar.');
             redirect($self . '&new=' . $entry['id']);
 
@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = post_str('id');
             $key = QrAccess::renew($id);
             if ($key) {
-                $_SESSION['qr_keys'][$id] = $key;
+                QrAccess::holdNewKey($id, $key);
                 flash('Neuer Schlüssel erzeugt – der alte Link und Aufkleber sind ab sofort ungültig.');
             }
             redirect($self . '&new=' . $id);

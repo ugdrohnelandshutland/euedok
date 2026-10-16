@@ -398,11 +398,11 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
 <?php elseif ($section === 'qr'):
     $newId = is_string($_GET['new'] ?? null) ? $_GET['new'] : '';
     ?>
-      <?php if ($newId !== '' && isset($_SESSION['qr_keys'][$newId]) && ($ne = QrAccess::find($newId))): ?>
+      <?php if ($newId !== '' && ($heldKey = QrAccess::heldKey($newId)) && ($ne = QrAccess::find($newId))): ?>
       <section class="card stack" style="border-color:var(--accent)">
         <h3><?= icon('qr') ?>Neuer Link für „<?= e($ne['label']) ?>“</h3>
-        <div class="keybox"><?= e(absolute_url('q/' . $_SESSION['qr_keys'][$newId])) ?></div>
-        <p class="hint warn">Der Link ist nur jetzt sichtbar – gespeichert wird nur ein Hash. Jetzt die Druckvorlage öffnen und ausdrucken.</p>
+        <div class="keybox"><?= e(absolute_url('q/' . $heldKey)) ?></div>
+        <p class="hint warn">Der Link ist nur 30 Minuten sichtbar – gespeichert wird nur ein Hash. Jetzt die Druckvorlage öffnen und ausdrucken.</p>
         <a class="btn pri" href="<?= e(base_url('settings.php?sticker=' . rawurlencode($newId))) ?>" target="_blank"><?= icon('printer') ?>Druckvorlage (PDF) öffnen</a>
       </section>
       <?php endif; ?>

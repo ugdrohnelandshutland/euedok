@@ -24,7 +24,9 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $target = $_SESSION['after_login'] ?? '';
     unset($_SESSION['after_login']);
-    if (is_string($target) && str_starts_with($target, base_url()) && !str_contains($target, 'action=')) {
+    // nur eigene Pfade: genau ein führender „/“, kein „//“ oder „\“ (sonst Weiterleitung auf fremde Seiten)
+    if (is_string($target) && str_starts_with($target, base_url()) && preg_match('#^/(?![/\\\\])[^\\\\\s]*$#', $target)
+        && !str_contains($target, '//') && !str_contains($target, 'action=')) {
         header('Location: ' . $target);
         exit;
     }

@@ -9,6 +9,11 @@ final class Auth
     private const REMEMBER_COOKIE = 'euedok_remember';
     private const MAX_ATTEMPTS = 5;
     private const LOCK_SECONDS = 900;
+    private const MAX_ATTEMPTS_PER_IP = 20;
+    /** Gültige Remember-Tokens bleiben nach dem Austausch kurz gültig (parallele Anfragen) */
+    private const REMEMBER_GRACE = 60;
+    /** Platzhalter-Hash: gleiche Rechenzeit bei unbekanntem Benutzernamen */
+    private const DUMMY_HASH = '$2y$10$8i/OWJASIysO7ccVxpvDFeG8Ny7MUQDzJcOJRCplnyZJ10h5aJFDa';
 
     private static ?array $user = null;
     private static bool $loaded = false;
@@ -24,6 +29,14 @@ final class Auth
         try {
             Storage::ensureDir($dir);
             session_save_path($dir);
+            // Abgelaufene Sitzungsdateien selbst aufräumen (PHP-GC läuft bei vielen Hostern nicht)
+            if (random_int(1, 50) === 1) {
+                foreach (glob($dir . '/sess_*') ?: [] as $f) {
+                    if (filemtime($f) < time() - 43200) {
+                        @unlink($f);
+                    }
+                }
+            }
         } catch (\RuntimeException) {
             // data/ nicht beschreibbar – der Assistent zeigt das an
         }
@@ -55,10 +68,16 @@ final class Auth
         }
         if ($uid !== null) {
             $u = self::findUser(['id' => $uid]);
-            if ($u && !empty($u['active'])) {
+            // ältere Sitzungen (vor diesem Update) ohne Zeitstempel einmalig übernehmen
+            $_SESSION['login_at'] ??= time();
+            $changed = !empty($u['password_changed_at']) ? (int) strtotime((string) $u['password_changed_at']) : 0;
+            if ($u && !empty($u['active']) && $_SESSION['login_at'] >= $changed) {
                 self::$user = $u;
             } else {
-                unset($_SESSION['uid']);
+                if ($u && $_SESSION['login_at'] < $changed) {
+                    Log::info('auth', 'session_expired_password', 'Sitzung nach Passwortänderung beendet', ['username' => $u['username']]);
+                }
+                unset($_SESSION['uid'], $_SESSION['login_at']);
             }
         }
         return self::$user;
@@ -100,16 +119,23 @@ final class Auth
     public static function attempt(string $username, string $password, bool $remember): ?string
     {
         $key = hash('sha256', strtolower($username) . '|' . client_ip());
+        // zusätzlich je IP-Adresse über alle Benutzernamen (gegen Durchprobieren vieler Namen)
+        $ipKey = 'ip|' . hash('sha256', client_ip());
         $attempts = Storage::read('auth/login-attempts.json', []);
         $entry = $attempts[$key] ?? ['count' => 0, 'until' => 0];
-        if ($entry['until'] > time()) {
+        $ipEntry = $attempts[$ipKey] ?? ['fails' => [], 'until' => 0];
+        $until = max((int) $entry['until'], (int) ($ipEntry['until'] ?? 0));
+        if ($until > time()) {
             Log::info('auth', 'login_blocked', 'Anmeldeversuch während Sperre', ['username' => $username]);
-            $min = (int) ceil(($entry['until'] - time()) / 60);
+            $min = (int) ceil(($until - time()) / 60);
             return "Zu viele Fehlversuche. Bitte in {$min} Minuten erneut versuchen.";
         }
 
         $u = self::findUser(['username' => strtolower($username)]);
-        $ok = $u && !empty($u['active']) && !empty($u['password_hash']) && password_verify($password, $u['password_hash']);
+        $valid = $u && !empty($u['active']) && !empty($u['password_hash']);
+        // immer eine Passwortprüfung rechnen, damit die Antwortzeit keine Benutzernamen verrät
+        $verified = password_verify($password, $valid ? $u['password_hash'] : self::DUMMY_HASH);
+        $ok = $valid && $verified;
         if (!$ok) {
             $entry['count']++;
             Log::warning('auth', 'login_failed', 'Anmeldung fehlgeschlagen', ['username' => $username, 'known_user' => (bool) $u, 'attempt' => $entry['count']]);
@@ -117,7 +143,15 @@ final class Auth
                 $entry = ['count' => 0, 'until' => time() + self::LOCK_SECONDS];
                 Log::warning('auth', 'login_locked', 'Anmeldung 15 Minuten gesperrt', ['username' => $username]);
             }
+            $fails = array_values(array_filter((array) ($ipEntry['fails'] ?? []), static fn ($t) => $t > time() - self::LOCK_SECONDS));
+            $fails[] = time();
+            $ipEntry = ['fails' => $fails, 'until' => (int) ($ipEntry['until'] ?? 0)];
+            if (count($fails) >= self::MAX_ATTEMPTS_PER_IP) {
+                $ipEntry = ['fails' => [], 'until' => time() + self::LOCK_SECONDS];
+                Log::warning('auth', 'login_ip_locked', 'Anmeldung für diese IP-Adresse 15 Minuten gesperrt', ['attempts' => self::MAX_ATTEMPTS_PER_IP]);
+            }
             $attempts[$key] = $entry;
+            $attempts[$ipKey] = $ipEntry;
             Storage::write('auth/login-attempts.json', self::pruneAttempts($attempts));
             return 'Benutzername oder Passwort falsch.';
         }
@@ -137,6 +171,7 @@ final class Auth
         session_regenerate_id(true);
         unset($_SESSION['qr']);
         $_SESSION['uid'] = $u['id'];
+        $_SESSION['login_at'] = time();
         self::$user = $u;
         self::$loaded = true;
         if ($remember) {
@@ -194,6 +229,20 @@ final class Auth
         Log::debug('auth', 'remember_restored', 'Anmeldung über gemerktes Gerät', ['user_id' => $t['user_id']]);
         session_regenerate_id(true);
         $_SESSION['uid'] = $t['user_id'];
+        $_SESSION['login_at'] = time();
+        // Token bei jeder Nutzung austauschen: ein kopiertes Cookie wird so schnell wertlos.
+        // Das alte bleibt kurz gültig, damit parallel laufende Anfragen nicht abgemeldet werden.
+        if (empty($t['rotated'])) {
+            Storage::locked('remember', static function () use ($selector) {
+                $tokens = Storage::read('auth/remember.json', []);
+                if (isset($tokens[$selector])) {
+                    $tokens[$selector]['rotated'] = true;
+                    $tokens[$selector]['expires'] = min((int) $tokens[$selector]['expires'], time() + self::REMEMBER_GRACE);
+                    Storage::write('auth/remember.json', $tokens);
+                }
+            });
+            self::issueRememberToken($t['user_id']);
+        }
         return $t['user_id'];
     }
 
@@ -220,7 +269,7 @@ final class Auth
 
     private static function pruneAttempts(array $attempts): array
     {
-        return array_filter($attempts, static fn ($a) => ($a['until'] ?? 0) > time() || ($a['count'] ?? 0) > 0);
+        return array_filter($attempts, static fn ($a) => ($a['until'] ?? 0) > time() || ($a['count'] ?? 0) > 0 || !empty($a['fails']));
     }
 
     public static function users(): array
