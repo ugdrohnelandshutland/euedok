@@ -78,160 +78,205 @@ final class Pdf
         return $txt;
     }
 
+    /** Abschluss: [Name, „15.10.2026 08:30 Uhr“, Zusatz wie „Schnellerfassung · MTW“ / „Korrektur 1“] */
+    public static function closedByParts(array $r): array
+    {
+        $last = null;
+        foreach ($r['history'] as $h) {
+            if (in_array($h['action'], ['closed', 'corrected'], true)) {
+                $last = $h;
+            }
+        }
+        if (!$last) {
+            return ['–', '', ''];
+        }
+        $notes = [];
+        if (!empty($last['source']) && str_starts_with($last['source'], 'qr:')) {
+            $notes[] = 'Schnellerfassung · ' . ($last['qr_label'] ?? substr($last['source'], 3));
+        }
+        if ($last['action'] === 'corrected') {
+            $notes[] = 'Korrektur ' . ($last['correction'] ?? '');
+        }
+        return [(string) ($last['by_name'] ?? $last['by']), fmt_datetime($last['at']) . ' Uhr', implode(' · ', $notes)];
+    }
+
+    /**
+     * Berichts-PDF im Formular-Layout (Variante C): geschlossenes Raster, nummerierte Abschnitte,
+     * Personal zweispaltig, unten Einheitsführer / Abschluss / Divera – druck- und s/w-freundlich.
+     */
     public static function reportHtml(array $r): string
     {
         $unit = Settings::unit();
-        $accent = preg_match('/^#[0-9a-f]{6}$/i', (string) $unit['accent_color']) ? $unit['accent_color'] : '#0f6f68';
-        $type = Settings::reportType($r['type']['id']) ?? ['style' => 'calm', 'lead_label' => 'Leitung'];
-        $badge = ($type['style'] ?? 'calm') === 'alert' ? '#c4202b' : '#24394e';
         $defs = $r['field_definitions'] ?? [];
+        $h = static fn ($s) => self::h($s);
+        $L = static fn (string $l) => '<span class="lbl">' . self::h($l) . '</span><br>';
+        $V = static fn ($v) => '<span class="val">' . (trim((string) $v) !== '' ? self::h((string) $v) : '–') . '</span>';
+        $two = static fn (string $a, string $b) => '<span class="val">' . self::h($a) . '</span>' . ($b !== '' ? '<br>' . self::h($b) : '');
+        $sec = 0;
+        $hd = static function (string $title, int $cols = 1) use (&$sec): string {
+            $sec++;
+            return '<tr><td colspan="' . $cols . '" class="hd">' . $sec . ' · ' . self::h($title) . '</td></tr>';
+        };
 
-        $leadName = '';
-        foreach ($r['personnel'] as $p) {
-            if ($p['id'] === $r['lead']) {
-                $leadName = $p['name'];
-            }
-        }
-
-        $rows = [
-            ['Beginn', fmt_datetime($r['start'])],
-            ['Ende', fmt_datetime($r['end'])],
-            ['Dauer', fmt_duration($r['duration_min'])],
-            ['Ort', $r['location']],
-            ['Thema / Stichwort', $r['subject']],
-        ];
-        if (Settings::moduleOn('alert_source') || !empty($r['alert_source'])) {
-            $rows[] = ['Alarmierung durch', $r['alert_source']['label'] ?? ''];
-        }
-        if (Settings::moduleOn('personnel')) {
-            $rows[] = [$type['lead_label'] ?? 'Leitung', $leadName];
-        }
-        foreach ($r['custom_fields'] ?? [] as $fid => $val) {
-            $d = $defs[$fid] ?? ['label' => $fid];
-            $rows[] = [$d['label'], html_entity_decode(strip_tags(self::fieldValue($d, $val)))];
-        }
-        $facts = '';
-        foreach (array_chunk($rows, 2) as $pair) {
-            $facts .= '<tr>';
-            foreach ($pair as [$k, $v]) {
-                $facts .= '<td class="k">' . self::h($k) . '</td><td class="v">' . (trim((string) $v) !== '' ? self::h((string) $v) : '<span class="q">–</span>') . '</td>';
-            }
-            if (count($pair) === 1) {
-                $facts .= '<td class="k"></td><td class="v"></td>';
-            }
-            $facts .= '</tr>';
-        }
-
-        $html = '<style>
-            body{font-family:dejavusans;font-size:9.6pt;color:#0b1a28;line-height:1.45}
-            h2{font-size:8pt;letter-spacing:1.5pt;text-transform:uppercase;color:#3b5063;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:0.6pt solid #b9c8d4}
-            table.facts{width:100%;border-collapse:collapse}
-            table.facts td{padding:5pt 6pt;border-bottom:0.5pt solid #d3dde6;vertical-align:top}
-            table.facts td.k{width:17%;color:#3b5063;font-size:8.2pt}
-            table.facts td.v{width:33%;font-weight:bold}
-            .q{color:#6f8597;font-weight:normal}
-            .box{border:0.6pt solid #d3dde6;background:#f4f7fa;padding:8pt 10pt;border-radius:6pt}
-            table.list{width:100%;border-collapse:collapse}
-            table.list th{text-align:left;font-size:7.6pt;letter-spacing:.8pt;text-transform:uppercase;color:#3b5063;padding:4pt 6pt;border-bottom:0.8pt solid #6f8597}
-            table.list td{padding:5pt 6pt;border-bottom:0.5pt solid #d3dde6}
-            table.list td.n, table.list th.n{text-align:right}
-            table.list tr.sum td{font-weight:bold;border-top:0.8pt solid #6f8597;border-bottom:none;color:' . $accent . '}
-            .lead-mark{font-size:7pt;color:#fff;background:' . $accent . ';padding:1pt 4pt;border-radius:3pt}
-            .chip{border:0.6pt solid #6f8597;border-radius:4pt;padding:2pt 6pt;margin-right:4pt}
-            .hint{font-size:8pt;color:#8a5a00}
-            .small{font-size:7.8pt;color:#3b5063}
+        $css = '<style>
+            body{font-family:dejavusans;font-size:9pt;color:#000;line-height:1.4}
+            table.g{width:100%;border-collapse:collapse}
+            table.g td,table.g th{border:0.6pt solid #6f8597;padding:4.5pt 6pt;vertical-align:top}
+            table.g th{background:#e8eef3;text-align:left;font-size:7.2pt;letter-spacing:.8pt;text-transform:uppercase;color:#24394e}
+            table.p td,table.p th{padding:3pt 5pt}
+            table.p td.sep,table.p th.sep{border-top:none;border-bottom:none;background:#fff;width:3mm;padding:0}
+            .lbl{font-size:6.8pt;color:#3b5063;text-transform:uppercase;letter-spacing:.6pt}
+            .val{font-weight:bold;font-size:9.6pt}
+            .hd{background:#24394e;color:#fff;font-weight:bold;font-size:7.6pt;letter-spacing:1.4pt;text-transform:uppercase}
+            .n,table.g th.n{text-align:right}
+            .nr{color:#6f8597;width:7mm}
+            .gap{margin-top:8pt}
         </style>';
 
-        $html .= '<table class="facts">' . $facts . '</table>';
-
-        $html .= '<h2>Bericht / getroffene Maßnahmen</h2><div class="box">' . (trim($r['narrative']) !== '' ? self::para($r['narrative']) : '<span class="q">–</span>') . '</div>';
-
-        if (Settings::moduleOn('defects') || trim($r['defects']) !== '') {
-            $html .= '<h2>Defekte / Vorfälle</h2><div class="box">' . (trim($r['defects']) !== '' ? self::para($r['defects']) : '<span class="q">keine</span>') . '</div>';
+        /* 1 · Art und Zeit (+ Berichtsfelder) */
+        $types = '';
+        foreach (Settings::activeReportTypes() as $t) {
+            $types .= ($t['id'] === $r['type']['id'] ? '☒ ' : '☐ ') . $h($t['label']) . ' &nbsp; ';
         }
+        if (!Settings::reportType($r['type']['id'])) {
+            $types = '☒ ' . $h($r['type']['label']);
+        }
+        $showAlert = Settings::moduleOn('alert_source') || !empty($r['alert_source']);
+        $html = '<table class="g">' . $hd('Art und Zeit', 4)
+            . '<tr><td colspan="' . ($showAlert ? 2 : 3) . '">' . $L('Berichtsart') . $types . '</td>'
+            . ($showAlert ? '<td>' . $L('Alarmierung durch') . $V($r['alert_source']['label'] ?? '') . '</td>' : '')
+            . '<td>' . $L('Dauer') . $V(fmt_duration($r['duration_min'])) . '</td></tr>'
+            . '<tr><td colspan="2" width="50%">' . $L('Beginn') . $V(fmt_datetime($r['start'])) . '</td><td colspan="2">' . $L('Ende') . $V(fmt_datetime($r['end'])) . '</td></tr>'
+            . '<tr><td colspan="2">' . $L('Ort') . $V($r['location']) . '</td><td colspan="2">' . $L('Thema / Stichwort') . $V($r['subject']) . '</td></tr>';
+        $cf = [];
+        foreach ($r['custom_fields'] ?? [] as $fid => $val) {
+            $d = $defs[$fid] ?? ['label' => $fid];
+            $cf[] = '<td colspan="2">' . $L($d['label']) . '<span class="val">' . self::fieldValue($d, $val) . '</span></td>';
+        }
+        foreach (array_chunk($cf, 2) as $pair) {
+            $html .= '<tr>' . implode('', $pair) . (count($pair) === 1 ? '<td colspan="2"></td>' : '') . '</tr>';
+        }
+        $html .= '</table>';
 
+        /* 2 · Bericht, 3 · Defekte */
+        $html .= '<table class="g gap">' . $hd('Bericht / getroffene Maßnahmen')
+            . '<tr><td style="height:32mm">' . (trim($r['narrative']) !== '' ? self::para($r['narrative']) : '–') . '</td></tr>';
+        if (Settings::moduleOn('defects') || trim($r['defects']) !== '') {
+            $html .= $hd('Defekte / Vorfälle') . '<tr><td>' . (trim($r['defects']) !== '' ? self::para($r['defects']) : 'keine') . '</td></tr>';
+        }
+        $html .= '</table>';
+
+        /* 4 · Personal – zweispaltig, solange höchstens zwei Personenfelder genutzt werden */
         if (!empty($r['personnel'])) {
-            $pf = array_filter($defs, static fn ($d) => ($d['scope'] ?? '') === 'person');
-            $usedPf = [];
-            foreach ($pf as $fid => $d) {
+            $pf = [];
+            foreach ($defs as $fid => $d) {
+                if (($d['scope'] ?? '') !== 'person') {
+                    continue;
+                }
                 foreach ($r['personnel'] as $p) {
                     if (array_key_exists($fid, $p['fields'] ?? [])) {
-                        $usedPf[$fid] = $d;
+                        $pf[$fid] = $d;
                         break;
                     }
                 }
             }
-            $html .= '<h2>Eingesetztes Personal (' . count($r['personnel']) . ')</h2><table class="list"><tr><th>Name</th>';
-            foreach ($usedPf as $d) {
-                $html .= '<th class="n">' . self::h($d['label']) . '</th>';
+            $people = array_values($r['personnel']);
+            $twoCols = count($people) > 1 && count($pf) <= 2;
+            $colsPer = 2 + count($pf);
+            $width = $twoCols ? $colsPer * 2 + 1 : $colsPer;
+            $headCells = '<th class="nr">Nr.</th><th>Name</th>';
+            foreach ($pf as $d) {
+                $short = mb_strlen($d['label']) > 11 ? mb_substr($d['label'], 0, 9) . '.' : $d['label'];
+                $headCells .= '<th class="n" style="width:22mm">' . $h($short) . '</th>';
             }
-            $html .= '</tr>';
-            $sums = [];
-            foreach ($r['personnel'] as $p) {
-                $html .= '<tr><td>' . self::h($p['name']) . ($p['id'] === $r['lead'] ? ' &nbsp;<span class="lead-mark">' . self::h($type['lead_label'] ?? 'Leitung') . '</span>' : '') . '</td>';
-                foreach ($usedPf as $fid => $d) {
-                    $v = $p['fields'][$fid] ?? null;
-                    if (is_numeric($v)) {
-                        $sums[$fid] = ($sums[$fid] ?? 0) + $v;
-                    }
-                    $html .= '<td class="n">' . self::fieldValue($d, $v) . '</td>';
+            $cell = static function (?array $p, int $nr) use ($pf, $h): string {
+                if ($p === null) {
+                    return '<td class="nr"></td><td></td>' . str_repeat('<td></td>', count($pf));
                 }
-                $html .= '</tr>';
+                $c = '<td class="nr">' . $nr . '</td><td>' . $h($p['name']) . '</td>';
+                foreach ($pf as $fid => $d) {
+                    $v = $p['fields'][$fid] ?? null;
+                    $c .= '<td class="n">' . ($v === null || $v === '' ? '–' : self::fieldValue(['unit' => ''] + $d, $v)) . '</td>';
+                }
+                return $c;
+            };
+            $html .= '<table class="g p gap">' . $hd('Eingesetztes Personal (' . count($people) . ')', $width)
+                . '<tr>' . $headCells . ($twoCols ? '<th class="sep"></th>' . $headCells : '') . '</tr>';
+            if ($twoCols) {
+                $half = (int) ceil(count($people) / 2);
+                for ($i = 0; $i < $half; $i++) {
+                    $html .= '<tr>' . $cell($people[$i], $i + 1) . '<td class="sep"></td>' . $cell($people[$half + $i] ?? null, $half + $i + 1) . '</tr>';
+                }
+            } else {
+                foreach ($people as $i => $p) {
+                    $html .= '<tr>' . $cell($p, $i + 1) . '</tr>';
+                }
             }
-            $totals = self::totalsRow($usedPf, $sums, 'person');
+            $totals = self::personTotals($pf, $people);
             if ($totals !== '') {
-                $html .= '<tr class="sum"><td>Summe</td>' . $totals . '</tr>';
+                $html .= '<tr><td colspan="' . $width . '" class="n">' . $totals . '</td></tr>';
             }
             $html .= '</table>';
         }
 
+        /* 5 · Geräte, 6 · Fahrzeuge – nebeneinander, wenn beides vorhanden */
+        $eq = '';
         if (!empty($r['equipment'])) {
-            $html .= '<h2>Eingesetzte Geräte (' . count($r['equipment']) . ')</h2><div>'
-                . implode(' &nbsp;·&nbsp; ', array_map(static fn ($q) => self::h($q['label']), $r['equipment'])) . '</div>';
+            $eq = '<table class="g">' . $hd('Geräte', 2);
+            foreach (array_chunk($r['equipment'], 2) as $pair) {
+                $eq .= '<tr><td width="50%">☒ ' . $h($pair[0]['label']) . '</td><td width="50%">' . (isset($pair[1]) ? '☒ ' . $h($pair[1]['label']) : '') . '</td></tr>';
+            }
+            $eq .= '</table>';
         }
-
+        $ve = '';
         if (!empty($r['vehicles'])) {
             $vf = array_filter($defs, static fn ($d) => ($d['scope'] ?? '') === 'vehicle');
-            $html .= '<h2>Eingesetzte Fahrzeuge</h2><table class="list"><tr><th>Fahrzeug</th><th>Funkrufname</th>';
+            $ve = '<table class="g">' . $hd('Fahrzeuge', 2 + count($vf)) . '<tr><th>Fahrzeug</th><th>Funk</th>';
             foreach ($vf as $d) {
-                $html .= '<th class="n">' . self::h($d['label']) . '</th>';
+                $ve .= '<th class="n">' . $h($d['unit'] !== '' ? $d['unit'] : $d['label']) . '</th>';
             }
-            $html .= '</tr>';
-            $sums = [];
+            $ve .= '</tr>';
             foreach ($r['vehicles'] as $v) {
                 $full = MasterData::findVehicle($v['id']);
-                $html .= '<tr><td>' . self::h($v['label']) . '</td><td>' . self::h($full['radio_call_sign'] ?? '') . '</td>';
+                $call = trim((string) ($full['radio_call_sign'] ?? ''));
+                $ve .= '<tr><td>' . $h($v['label']) . '</td><td>' . ($call !== '' ? $h($call) : '–') . '</td>';
                 foreach ($vf as $fid => $d) {
                     $val = $v['fields'][$fid] ?? null;
-                    if (is_numeric($val)) {
-                        $sums[$fid] = ($sums[$fid] ?? 0) + $val;
-                    }
-                    $html .= '<td class="n">' . self::fieldValue($d, $val) . '</td>';
+                    $ve .= '<td class="n">' . ($val === null || $val === '' ? '–' : $h(is_float($val) ? number_format($val, 1, ',', '.') : (string) $val)) . '</td>';
                 }
-                $html .= '</tr>';
+                $ve .= '</tr>';
             }
-            if (count($r['vehicles']) > 1) {
-                $totals = self::totalsRow($vf, $sums, 'vehicle');
-                if ($totals !== '') {
-                    $html .= '<tr class="sum"><td>Summe</td><td></td>' . $totals . '</tr>';
-                }
-            }
-            $html .= '</table>';
+            $ve .= '</table>';
+        }
+        if ($eq !== '' && $ve !== '') {
+            $html .= '<table width="100%" class="gap" style="border-collapse:collapse"><tr><td width="50%" style="padding:0 4pt 0 0;vertical-align:top">' . $eq
+                . '</td><td width="50%" style="padding:0 0 0 4pt;vertical-align:top">' . $ve . '</td></tr></table>';
+        } elseif ($eq !== '' || $ve !== '') {
+            $html .= '<div class="gap">' . $eq . $ve . '</div>';
         }
 
+        /* 7 · Einheitsführer und Abschluss */
+        $lead = '';
+        foreach ($r['personnel'] as $p) {
+            if ($p['id'] === $r['lead']) {
+                $lead = $p['name'];
+            }
+        }
+        [$who, $when, $note] = self::closedByParts($r);
+        $div = ['–', ''];
         if (!empty($r['divera'])) {
-            $html .= '<h2>Divera247-Bezug</h2><div class="small">' . ($r['divera']['type'] === 'alarm' ? 'Alarm' : 'Termin') . ' Nr. ' . self::h((string) $r['divera']['id'])
-                . ' · ' . self::h($r['divera']['title']) . (trim((string) $r['divera']['text']) !== '' ? '<br>' . self::para($r['divera']['text']) : '') . '</div>';
+            $div = [($r['divera']['type'] === 'alarm' ? 'Alarm' : 'Termin') . ' Nr. ' . $r['divera']['id'], (string) ($r['divera']['title'] ?? '')];
         }
+        $html .= '<table class="g gap">' . $hd('Einheitsführer und Abschluss', 3) . '<tr>'
+            . '<td width="34%">' . $L('Einheitsführer') . $two($lead !== '' ? $lead : '–', '') . '</td>'
+            . '<td width="33%">' . $L('Abgeschlossen durch') . $two($who, $when) . ($note !== '' ? '<br><span class="lbl">' . $h($note) . '</span>' : '') . '</td>'
+            . '<td width="33%">' . $L('Divera247-Bezug') . $two($div[0], $div[1]) . '</td></tr></table>';
 
-        $html .= '<p class="small" style="margin-top:18pt">Abgeschlossen durch ' . self::h(self::closedByText($r)) . '</p>';
-
-        // Kopf und Fuß
-        $header = '<table width="100%" style="border-bottom:0.8pt solid ' . $accent . ';padding-bottom:4pt"><tr>'
-            . '<td style="vertical-align:bottom"><span style="font-size:13pt;font-weight:bold;color:#0b1a28">' . self::h($unit['name'] ?: 'EÜDOK') . '</span><br>'
-            . '<span style="font-size:7pt;letter-spacing:1.6pt;color:#3b5063;text-transform:uppercase">' . self::h($unit['subtitle'] ?: 'Einsatz- & Übungsdokumentation') . '</span></td>'
-            . '<td style="text-align:right;vertical-align:bottom"><span style="background:' . $badge . ';color:#fff;font-size:7.5pt;font-weight:bold;letter-spacing:1.2pt;padding:2pt 6pt;text-transform:uppercase">'
-            . self::h(mb_strtoupper(Reports::documentTitle($r['type']))) . '</span><br><span style="font-size:15pt;font-weight:bold">' . self::h($r['report_number']) . '</span></td>'
+        /* Kopf und Fuß */
+        $header = '<table width="100%" style="border-bottom:1.5pt solid #000"><tr>'
+            . '<td style="padding-bottom:4pt"><b style="font-size:13pt">' . $h($unit['name'] ?: 'EÜDOK') . '</b><br>'
+            . '<span style="font-size:7pt;letter-spacing:1.4pt;text-transform:uppercase">' . $h(Reports::documentTitle($r['type']) . ($unit['subtitle'] ? ' · ' . $unit['subtitle'] : '')) . '</span></td>'
+            . '<td style="text-align:right;padding-bottom:4pt"><span style="font-size:7pt">Berichts-Nr.</span><br><b style="font-size:15pt">' . $h($r['report_number']) . '</b></td>'
             . '</tr></table>';
         $footer = self::footerHtml(Footer::parts($unit), [
             'number' => $r['report_number'],
@@ -240,7 +285,40 @@ final class Pdf
         ]);
 
         return '<htmlpageheader name="h">' . $header . '</htmlpageheader><htmlpagefooter name="f">' . $footer . '</htmlpagefooter>'
-            . '<sethtmlpageheader name="h" value="on" show-this-page="1" /><sethtmlpagefooter name="f" value="on" />' . $html;
+            . '<sethtmlpageheader name="h" value="on" show-this-page="1" /><sethtmlpagefooter name="f" value="on" />' . $css . $html;
+    }
+
+    /** „Flugminuten gesamt: 390 min (6:30 h)“ für Personenfelder mit „Summe anzeigen“ */
+    private static function personTotals(array $pf, array $people): string
+    {
+        $fields = [];
+        foreach (Settings::customFields()['person'] ?? [] as $f) {
+            $fields[$f['id']] = $f;
+        }
+        $parts = [];
+        foreach ($pf as $fid => $d) {
+            if (empty($fields[$fid]['show_total'])) {
+                continue;
+            }
+            $sum = 0;
+            $any = false;
+            foreach ($people as $p) {
+                $v = $p['fields'][$fid] ?? null;
+                if (is_numeric($v)) {
+                    $sum += $v;
+                    $any = true;
+                }
+            }
+            if (!$any) {
+                continue;
+            }
+            $txt = '<b>' . self::h($d['label']) . ' gesamt: ' . self::h(str_replace('.', ',', (string) round($sum, 1))) . ($d['unit'] !== '' ? ' ' . self::h($d['unit']) : '') . '</b>';
+            if (($d['unit'] ?? '') === 'min' && $sum >= 60) {
+                $txt .= ' &nbsp;(' . intdiv((int) $sum, 60) . ':' . sprintf('%02d', (int) $sum % 60) . ' h)';
+            }
+            $parts[] = $txt;
+        }
+        return implode(' &nbsp;·&nbsp; ', $parts);
     }
 
     /** Dreispaltige Fußzeile (links, Mitte, rechts) aus den Einstellungen. */
@@ -257,25 +335,6 @@ final class Pdf
     private static function bottomMargin(): int
     {
         return 14 + 3 * Footer::lineCount(Footer::parts());
-    }
-
-    private static function totalsRow(array $defs, array $sums, string $scope): string
-    {
-        $fields = [];
-        foreach (Settings::customFields()[$scope] ?? [] as $f) {
-            $fields[$f['id']] = $f;
-        }
-        $out = '';
-        $any = false;
-        foreach ($defs as $fid => $d) {
-            if (!empty($fields[$fid]['show_total']) && isset($sums[$fid])) {
-                $any = true;
-                $out .= '<td class="n">' . self::fieldValue($d, $sums[$fid]) . '</td>';
-            } else {
-                $out .= '<td></td>';
-            }
-        }
-        return $any ? $out : '';
     }
 
     public static function writeReport(array $r, string $file): void
