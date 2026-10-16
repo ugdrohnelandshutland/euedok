@@ -156,12 +156,13 @@ final class QrAccess
      * Schutz gegen Durchprobieren der PIN – drei Zähler, die sich nicht durch Löschen des Geräte-Cookies umgehen lassen:
      *   Gerät:      5 Fehlversuche   → 15 Minuten gesperrt
      *   IP-Adresse: 10 Fehlversuche je Stunde → 1 Stunde gesperrt
-     *   QR-Zugang:  20 Fehlversuche je Stunde (alle Geräte) → PIN-Eingabe 1 Stunde gesperrt, Mail an die Leitung
+     *   QR-Zugang:  20 Fehlversuche je Stunde (alle Geräte) → nur Warn-Mail an die Leitung, KEINE Sperre –
+     *               sonst könnte jeder mit dem Link alle Mitglieder aussperren (gemerkte Geräte sind ohnehin frei)
      */
     private const PIN_LIMITS = [
         'device' => ['max' => 5, 'window' => 900, 'lock' => 900],
         'ip' => ['max' => 10, 'window' => 3600, 'lock' => 3600],
-        'entry' => ['max' => 20, 'window' => 3600, 'lock' => 3600],
+        'entry' => ['max' => 20, 'window' => 3600, 'lock' => 0], // 0 = nur benachrichtigen
     ];
 
     /** @return array<string,string> Zählerart → Schlüssel in qr-pin-attempts.json */
@@ -226,7 +227,7 @@ final class QrAccess
                 $fails[] = $now;
                 $rec = ['fails' => $fails, 'until' => (int) ($attempts[$k]['until'] ?? 0)];
                 if (count($fails) >= $lim['max']) {
-                    $rec = ['fails' => [], 'until' => $now + $lim['lock']];
+                    $rec = ['fails' => [], 'until' => $lim['lock'] > 0 ? $now + $lim['lock'] : 0];
                     $locks[$type] = $rec['until'];
                 }
                 $attempts[$k] = $rec;
@@ -238,7 +239,9 @@ final class QrAccess
         });
         if ($newLocks) {
             self::notifyLockout($entry, array_keys($newLocks));
-            return self::lockText(max($newLocks));
+            if (max($newLocks) > time()) {
+                return self::lockText(max($newLocks));
+            }
         }
         return 'PIN falsch.';
     }
@@ -248,7 +251,7 @@ final class QrAccess
         $what = [
             'device' => 'ein Gerät (5 Fehlversuche, 15 Minuten)',
             'ip' => 'eine IP-Adresse (10 Fehlversuche in einer Stunde, 1 Stunde)',
-            'entry' => 'die PIN-Eingabe dieses QR-Zugangs für alle Geräte (20 Fehlversuche in einer Stunde, 1 Stunde)',
+            'entry' => 'nichts zusätzlich – aber es gab 20 Fehlversuche in einer Stunde von verschiedenen Geräten/Adressen (bitte Schlüssel erneuern, wenn das nicht von euch war)',
         ];
         $text = implode("\n", array_map(static fn ($t) => '- ' . $what[$t], $types));
         Log::warning('qr', 'pin_lockout', 'PIN-Sperre ausgelöst', ['qr' => $entry['label'], 'locked' => $types]);
@@ -257,7 +260,7 @@ final class QrAccess
                 Settings::mail()['recipients'],
                 '[EÜDOK] Hinweis: PIN-Sperre beim QR-Zugang „' . $entry['label'] . '“',
                 "Am QR-Zugang „{$entry['label']}“ wurde wiederholt eine falsche PIN eingegeben (" . date('d.m.Y H:i') . ").\n"
-                . "Gesperrt wurde:\n{$text}\n\n"
+                . "Gesperrt bzw. auffällig:\n{$text}\n\n"
                 . "Falls das nicht von euch war: QR-Zugang in den Einstellungen sperren oder Schlüssel erneuern."
             );
         }

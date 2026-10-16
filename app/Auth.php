@@ -121,13 +121,38 @@ final class Auth
         $key = hash('sha256', strtolower($username) . '|' . client_ip());
         // zusätzlich je IP-Adresse über alle Benutzernamen (gegen Durchprobieren vieler Namen)
         $ipKey = 'ip|' . hash('sha256', client_ip());
-        $attempts = Storage::read('auth/login-attempts.json', []);
-        $entry = $attempts[$key] ?? ['count' => 0, 'until' => 0];
-        $ipEntry = $attempts[$ipKey] ?? ['fails' => [], 'until' => 0];
-        $until = max((int) $entry['until'], (int) ($ipEntry['until'] ?? 0));
-        if ($until > time()) {
+
+        // Versuch VOR der Passwortprüfung unter Sperre zählen – parallele Anfragen können den Zähler
+        // so nicht überholen. Bei Erfolg wird der Versuch wieder abgezogen.
+        $blocked = Storage::locked('login-attempts', static function () use ($key, $ipKey, $username): int {
+            $attempts = Storage::read('auth/login-attempts.json', []);
+            $entry = $attempts[$key] ?? ['count' => 0, 'until' => 0];
+            $ipEntry = $attempts[$ipKey] ?? ['fails' => [], 'until' => 0];
+            $until = max((int) $entry['until'], (int) ($ipEntry['until'] ?? 0));
+            if ($until > time()) {
+                return $until;
+            }
+            $entry['count']++;
+            if ($entry['count'] >= self::MAX_ATTEMPTS + 1) {
+                $entry = ['count' => 0, 'until' => time() + self::LOCK_SECONDS];
+                Log::warning('auth', 'login_locked', 'Anmeldung 15 Minuten gesperrt', ['username' => $username]);
+            }
+            $fails = array_values(array_filter((array) ($ipEntry['fails'] ?? []), static fn ($t) => $t > time() - self::LOCK_SECONDS));
+            $fails[] = time();
+            $ipEntry = ['fails' => $fails, 'until' => (int) ($ipEntry['until'] ?? 0)];
+            if (count($fails) >= self::MAX_ATTEMPTS_PER_IP + 1) {
+                $ipEntry = ['fails' => [], 'until' => time() + self::LOCK_SECONDS];
+                Log::warning('auth', 'login_ip_locked', 'Anmeldung für diese IP-Adresse 15 Minuten gesperrt', ['attempts' => self::MAX_ATTEMPTS_PER_IP]);
+            }
+            $attempts[$key] = $entry;
+            $attempts[$ipKey] = $ipEntry;
+            Storage::write('auth/login-attempts.json', self::pruneAttempts($attempts));
+            // ist mit diesem Versuch die Grenze überschritten, wird er bereits abgewiesen
+            return max((int) $entry['until'], (int) $ipEntry['until']);
+        });
+        if ($blocked > time()) {
             Log::info('auth', 'login_blocked', 'Anmeldeversuch während Sperre', ['username' => $username]);
-            $min = (int) ceil(($until - time()) / 60);
+            $min = (int) ceil(($blocked - time()) / 60);
             return "Zu viele Fehlversuche. Bitte in {$min} Minuten erneut versuchen.";
         }
 
@@ -135,29 +160,19 @@ final class Auth
         $valid = $u && !empty($u['active']) && !empty($u['password_hash']);
         // immer eine Passwortprüfung rechnen, damit die Antwortzeit keine Benutzernamen verrät
         $verified = password_verify($password, $valid ? $u['password_hash'] : self::DUMMY_HASH);
-        $ok = $valid && $verified;
-        if (!$ok) {
-            $entry['count']++;
-            Log::warning('auth', 'login_failed', 'Anmeldung fehlgeschlagen', ['username' => $username, 'known_user' => (bool) $u, 'attempt' => $entry['count']]);
-            if ($entry['count'] >= self::MAX_ATTEMPTS) {
-                $entry = ['count' => 0, 'until' => time() + self::LOCK_SECONDS];
-                Log::warning('auth', 'login_locked', 'Anmeldung 15 Minuten gesperrt', ['username' => $username]);
-            }
-            $fails = array_values(array_filter((array) ($ipEntry['fails'] ?? []), static fn ($t) => $t > time() - self::LOCK_SECONDS));
-            $fails[] = time();
-            $ipEntry = ['fails' => $fails, 'until' => (int) ($ipEntry['until'] ?? 0)];
-            if (count($fails) >= self::MAX_ATTEMPTS_PER_IP) {
-                $ipEntry = ['fails' => [], 'until' => time() + self::LOCK_SECONDS];
-                Log::warning('auth', 'login_ip_locked', 'Anmeldung für diese IP-Adresse 15 Minuten gesperrt', ['attempts' => self::MAX_ATTEMPTS_PER_IP]);
-            }
-            $attempts[$key] = $entry;
-            $attempts[$ipKey] = $ipEntry;
-            Storage::write('auth/login-attempts.json', self::pruneAttempts($attempts));
+        if (!($valid && $verified)) {
+            Log::warning('auth', 'login_failed', 'Anmeldung fehlgeschlagen', ['username' => $username, 'known_user' => (bool) $u]);
             return 'Benutzername oder Passwort falsch.';
         }
-        unset($attempts[$key]);
-        Storage::write('auth/login-attempts.json', self::pruneAttempts($attempts));
-
+        // Erfolg: gezählten Versuch zurücknehmen
+        Storage::locked('login-attempts', static function () use ($key, $ipKey) {
+            $attempts = Storage::read('auth/login-attempts.json', []);
+            unset($attempts[$key]);
+            if (!empty($attempts[$ipKey]['fails'])) {
+                array_pop($attempts[$ipKey]['fails']);
+            }
+            Storage::write('auth/login-attempts.json', self::pruneAttempts($attempts));
+        });
         if (password_needs_rehash($u['password_hash'], PASSWORD_DEFAULT)) {
             self::updateUser($u['id'], ['password_hash' => password_hash($password, PASSWORD_DEFAULT)]);
         }
