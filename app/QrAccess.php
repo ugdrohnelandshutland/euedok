@@ -92,6 +92,12 @@ final class QrAccess
             return null;
         }
         self::saveEntries($entries, 'QR-Schlüssel erneuert (alter Link ungültig): ' . $found);
+        // Angreifer hat den alten Link nicht mehr → Sperre je Zugang aufheben, damit Mitglieder sofort wieder rein können
+        Storage::locked('qr-pin', static function () use ($id) {
+            $attempts = Storage::read('auth/qr-pin-attempts.json', []);
+            unset($attempts['entry|' . $id]);
+            Storage::write('auth/qr-pin-attempts.json', $attempts);
+        });
         return $key;
     }
 
@@ -153,115 +159,86 @@ final class QrAccess
     }
 
     /*
-     * Schutz gegen Durchprobieren der PIN – drei Zähler, die sich nicht durch Löschen des Geräte-Cookies umgehen lassen:
-     *   Gerät:      5 Fehlversuche   → 15 Minuten gesperrt
-     *   IP-Adresse: 10 Fehlversuche je Stunde → 1 Stunde gesperrt
-     *   QR-Zugang:  20 Fehlversuche je Stunde (alle Geräte) → nur Warn-Mail an die Leitung, KEINE Sperre –
-     *               sonst könnte jeder mit dem Link alle Mitglieder aussperren (gemerkte Geräte sind ohnehin frei)
+     * Schutz gegen Durchprobieren der PIN – ein Zähler je QR-Zugang, unabhängig von Gerät und IP-Adresse:
+     * 10 Fehlversuche innerhalb einer Stunde → dieser QR-Zugang ist 1 Stunde komplett gesperrt
+     * (auch für gemerkte Geräte; bereits laufende Erfassungen laufen weiter). Die Leitung bekommt eine Mail.
+     * Schlüssel erneuern hebt die Sperre sofort auf.
      */
-    private const PIN_LIMITS = [
-        'device' => ['max' => 5, 'window' => 900, 'lock' => 900],
-        'ip' => ['max' => 10, 'window' => 3600, 'lock' => 3600],
-        'entry' => ['max' => 20, 'window' => 3600, 'lock' => 0], // 0 = nur benachrichtigen
-    ];
+    private const PIN_MAX_FAILS = 10;
+    private const PIN_WINDOW = 3600;
+    private const PIN_LOCK = 3600;
 
-    /** @return array<string,string> Zählerart → Schlüssel in qr-pin-attempts.json */
-    private static function pinKeys(array $entry, string $device): array
+    private static function pinKey(array $entry): string
     {
-        return [
-            'device' => 'dev|' . $device . '|' . $entry['id'],
-            'ip' => 'ip|' . hash('sha256', client_ip()) . '|' . $entry['id'],
-            'entry' => 'entry|' . $entry['id'],
-        ];
+        return 'entry|' . $entry['id'];
     }
 
-    public static function pinLockedUntil(array $entry, string $device): int
+    /** Zeitpunkt, bis zu dem der QR-Zugang wegen falscher PINs gesperrt ist (0 = frei) */
+    public static function lockedUntil(array $entry): int
     {
-        $attempts = Storage::read('auth/qr-pin-attempts.json', []);
-        $until = 0;
-        foreach (self::pinKeys($entry, $device) as $k) {
-            $u = (int) ($attempts[$k]['until'] ?? 0);
-            if ($u > time()) {
-                $until = max($until, $u);
-            }
-        }
-        return $until;
+        $until = (int) (Storage::read('auth/qr-pin-attempts.json', [])[self::pinKey($entry)]['until'] ?? 0);
+        return $until > time() ? $until : 0;
     }
 
-    private static function lockText(int $until): string
+    public static function lockText(int $until): string
     {
-        $min = max(1, (int) ceil(($until - time()) / 60));
-        return 'Zu viele Fehlversuche – PIN-Eingabe für ' . $min . ' Minuten gesperrt.';
+        return 'Zu viele falsche PIN-Eingaben – dieser QR-Code ist bis ' . date('H:i', $until) . ' Uhr gesperrt.';
     }
 
     /** @return string|null Fehlermeldung oder null bei Erfolg */
     public static function checkPin(array $entry, string $device, string $pin): ?string
     {
-        if ($until = self::pinLockedUntil($entry, $device)) {
+        if ($until = self::lockedUntil($entry)) {
             return self::lockText($until);
         }
-        $keys = self::pinKeys($entry, $device);
         if (preg_match('/^\d{4,6}$/', $pin) && password_verify($pin, (string) $entry['pin_hash'])) {
+            // Zähler bleibt bewusst stehen – sonst könnte jede richtige Eingabe einem Angreifer neue Versuche freigeben
             Log::info('qr', 'pin_ok', 'PIN korrekt', ['qr' => $entry['label'], 'device' => substr($device, 0, 12)]);
-            Storage::locked('qr-pin', static function () use ($keys, $device, $entry) {
-                $attempts = Storage::read('auth/qr-pin-attempts.json', []);
-                unset($attempts[$keys['device']]); // Geräte-Zähler zurücksetzen; IP/Zugang zählen weiter
-                Storage::write('auth/qr-pin-attempts.json', $attempts);
-                $days = (int) $entry['pin_remember_days'];
-                if ($days > 0) {
+            $days = (int) $entry['pin_remember_days'];
+            if ($days > 0) {
+                Storage::locked('qr-pin', static function () use ($device, $entry, $days) {
                     $devices = Storage::read('auth/qr-devices.json', []);
                     $devices[$device][$entry['id']] = ['pin_version' => (int) $entry['pin_version'], 'until' => time() + $days * 86400];
                     Storage::write('auth/qr-devices.json', $devices);
-                }
-            });
+                });
+            }
             return null;
         }
         Log::warning('qr', 'pin_failed', 'Falsche PIN', ['qr' => $entry['label'], 'device' => substr($device, 0, 12)]);
-        $newLocks = Storage::locked('qr-pin', static function () use ($keys) {
+        $key = self::pinKey($entry);
+        $until = Storage::locked('qr-pin', static function () use ($key) {
             $attempts = Storage::read('auth/qr-pin-attempts.json', []);
             $now = time();
-            $locks = [];
-            foreach ($keys as $type => $k) {
-                $lim = self::PIN_LIMITS[$type];
-                $fails = array_values(array_filter((array) ($attempts[$k]['fails'] ?? []), static fn ($t) => $t > $now - $lim['window']));
-                $fails[] = $now;
-                $rec = ['fails' => $fails, 'until' => (int) ($attempts[$k]['until'] ?? 0)];
-                if (count($fails) >= $lim['max']) {
-                    $rec = ['fails' => [], 'until' => $lim['lock'] > 0 ? $now + $lim['lock'] : 0];
-                    $locks[$type] = $rec['until'];
-                }
-                $attempts[$k] = $rec;
+            $fails = array_values(array_filter((array) ($attempts[$key]['fails'] ?? []), static fn ($t) => $t > $now - self::PIN_WINDOW));
+            $fails[] = $now;
+            $until = 0;
+            $attempts[$key] = ['fails' => $fails, 'until' => 0];
+            if (count($fails) >= self::PIN_MAX_FAILS) {
+                $until = $now + self::PIN_LOCK;
+                $attempts[$key] = ['fails' => [], 'until' => $until];
             }
-            // abgelaufene Einträge aufräumen
+            // abgelaufene Einträge (auch aus älteren Versionen mit Geräte-/IP-Zählern) aufräumen
             $attempts = array_filter($attempts, static fn ($a) => ($a['until'] ?? 0) > $now || !empty($a['fails']));
             Storage::write('auth/qr-pin-attempts.json', $attempts);
-            return $locks;
+            return $until;
         });
-        if ($newLocks) {
-            self::notifyLockout($entry, array_keys($newLocks));
-            if (max($newLocks) > time()) {
-                return self::lockText(max($newLocks));
-            }
+        if ($until) {
+            self::notifyLockout($entry, $until);
+            return self::lockText($until);
         }
         return 'PIN falsch.';
     }
 
-    private static function notifyLockout(array $entry, array $types): void
+    private static function notifyLockout(array $entry, int $until): void
     {
-        $what = [
-            'device' => 'ein Gerät (5 Fehlversuche, 15 Minuten)',
-            'ip' => 'eine IP-Adresse (10 Fehlversuche in einer Stunde, 1 Stunde)',
-            'entry' => 'nichts zusätzlich – aber es gab 20 Fehlversuche in einer Stunde von verschiedenen Geräten/Adressen (bitte Schlüssel erneuern, wenn das nicht von euch war)',
-        ];
-        $text = implode("\n", array_map(static fn ($t) => '- ' . $what[$t], $types));
-        Log::warning('qr', 'pin_lockout', 'PIN-Sperre ausgelöst', ['qr' => $entry['label'], 'locked' => $types]);
+        Log::warning('qr', 'pin_lockout', 'QR-Zugang wegen falscher PINs gesperrt', ['qr' => $entry['label'], 'until' => date('c', $until)]);
         if (Mailer::enabled()) {
             Mailer::sendText(
                 Settings::mail()['recipients'],
-                '[EÜDOK] Hinweis: PIN-Sperre beim QR-Zugang „' . $entry['label'] . '“',
-                "Am QR-Zugang „{$entry['label']}“ wurde wiederholt eine falsche PIN eingegeben (" . date('d.m.Y H:i') . ").\n"
-                . "Gesperrt bzw. auffällig:\n{$text}\n\n"
-                . "Falls das nicht von euch war: QR-Zugang in den Einstellungen sperren oder Schlüssel erneuern."
+                '[EÜDOK] QR-Zugang „' . $entry['label'] . '“ für 1 Stunde gesperrt',
+                "Am QR-Zugang „{$entry['label']}“ wurde innerhalb einer Stunde " . self::PIN_MAX_FAILS . "-mal eine falsche PIN eingegeben (" . date('d.m.Y H:i') . ").\n"
+                . "Der QR-Code ist deshalb bis " . date('H:i', $until) . " Uhr für alle gesperrt.\n\n"
+                . "Falls das nicht von euch war: In den Einstellungen den Schlüssel erneuern (hebt die Sperre sofort auf, neuer Aufkleber nötig)."
             );
         }
     }

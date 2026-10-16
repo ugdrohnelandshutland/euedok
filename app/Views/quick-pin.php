@@ -7,7 +7,7 @@
       <span class="kick">Schnellerfassung · <?= e($entry['label']) ?></span>
     </div>
     <?php if ($locked): ?>
-      <div class="msg err"><?= icon('lock') ?><span>Zu viele Fehlversuche – gesperrt bis <?= e(date('H:i', $locked)) ?> Uhr.</span></div>
+      <div class="msg err"><?= icon('lock') ?><span><?= e(\Euedok\QrAccess::lockText($locked)) ?></span></div>
     <?php else: ?>
       <p style="text-align:center;font-weight:700">PIN eingeben</p>
       <?php if ($error): ?><div class="msg err"><?= icon('alert') ?><span><?= e($error) ?></span></div><?php endif; ?>

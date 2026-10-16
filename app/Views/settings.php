@@ -409,7 +409,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
 
       <?php foreach (QrAccess::entries() as $q): ?>
       <section class="card stack">
-        <h3><?= icon('qr') ?><?= e($q['label']) ?> <span class="r"><?= $q['active'] ? '<span class="bd ok">aktiv</span>' : '<span class="bd er">gesperrt</span>' ?></span></h3>
+        <h3><?= icon('qr') ?><?= e($q['label']) ?> <span class="r"><?= $q['active'] ? '<span class="bd ok">aktiv</span>' : '<span class="bd er">gesperrt</span>' ?><?= ($pinLock = QrAccess::lockedUntil($q)) ? ' <span class="bd er">falsche PINs – gesperrt bis ' . e(date('H:i', $pinLock)) . ' Uhr</span>' : '' ?></span></h3>
         <p class="hint">Dienst-Zugang <span class="mono"><?= e($q['service_account']) ?></span> · Schlüssel beginnt mit <span class="mono"><?= e($q['key_hint']) ?>…</span> · angelegt <?= e(fmt_datetime($q['created_at'])) ?><?= $q['renewed_at'] ? ' · erneuert ' . e(fmt_datetime($q['renewed_at'])) : '' ?> · PIN <?= $q['pin_enabled'] ? 'an' : 'aus' ?></p>
         <form method="post" action="<?= $action('qr-update') ?>" class="stack">
           <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($q['id']) ?>">

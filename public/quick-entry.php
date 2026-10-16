@@ -45,6 +45,9 @@ if ($key !== '') {
         ]);
         qr_fail('Dieser QR-Code ist nicht (mehr) gültig. Bitte bei der Leitung melden.');
     }
+    if ($until = QrAccess::lockedUntil($entry)) {
+        qr_fail(QrAccess::lockText($until));
+    }
     $device = QrAccess::deviceId();
     if (!empty($entry['pin_enabled']) && !QrAccess::pinRemembered($entry, $device)) {
         $_SESSION['qr_pending'] = $entry['id'];
@@ -73,7 +76,7 @@ if (isset($_GET['pin'])) {
             redirect('quick-entry.php');
         }
     }
-    $locked = QrAccess::pinLockedUntil($entry, $device);
+    $locked = QrAccess::lockedUntil($entry);
     qr_page('PIN', 'quick-pin', ['entry' => $entry, 'error' => $error, 'locked' => $locked]);
 }
 

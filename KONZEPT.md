@@ -309,8 +309,9 @@ Popup mit Alarmen der letzten 24 h (7c).
   - 4–6-stellige Zahl, Abfrage mit großer Zifferntastatur direkt nach dem Scannen
   - Auf dem Gerät für eine einstellbare Zeit gemerkt (z. B. 30 Tage), damit im Einsatz
     nicht jedes Mal getippt werden muss; „jedes Mal fragen“ ebenfalls möglich
-  - Schutz gegen Raten: nach 5 Fehlversuchen 15 Minuten Sperre für dieses Gerät,
-    Hinweis per Mail an die Leitung
+  - Schutz gegen Raten: nach 10 falschen PINs innerhalb einer Stunde ist der QR-Zugang
+    1 Stunde komplett gesperrt (unabhängig von Gerät/IP, auch für gemerkte Geräte),
+    Hinweis per Mail an die Leitung; Schlüssel erneuern hebt die Sperre sofort auf
   - PIN wird nur als Hash gespeichert; Ändern der PIN macht gemerkte Geräte ungültig
   - Sinnvoll z. B., wenn der Aufkleber an einer Stelle hängt, an die auch Fremde kommen
 - **Mehrere QR-Zugänge** möglich, jeweils mit Bezeichnung (z. B. „MTW UG-Drohne“,
