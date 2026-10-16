@@ -29,6 +29,7 @@ if (!$edit) {
 
 $cfg = FormConfig::build($report, $meta, [
     'mode' => 'user',
+    'me_person' => \Euedok\Actor::fromUser($user)['person']['id'] ?? null,
     'correction' => $report['status'] === 'closed',
     'ask_divera' => isset($_GET['new']) && $report['status'] === 'draft' && empty($report['divera']),
     'divera_lookup' => Divera::lookupAllowed($report['type']['id'], false),

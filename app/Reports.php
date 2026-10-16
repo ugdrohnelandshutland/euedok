@@ -432,7 +432,7 @@ final class Reports
             'alert_source' => 'Alarmierung durch',
             'narrative' => 'Bericht / Maßnahmen',
             'personnel' => 'mindestens eine Person',
-            'lead' => 'Leitung',
+            'lead' => 'Einheitsführer',
             'equipment' => 'mindestens ein Gerät',
             'vehicles' => 'mindestens ein Fahrzeug',
         ];

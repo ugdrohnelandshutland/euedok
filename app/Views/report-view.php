@@ -56,7 +56,7 @@ $actions = [
         <dt>Ort</dt><dd><?= e($r['location']) ?></dd>
         <dt>Thema</dt><dd><?= e($r['subject']) ?></dd>
         <?php if (!empty($r['alert_source'])): ?><dt>Alarmierung</dt><dd><?= e($r['alert_source']['label']) ?></dd><?php endif; ?>
-        <dt><?= e($type['lead_label'] ?? 'Leitung') ?></dt><dd><?= e($lead) ?></dd>
+        <dt>Einheitsführer</dt><dd><?= e($lead) ?></dd>
         <?php foreach ($r['custom_fields'] ?? [] as $fid => $v): ?><dt><?= e($defs[$fid]['label'] ?? $fid) ?></dt><dd><?= e($fv($defs[$fid] ?? [], $v)) ?></dd><?php endforeach; ?>
       </dl>
     </section>
@@ -65,7 +65,7 @@ $actions = [
       <div class="stack" style="gap:6px">
         <?php foreach ($r['personnel'] as $p): ?>
         <div class="row" style="align-items:center;gap:8px;flex-wrap:nowrap">
-          <span style="flex:1;min-width:0"><b><?= e($p['name']) ?></b><?= $p['id'] === $r['lead'] ? ' <span class="src">Leitung</span>' : '' ?></span>
+          <span style="flex:1;min-width:0"><b><?= e($p['name']) ?></b><?= $p['id'] === $r['lead'] ? ' <span class="src">Einheitsführer</span>' : '' ?></span>
           <?php foreach ($p['fields'] ?? [] as $fid => $v): ?><span class="muted small" style="flex:none;min-width:0"><?= e(($defs[$fid]['label'] ?? $fid) . ': ' . $fv($defs[$fid] ?? [], $v)) ?></span><?php endforeach; ?>
         </div>
         <?php endforeach; ?>

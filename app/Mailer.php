@@ -122,7 +122,7 @@ final class Mailer
             'Datum:          ' . fmt_datetime($r['start']) . ($r['end'] ? ' – ' . fmt_datetime($r['end']) : ''),
             'Ort:            ' . $r['location'],
             'Thema:          ' . $r['subject'],
-            'Leitung:        ' . $lead,
+            'Einheitsführer: ' . $lead,
             'Abgeschlossen:  ' . $closedBy,
             '',
             'Im Anhang: Bericht als PDF und als JSON-Datei.',

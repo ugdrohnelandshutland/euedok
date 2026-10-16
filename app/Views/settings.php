@@ -106,7 +106,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <h3><?= icon('file') ?>Berichtsarten &amp; Nummern</h3>
         <p class="hint">Nummernformat: {YYYY} = Jahr, {YY} = Jahr zweistellig, {NNN} = laufende Nummer (Zählung je Art und Jahr). „Laut“ = roter Block wie beim Einsatz.</p>
         <?php
-        $grid = 'grid-template-columns:minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.1fr) 110px 120px 64px 80px';
+        $grid = 'grid-template-columns:minmax(0,1.3fr) minmax(0,1.1fr) 110px 120px 64px 80px';
         $typeRow = static function ($i, array $t) use ($cell, $swCell, $mvCell, $grid): string {
             $isNew = !isset($t['id']);
             $sel = static fn ($v, $cur) => $v === $cur ? ' selected' : '';
@@ -114,7 +114,6 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
                 . '<input type="hidden" name="types[' . $i . '][id]" value="' . e($t['id'] ?? '') . '">'
                 . $cell('Bezeichnung', '<input class="in" name="types[' . $i . '][label]" value="' . e($t['label'] ?? '') . '" placeholder="z. B. Ausbildung">', 'wide')
                 . $cell('Nummernformat', '<input class="in" name="types[' . $i . '][number_format]" value="' . e($t['number_format'] ?? '') . '" placeholder="A-{YYYY}-{NNN}">')
-                . $cell('Bezeichnung Leitung', '<input class="in" name="types[' . $i . '][lead_label]" value="' . e($t['lead_label'] ?? '') . '" placeholder="Leitung">')
                 . $cell('Farbe', '<select class="in" name="types[' . $i . '][style]"><option value="calm"' . $sel('calm', $t['style'] ?? 'calm') . '>ruhig</option><option value="alert"' . $sel('alert', $t['style'] ?? '') . '>laut</option></select>')
                 . $cell('Divera', '<select class="in" name="types[' . $i . '][divera_source]"><option value="">kein Divera</option><option value="alarm"' . $sel('alarm', $t['divera_source'] ?? '') . '>Alarme</option><option value="event"' . $sel('event', $t['divera_source'] ?? '') . '>Termine</option></select>')
                 . $swCell('aktiv', 'types[' . $i . '][active]', $isNew || !empty($t['active'])) . $mvCell
@@ -122,7 +121,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
                 . '</div>';
         };
         ?>
-        <div class="ed-head" style="<?= $grid ?>"><span>Bezeichnung</span><span>Nummernformat</span><span>Bezeichnung Leitung</span><span>Farbe</span><span>Divera</span><span>aktiv</span><span></span></div>
+        <div class="ed-head" style="<?= $grid ?>"><span>Bezeichnung</span><span>Nummernformat</span><span>Farbe</span><span>Divera</span><span>aktiv</span><span></span></div>
         <div id="list-types"><?php foreach ($unit['report_types'] as $i => $t) { echo $typeRow($i, $t); } ?></div>
         <template id="list-types-tpl"><?= $typeRow('__i__', []) ?></template>
         <button type="button" class="btn sm" data-add-row="list-types"><?= icon('plus') ?>Berichtsart hinzufügen</button>

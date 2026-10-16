@@ -123,7 +123,7 @@ final class SettingsPage
                 'id' => $id,
                 'label' => $label,
                 'number_format' => $fmt,
-                'lead_label' => self::s($row, 'lead_label', 40) ?: 'Leitung',
+                // Bezeichnung der Leitung ist einheitlich 
                 'style' => ($row['style'] ?? '') === 'alert' ? 'alert' : 'calm',
                 'divera_source' => in_array($row['divera_source'] ?? '', ['alarm', 'event'], true) ? $row['divera_source'] : null,
                 'active' => !empty($row['active']),

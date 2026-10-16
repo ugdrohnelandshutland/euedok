@@ -94,6 +94,11 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
  <div class="fcol">
   <?php if ($showPeople): ?>
   <section class="pane" id="pane-people" data-pane="people">
+    <div class="card lead-line" data-req="lead">
+      <?= icon('star', 'lead-star') ?>
+      <span class="lead-tx"><small class="<?= $req('lead') ?>">Einheitsführer</small><b id="lead-name">–</b></span>
+      <button type="button" class="btn sm" id="lead-change">Ändern</button>
+    </div>
     <div class="card fieldset" data-req="personnel">
       <h3><?= icon('users') ?><span class="<?= $req('personnel') ?>">Eingesetztes Personal</span><span class="r" id="people-src"></span></h3>
       <input class="in" type="search" id="people-search" placeholder="Person suchen …" autocomplete="off">
@@ -102,11 +107,6 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
     <div class="sec-t"><span>Eingesetzt (<span id="people-count">0</span>)</span></div>
     <div class="stack" id="people-list"></div>
     <div id="people-sums" class="stack"></div>
-    <div class="card fieldset" data-req="lead">
-      <h3><?= icon('star') ?><span class="<?= $req('lead') ?>"><?= e($cfg['type']['lead_label']) ?></span></h3>
-      <div class="chips" id="lead-chips"></div>
-      <span class="hint" id="lead-hint">Zuerst Personal auswählen.</span>
-    </div>
   </section>
   <?php endif; ?>
 

@@ -52,6 +52,8 @@ final class FormConfig
             ],
             // Thema-Vorschläge nur für Angemeldete (würden über QR alte Inhalte verraten)
             'subjects' => $quick ? [] : Reports::subjectSuggestions(),
+            // Person des angemeldeten Zugangs – wird automatisch Einheitsführer
+            'me_person' => $opts['me_person'] ?? null,
             'divera' => [
                 'lookup' => $opts['divera_lookup'] ?? null,
                 'ask' => !empty($opts['ask_divera']) && !empty($opts['divera_lookup']),

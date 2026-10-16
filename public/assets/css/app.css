@@ -287,6 +287,15 @@ body.report{background:var(--ground)}
 .stp .v{width:70px;height:44px;border-radius:var(--r-s);border:1px solid var(--line-strong);background:var(--input);text-align:center;font-weight:800;font-size:17px;color:var(--text)}
 .stp .v:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .stp .unit{font-size:13px;color:var(--quiet);font-weight:700;min-width:26px}
+/* Einheitsführer-Zeile (automatisch gesetzt, „Ändern“ öffnet Auswahl) */
+.lead-line{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.lead-line .lead-star{width:24px;height:24px;color:#d79a00;fill:#f2b01e}
+.lead-line .lead-tx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.lead-line .lead-tx small{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--quiet)}
+.lead-line .lead-tx b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lead-line.empty .lead-tx b{color:var(--quiet);font-weight:600}
+.lead-line.empty .lead-star{fill:none}
+.cand small{font-size:12px;color:var(--quiet)}
 .sum{padding:12px 16px;border-radius:var(--r-m);background:var(--sum-bg);color:var(--sum-text);display:flex;align-items:center;gap:10px;font-size:14px;border:1px solid var(--sum-line)}
 .sum b{font-size:19px;color:var(--sum-accent);margin-left:auto}
 .sum svg.i{color:var(--sum-accent);width:22px;height:22px}

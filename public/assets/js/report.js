@@ -335,7 +335,7 @@
       data.personnel.push({ id: p.id, name: p.name, divera_id: p.divera_id, fields: fields });
     } else if (!on && idx > -1) {
       data.personnel.splice(idx, 1);
-      if (data.lead === id) data.lead = null;
+      if (data.lead === id) data.lead = null; // renderLead() wählt automatisch neu
     }
     renderPeople();
   }
@@ -384,22 +384,50 @@
     }
   }
 
-  function renderLead() {
-    var box = $('lead-chips');
-    if (!box) return;
-    box.innerHTML = data.personnel.map(function (p) {
-      return '<button type="button" class="chip' + (data.lead === p.id ? ' on' : '') + '" data-lead="' + esc(p.id) + '"><span class="av">' + esc(initials(p.name)) + '</span>' + personLabel(p) + '</button>';
-    }).join('');
-    $('lead-hint').hidden = data.personnel.length > 0;
+  /* Einheitsführer: automatisch Ersteller bzw. angemeldete Person, sonst erste eingesetzte Person.
+     „Ändern“ öffnet eine Auswahl aus den eingesetzten Personen. */
+  function isDeployed(id) { return data.personnel.some(function (p) { return p.id === id; }); }
+  function autoLead() {
+    if (data.lead && isDeployed(data.lead)) return false;
+    var before = data.lead;
+    var pref = [cfg.me_person, data.created_by].filter(Boolean);
+    var pick = null;
+    pref.forEach(function (id) { if (!pick && isDeployed(id)) pick = id; });
+    if (!pick && data.personnel.length) pick = data.personnel[0].id;
+    data.lead = pick;
+    return data.lead !== before;
   }
-  if ($('lead-chips')) {
-    $('lead-chips').addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-lead]');
-      if (!b) return;
-      var id = b.getAttribute('data-lead');
-      data.lead = data.lead === id ? null : id;
-      renderLead();
-      changed();
+  function renderLead() {
+    var line = document.querySelector('.lead-line');
+    if (!line) return false;
+    var autoChanged = autoLead();
+    var p = null;
+    data.personnel.forEach(function (x) { if (x.id === data.lead) p = x; });
+    $('lead-name').innerHTML = p ? personLabel(p) : 'noch offen – zuerst Personal auswählen';
+    line.classList.toggle('empty', !p);
+    $('lead-change').disabled = data.personnel.length < 2;
+    return autoChanged;
+  }
+  if ($('lead-change')) {
+    $('lead-change').addEventListener('click', function () {
+      var mine = [cfg.me_person, data.created_by].filter(Boolean);
+      var list = data.personnel.map(function (p) {
+        var note = mine.indexOf(p.id) > -1 ? '<small>' + (cfg.mode === 'qr' ? 'Ersteller' : 'angemeldet') + '</small>' : '';
+        return '<button type="button" class="cand' + (p.id === data.lead ? ' on' : '') + '" data-pick="' + esc(p.id) + '"><b>' + personLabel(p) + '</b>' + note + '</button>';
+      }).join('');
+      var d = dialog('<h2>' + ic('star') + 'Einheitsführer wählen</h2><div class="stack" style="gap:8px">' + list + '</div>' +
+        '<div class="acts"><button type="button" class="btn" data-act="cancel">Abbrechen</button></div>');
+      d.el.addEventListener('click', function (ev) {
+        var b = ev.target.closest('[data-pick]');
+        if (b) {
+          data.lead = b.getAttribute('data-pick');
+          d.close();
+          renderLead();
+          changed();
+          return;
+        }
+        if (ev.target.closest('[data-act="cancel"]') || ev.target === d.el) d.close();
+      });
     });
   }
 
@@ -653,6 +681,7 @@
       return { id: v.id, label: v.label, source: v.source, fields: v.fields || {} };
     });
     duration(); renderAlert(); renderPeople(); renderVehicles(); renderDiveraRef(); progress();
+    if (data.lead) changed(); // automatisch gesetzten Einheitsführer speichern
     clearBackup();
   }
   if ($('divera-btn')) $('divera-btn').addEventListener('click', function () { diveraLookup(false); });
@@ -727,6 +756,8 @@
 
   /* ---------- Start ---------- */
   renderPeople();
+  // Einheitsführer beim Öffnen automatisch gesetzt (ältere Entwürfe) → speichern
+  if (data.lead && data.lead !== R.lead && cfg.status === 'draft') setTimeout(changed, 0);
   renderEquipment();
   renderVehicles();
   showPane(tabs[0].getAttribute('data-pane'), false);
