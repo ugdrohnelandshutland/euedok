@@ -77,14 +77,25 @@ Remove-Item $check, $pdf1, $pdf2
 # Die Prüfung legt data\ im Build an – darf nicht mit ausgeliefert werden
 if (Test-Path (Join-Path $target 'data')) { Remove-Item -Recurse -Force (Join-Path $target 'data') }
 
-Write-Host "5/5 ZIP und Tag ..."
+Write-Host "5/5 ZIP, Signatur und Tag ..."
+# ZIP per PHP statt Compress-Archive: Pfade mit „/“ (Compress-Archive unter PowerShell 5 schreibt „\“)
 $zip = Join-Path $build "euedok-$Version.zip"
 if (Test-Path $zip) { Remove-Item $zip }
-Compress-Archive -Path (Join-Path $target '*') -DestinationPath $zip
+& $Php (Join-Path $PSScriptRoot 'release-tool.php') zip $target $zip
+if ($LASTEXITCODE -ne 0) { throw "ZIP konnte nicht erstellt werden." }
+# Signatur für die Update-Funktion (privater Schlüssel nur unter %USERPROFILE%\.euedok\)
+& $Php (Join-Path $PSScriptRoot 'release-tool.php') sign $zip
+if ($LASTEXITCODE -ne 0) { throw "Signieren fehlgeschlagen." }
+& $Php (Join-Path $PSScriptRoot 'release-tool.php') verify $zip
+if ($LASTEXITCODE -ne 0) { throw "Signatur passt nicht zum öffentlichen Schlüssel in app\Updater.php." }
 if (-not (git tag -l "v$Version")) { git tag -a "v$Version" -m "EÜDOK $Version" }
 
 $size = [math]::Round(((Get-ChildItem $target -Recurse -File | Measure-Object Length -Sum).Sum) / 1MB, 1)
 Write-Host ""
 Write-Host "Fertig: $target ($size MB)"
 Write-Host "        $zip"
-Write-Host "Deploy: powershell -ExecutionPolicy Bypass -File tools\deploy.ps1 -Version $Version"
+Write-Host "        $zip.sig"
+Write-Host ""
+Write-Host "Update über GitHub: git push origin main v$Version, dann auf GitHub ein Release zum Tag v$Version anlegen"
+Write-Host "        und BEIDE Dateien anhängen (euedok-$Version.zip und euedok-$Version.zip.sig)."
+Write-Host "Deploy per FTP (Erstinstallation/Notfall): powershell -ExecutionPolicy Bypass -File tools\deploy.ps1 -Version $Version"

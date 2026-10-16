@@ -292,6 +292,18 @@ final class Auth
         return Settings::get('users')['users'];
     }
 
+    /** Passwort des angemeldeten Benutzers erneut bestätigen (vor folgenreichen Aktionen wie Updates) */
+    public static function confirmPassword(string $password): bool
+    {
+        $u = self::user();
+        $rec = $u ? self::findUser(['id' => $u['id']]) : null;
+        $ok = $rec && $password !== '' && password_verify($password, (string) $rec['password_hash']);
+        if (!$ok) {
+            Log::warning('auth', 'confirm_failed', 'Passwortbestätigung fehlgeschlagen', ['user' => $u['username'] ?? null]);
+        }
+        return $ok;
+    }
+
     public static function findUser(array $criteria): ?array
     {
         foreach (self::users() as $u) {

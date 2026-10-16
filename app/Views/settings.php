@@ -5,6 +5,7 @@ use Euedok\QrAccess;
 use Euedok\Reports;
 use Euedok\Settings;
 use Euedok\SettingsPage;
+use Euedok\Updater;
 
 $unit = Settings::unit();
 $md = Settings::masterData();
@@ -511,6 +512,72 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <button class="btn"><?= icon('refresh') ?>Übersicht neu aufbauen</button>
         <p class="hint">EÜDOK <?= e(EUEDOK_VERSION) ?> · PHP <?= e(PHP_VERSION) ?></p>
       </form>
+
+<?php elseif ($section === 'update'):
+    $chk = $_SESSION['update_check'] ?? null;
+    $problems = Updater::preflight();
+    $prev = Updater::previous();
+    $hist = array_slice(Updater::history(), 0, 10);
+    $pwField = '<label class="f">Dein Passwort zur Bestätigung <input class="in" type="password" name="password" autocomplete="current-password" required></label>';
+    ?>
+      <section class="card stack">
+        <h3><?= icon('server') ?>Installierte Version</h3>
+        <p><b>EÜDOK <?= e(EUEDOK_VERSION) ?></b> · PHP <?= e(PHP_VERSION) ?><?= $hist ? ' · zuletzt geändert ' . e(fmt_datetime($hist[0]['at'])) : '' ?></p>
+        <?php foreach ($problems as $p): ?><div class="msg warn"><?= icon('alert') ?><span><?= e($p) ?></span></div><?php endforeach; ?>
+      </section>
+
+      <section class="card stack">
+        <h3><?= icon('refresh') ?>Nach Updates suchen</h3>
+        <p class="hint">EÜDOK fragt GitHub (<span class="mono"><?= e(Updater::REPO) ?></span>) nur, wenn du hier klickst – es gibt keine automatische Suche und keine Benachrichtigung.</p>
+        <form method="post" action="<?= $action('update-check') ?>"><?= csrf_field() ?><button class="btn"><?= icon('search') ?>Jetzt nach Updates suchen</button></form>
+        <?php if ($chk && !$chk['ok']): ?>
+        <div class="msg err"><?= icon('alert') ?><span><?= e($chk['error']) ?> (<?= e(fmt_datetime($chk['checked_at'])) ?>)</span></div>
+        <?php elseif ($chk): ?>
+        <div class="msg <?= $chk['newer'] ? 'info' : 'ok' ?>"><?= icon($chk['newer'] ? 'zap' : 'check') ?><span><?= $chk['newer']
+            ? 'Neue Version <b>' . e($chk['version']) . '</b> verfügbar'
+            : 'Du hast die neueste Version (' . e($chk['version']) . ')' ?><?= $chk['published_at'] ? ' · veröffentlicht ' . e(fmt_datetime(date('Y-m-d\TH:i:s', (int) strtotime($chk['published_at'])))) : '' ?> · geprüft <?= e(fmt_datetime($chk['checked_at'])) ?></span></div>
+        <?php if ($chk['newer']): ?>
+          <?php if (trim($chk['notes']) !== ''): ?><details open><summary class="muted small" style="cursor:pointer">Änderungen in <?= e($chk['name']) ?></summary><pre class="small" style="white-space:pre-wrap;word-break:break-word;margin-top:6px;font-family:inherit"><?= e($chk['notes']) ?></pre></details><?php endif; ?>
+          <?php if ($chk['html_url']): ?><p class="small"><a href="<?= e($chk['html_url']) ?>" target="_blank" rel="noopener noreferrer">Release auf GitHub ansehen</a></p><?php endif; ?>
+          <?php if (!$chk['zip_url'] || !$chk['sig_url']): ?>
+          <div class="msg warn"><?= icon('alert') ?><span>Am Release fehlen die Dateien <span class="mono">euedok-<?= e($chk['version']) ?>.zip</span> und <span class="mono">.zip.sig</span> – so kann nicht installiert werden.</span></div>
+          <?php elseif ($problems): ?>
+          <div class="msg warn"><?= icon('alert') ?><span>Installation erst möglich, wenn die Hinweise oben behoben sind.</span></div>
+          <?php else: ?>
+          <form method="post" action="<?= $action('update-install') ?>" class="stack">
+            <?= csrf_field() ?><input type="hidden" name="version" value="<?= e($chk['version']) ?>">
+            <?= $pwField ?>
+            <p class="hint">Das Paket wird von GitHub geladen und nur installiert, wenn seine Signatur stimmt. Berichte und Einstellungen (<span class="mono">data/</span>) bleiben unverändert. Während des Austauschs (wenige Sekunden) sehen andere kurz „Update läuft“. Startet EÜDOK danach nicht fehlerfrei, wird die bisherige Version automatisch wiederhergestellt.</p>
+            <button class="btn pri" data-confirm="Update auf <?= e($chk['version']) ?> jetzt installieren?"><?= icon('zap') ?>Update auf <?= e($chk['version']) ?> installieren</button>
+          </form>
+          <?php endif; ?>
+        <?php endif; ?>
+        <?php endif; ?>
+      </section>
+
+      <section class="card stack">
+        <h3><?= icon('archive') ?>Vorherige Version</h3>
+        <?php if ($prev): ?>
+        <p>Version <b><?= e($prev['version']) ?></b> ist gesichert (ersetzt <?= e(fmt_datetime($prev['replaced_at'])) ?>).</p>
+        <form method="post" action="<?= $action('update-rollback') ?>" class="stack">
+          <?= csrf_field() ?>
+          <?= $pwField ?>
+          <button class="btn" data-confirm="Version <?= e($prev['version']) ?> wiederherstellen? Die aktuelle Version <?= e(EUEDOK_VERSION) ?> wird dafür zur „vorherigen“."><?= icon('refresh') ?>Version <?= e($prev['version']) ?> wiederherstellen</button>
+        </form>
+        <?php else: ?>
+        <p class="hint">Noch keine – nach dem ersten Update liegt hier die Version davor (eine Generation).</p>
+        <?php endif; ?>
+        <p class="hint">Notfall, falls die Seite gar nicht mehr startet: Per FTP die Ordner <span class="mono">app</span>, <span class="mono">public</span> und <span class="mono">vendor</span> durch die aus <span class="mono">data/updates/previous/</span> ersetzen.</p>
+      </section>
+
+      <?php if ($hist): ?>
+      <section class="card">
+        <h3><?= icon('list') ?>Verlauf</h3>
+        <table class="tbl audit"><thead><tr><th>Wann</th><th>Was</th><th>Wer</th></tr></thead><tbody>
+          <?php foreach ($hist as $h): ?><tr><td><?= e(fmt_datetime($h['at'])) ?></td><td><?= e(($h['kind'] === 'update' ? 'Update ' : 'Zurück ') . $h['from'] . ' → ' . $h['to']) ?></td><td><?= e($h['by']) ?></td></tr><?php endforeach; ?>
+        </tbody></table>
+      </section>
+      <?php endif; ?>
 <?php endif; ?>
     </div>
   </div>

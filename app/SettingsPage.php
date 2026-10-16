@@ -21,6 +21,7 @@ final class SettingsPage
         'qr' => ['QR-Zugänge', 'qr'],
         'logs' => ['Protokolle', 'server'],
         'audit' => ['Änderungsprotokoll', 'list'],
+        'update' => ['Update', 'refresh'],
     ];
 
     /** Welche Schlüssel haben sich geändert? (für das Protokoll, ohne Werte von Geheimnissen) */

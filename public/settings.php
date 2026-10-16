@@ -14,6 +14,7 @@ use Euedok\QrAccess;
 use Euedok\Reports;
 use Euedok\Settings;
 use Euedok\SettingsPage;
+use Euedok\Updater;
 
 $user = Auth::requireSettingsRight();
 $section = is_string($_GET['s'] ?? null) && isset(SettingsPage::SECTIONS[$_GET['s']]) ? $_GET['s'] : 'unit';
@@ -137,6 +138,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'qr-delete':
             QrAccess::delete(post_str('id'));
             flash('QR-Zugang gelöscht – der Link ist ungültig.');
+            redirect($self);
+
+        case 'update-check':
+            // nur auf Klick – EÜDOK sucht nie von selbst nach Updates
+            try {
+                $_SESSION['update_check'] = ['ok' => true] + Updater::check();
+            } catch (\Throwable $e) {
+                $_SESSION['update_check'] = ['ok' => false, 'error' => $e->getMessage(), 'checked_at' => now_iso()];
+            }
+            redirect($self);
+
+        case 'update-install':
+        case 'update-rollback':
+            if (!Auth::confirmPassword((string) ($_POST['password'] ?? ''))) {
+                flash('Passwort falsch – nichts geändert.', 'err');
+                redirect($self);
+            }
+            try {
+                if ($action === 'update-install') {
+                    $rel = $_SESSION['update_check'] ?? null;
+                    if (empty($rel['ok']) || empty($rel['newer']) || ($rel['version'] ?? '') !== post_str('version')) {
+                        throw new \RuntimeException('Bitte zuerst erneut nach Updates suchen.');
+                    }
+                    $msg = Updater::install($rel, $user);
+                    unset($_SESSION['update_check']);
+                } else {
+                    $msg = Updater::rollback($user);
+                }
+                flash($msg);
+            } catch (\Throwable $e) {
+                Log::error('update', $action === 'update-install' ? 'install_failed' : 'rollback_failed', $e->getMessage());
+                flash($e->getMessage(), 'err');
+            }
             redirect($self);
 
         case 'rebuild-index':

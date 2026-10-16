@@ -41,7 +41,15 @@ landen dann in `data/mail-outbox/`.
 4. Adresse aufrufen → Einrichtungsassistent durchlaufen.
 5. Unter Einstellungen Mailversand (SMTP-Postfach), Divera247-Schlüssel und QR-Zugänge eintragen.
 
-**Update:** `public/`, `app/`, `vendor/` ersetzen. `data/` wird nie überschrieben.
+**Update:** Einstellungen → Update → „Jetzt nach Updates suchen“ (nur auf Klick, keine automatische
+Suche). Installiert werden nur signierte Pakete aus den GitHub-Releases; der vorherige Stand bleibt
+gesichert und lässt sich dort wiederherstellen. `data/` wird nie überschrieben.
+Ohne Update-Funktion (Erstinstallation, Notfall): `public/`, `app/`, `vendor/` per FTP ersetzen.
+
+**Release veröffentlichen:** `tools\build-release.ps1 -Version x.y.z` baut und signiert
+`build\euedok-x.y.z.zip` + `.zip.sig` (Signaturschlüssel einmalig mit `php tools/release-tool.php keygen`,
+liegt nur unter `%USERPROFILE%\.euedok\`). Dann `main` und Tag pushen, auf GitHub ein Release zum Tag
+anlegen und beide Dateien anhängen.
 
 ## Ablage
 

@@ -23,6 +23,7 @@ final class Log
         'pdf' => 'PDF',
         'divera' => 'Divera247',
         'qr' => 'QR-Schnellerfassung',
+        'update' => 'Update',
         'error' => 'Fehler',
     ];
 

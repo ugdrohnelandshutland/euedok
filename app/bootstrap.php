@@ -83,6 +83,22 @@ if (PHP_SAPI !== 'cli' && str_ends_with(rtrim(base_url(), '/'), '/public') && !i
     exit;
 }
 
+// Während ein Update die Programmordner tauscht (wenige Sekunden): kurz „Update läuft“ statt halber Seiten
+if (PHP_SAPI !== 'cli' && \Euedok\Updater::maintenanceActive()) {
+    http_response_code(503);
+    header('Retry-After: 30');
+    if (is_api_request()) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'EÜDOK wird gerade aktualisiert. Bitte in einer Minute erneut versuchen.']);
+        exit;
+    }
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EÜDOK – Update läuft</title>'
+        . '<div style="font-family:system-ui;max-width:560px;margin:40px auto;padding:0 16px;line-height:1.5">'
+        . '<h1>Update läuft</h1><p>EÜDOK wird gerade aktualisiert. Bitte in einer Minute neu laden.</p></div>';
+    exit;
+}
+
 $installed = \Euedok\Settings::isInstalled();
 date_default_timezone_set($installed ? (string) (\Euedok\Settings::unit()['timezone'] ?? 'Europe/Berlin') : 'Europe/Berlin');
 
