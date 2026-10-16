@@ -125,7 +125,7 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
     <?php endif; ?>
     <?php if (!$quick && !$cfg['correction'] && $cfg['status'] === 'draft'): ?>
     <div class="card fieldset">
-      <h3><?= icon('trash') ?>Entwurf verwerfen</h3>
+      <h3><?= icon('trash') ?>Entwurf löschen</h3>
       <span class="hint">Löscht diesen Entwurf endgültig, z. B. wenn er versehentlich angelegt wurde.</span>
       <?php render('partials/discard-button', ['number' => $cfg['number'], 'back' => 'index.php', 'small' => false]); ?>
     </div>
