@@ -528,7 +528,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
 
       <section class="card stack">
         <h3><?= icon('refresh') ?>Nach Updates suchen</h3>
-        <p class="hint">EÜDOK fragt GitHub (<span class="mono"><?= e(Updater::REPO) ?></span>) nur, wenn du hier klickst – es gibt keine automatische Suche und keine Benachrichtigung.</p>
+        <p class="hint">EÜDOK fragt GitHub (<span class="mono"><?= e(Updater::REPO) ?></span>).</p>
         <form method="post" action="<?= $action('update-check') ?>"><?= csrf_field() ?><button class="btn"><?= icon('search') ?>Jetzt nach Updates suchen</button></form>
         <?php if ($chk && !$chk['ok']): ?>
         <div class="msg err"><?= icon('alert') ?><span><?= e($chk['error']) ?> (<?= e(fmt_datetime($chk['checked_at'])) ?>)</span></div>
