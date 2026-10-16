@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Lädt Bibliotheken, setzt Pfade, startet die Sitzung.
  */
 
-const EUEDOK_VERSION = '1.2.0';
+const EUEDOK_VERSION = '1.2.1';
 
 define('EUEDOK_ROOT', dirname(__DIR__));
 define('EUEDOK_DATA', EUEDOK_ROOT . '/data');
