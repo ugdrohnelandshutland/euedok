@@ -77,7 +77,7 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
   <section class="pane" id="pane-gear" data-pane="gear">
     <?php if (!empty($cfg['modules']['equipment'])): ?>
     <div class="card fieldset" data-req="equipment">
-      <h3><?= icon('box') ?><span class="<?= $req('equipment') ?>">Eingesetzte Geräte</span><span class="r" id="equip-count"></span></h3>
+      <h3><?= icon('box') ?><span class="<?= $req('equipment') ?>">Eingesetzte Geräte</span><span class="r cnt" id="equip-count"></span></h3>
       <div class="chips" id="equip-chips"></div>
     </div>
     <?php endif; ?>

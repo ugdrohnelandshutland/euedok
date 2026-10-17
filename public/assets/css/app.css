@@ -127,6 +127,8 @@ textarea.in{min-height:140px;resize:vertical;line-height:1.5;font-weight:500}
 .chip:active{transform:scale(.97)}
 .chip.on{background:var(--fill);border-color:var(--fill);color:#fff}
 .chip.add{border-style:dashed;color:var(--quiet)}
+.chip .tick{color:var(--quiet);margin-left:-4px}
+.chip.on .tick{color:inherit}
 .chip .av{width:28px;height:28px;border-radius:50%;background:var(--raised);color:var(--text);font-size:11px;font-weight:800;display:grid;place-items:center;margin-left:-6px}
 .chip.on .av{background:rgba(255,255,255,.2);color:#fff}
 @media (hover:hover){.chip:not(.on):hover{border-color:var(--accent)}}
@@ -397,6 +399,8 @@ dl.facts dd{font-weight:600}
   .card h3{flex-wrap:wrap}
   .card h3 .r{flex-basis:100%;margin-left:0}
   .card h3>span:not(.r){flex:1 1 0;min-width:0}
+  /* kurze Zähler bleiben wie am PC rechts in der Titelzeile (sonst springt der Inhalt beim ersten Antippen) */
+  .card h3 .r.cnt{flex-basis:auto;margin-left:auto;white-space:nowrap}
 }
 .foot-ed{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .foot-col{display:flex;flex-direction:column;gap:6px;min-width:0}

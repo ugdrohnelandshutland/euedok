@@ -453,9 +453,10 @@
     if (!box) return;
     box.innerHTML = cfg.lists.equipment.map(function (q) {
       var on = data.equipment.indexOf(q.id) > -1;
-      return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-equip="' + esc(q.id) + '" aria-pressed="' + on + '">' + (on ? ic('check') : '') + esc(q.label) + '</button>';
+      return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-equip="' + esc(q.id) + '" aria-pressed="' + on + '">' + ic(on ? 'check' : 'plus', 'tick') + esc(q.label) + '</button>'; // Symbol immer da → Breite bleibt beim Anhaken gleich
     }).join('') || '<span class="hint">Keine Geräte hinterlegt.</span>';
-    $('equip-count').textContent = data.equipment.length ? data.equipment.length + ' gewählt' : '';
+    // immer anzeigen (auch „0 gewählt“): sonst erscheint die Zeile beim ersten Antippen und schiebt alle Geräte nach unten
+    $('equip-count').textContent = data.equipment.length + ' gewählt';
   }
   if ($('equip-chips')) {
     $('equip-chips').addEventListener('click', function (ev) {
@@ -464,7 +465,12 @@
       var id = b.getAttribute('data-equip');
       var i = data.equipment.indexOf(id);
       if (i > -1) data.equipment.splice(i, 1); else data.equipment.push(id);
-      renderEquipment();
+      // nur diesen Chip umschalten statt neu aufbauen – nichts verschiebt oder flackert unter dem Finger
+      var on = i < 0;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+      b.querySelector('use').setAttribute('href', cfg.urls.sprite + '#i-' + (on ? 'check' : 'plus'));
+      $('equip-count').textContent = data.equipment.length + ' gewählt';
       changed();
     });
   }
