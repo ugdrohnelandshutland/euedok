@@ -391,6 +391,9 @@ dl.facts dd{font-weight:600}
   .cell.sw-cell,.cell.mv-cell{flex-direction:row;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:4px 10px;border:1px solid var(--line);border-radius:var(--r-s);background:var(--strip)}
   .cell.sw-cell .cl,.cell.mv-cell .cl{font-size:13px;color:var(--text)}
   .ed-row>.mv-cell{grid-column:1/-1}
+  /* Schalter auf Höhe des Eingabefelds daneben (das hat eine Beschriftung darüber) */
+  .ed-row>.sw-cell{align-self:end;min-height:42px}
+  .ed-row select.in{padding-left:8px;padding-right:4px}
   .card h3{flex-wrap:wrap}
   .card h3 .r{flex-basis:100%;margin-left:0}
   .card h3>span:not(.r){flex:1 1 0;min-width:0}
