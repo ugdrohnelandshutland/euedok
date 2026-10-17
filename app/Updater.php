@@ -142,6 +142,7 @@ final class Updater
             $staging = self::workDir() . '/staging';
             self::removeTree($staging);
             self::extract($zipFile, $staging);
+            self::fixPermissions($staging);
             self::validate($staging, $version);
 
             // 3) Tauschen (Wartungsmodus nur für die Sekunden des Tauschs)
@@ -300,6 +301,18 @@ final class Updater
         }
     }
 
+    /**
+     * Rechte wie beim FTP-Upload: Ordner 0755, Dateien 0644. Ohne das hätten die Ordner die 0750 aus
+     * Storage::ensureDir (gedacht für data/) – der Webserver läuft auf Plesk als anderer Benutzer → HTTP 403.
+     */
+    private static function fixPermissions(string $staging): void
+    {
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($staging, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($it as $f) {
+            @chmod($f->getPathname(), $f->isDir() ? 0755 : 0644);
+        }
+    }
+
     private static function validate(string $staging, string $version): void
     {
         foreach (self::DIRS as $d) {
@@ -332,6 +345,8 @@ final class Updater
         $done = [];
         try {
             foreach (self::DIRS as $d) {
+                // oberster Ordner bekommt exakt die Rechte des bisherigen (z. B. public/ als Dokumentstamm)
+                @chmod($staging . '/' . $d, fileperms(EUEDOK_ROOT . '/' . $d) & 0777);
                 self::move(EUEDOK_ROOT . '/' . $d, $prev . '/' . $d);
                 $done[] = [$d, 'out'];
                 self::move($staging . '/' . $d, EUEDOK_ROOT . '/' . $d);
@@ -418,7 +433,8 @@ final class Updater
             return null;
         }
         $ok = $status === 200 && str_contains((string) $body, '<title>');
-        Log::info('update', 'selftest', $ok ? 'Selbsttest erfolgreich' : 'Selbsttest fehlgeschlagen', ['http' => $status]);
+        Log::info('update', 'selftest', $ok ? 'Selbsttest erfolgreich' : 'Selbsttest fehlgeschlagen', ['http' => $status, 'url' => $url]
+            + ($ok ? [] : ['body' => mb_substr(trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $body))), 0, 300)]));
         return $ok;
     }
 
