@@ -15,6 +15,21 @@ final class Auth
     /** Platzhalter-Hash: gleiche Rechenzeit bei unbekanntem Benutzernamen */
     private const DUMMY_HASH = '$2y$10$8i/OWJASIysO7ccVxpvDFeG8Ny7MUQDzJcOJRCplnyZJ10h5aJFDa';
 
+    /** Benutzername: Kleinbuchstaben, Ziffern, . _ - @ (also auch E-Mail-Adressen), 3–100 Zeichen */
+    public const USERNAME_MAX = 100;
+
+    /** @return string|null Fehlermeldung oder null, wenn gültig (erwartet bereits kleingeschrieben) */
+    public static function usernameError(string $username): ?string
+    {
+        if (mb_strlen($username) > self::USERNAME_MAX) {
+            return 'Benutzername „' . mb_substr($username, 0, 40) . '…“ ist zu lang (höchstens ' . self::USERNAME_MAX . ' Zeichen).';
+        }
+        if (!preg_match('/^[a-z0-9._@-]{3,' . self::USERNAME_MAX . '}$/', $username)) {
+            return 'Benutzername „' . $username . '“ ungültig (3–' . self::USERNAME_MAX . ' Zeichen: a–z, 0–9, . _ - @ – z. B. auch eine E-Mail-Adresse).';
+        }
+        return null;
+    }
+
     private static ?array $user = null;
     private static bool $loaded = false;
 

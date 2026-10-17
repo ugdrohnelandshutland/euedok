@@ -356,14 +356,14 @@ final class SettingsPage
         $notes = [];
         foreach (self::rows('users') as $row) {
             $id = self::s($row, 'id', 20);
-            $username = strtolower(self::s($row, 'username', 32));
+            $username = strtolower(self::s($row, 'username', 500)); // nicht kürzen – zu lange Namen bekommen eine klare Meldung
             $display = self::s($row, 'display_name', 80);
             $pw = (string) ($row['password'] ?? '');
             if ($username === '' && $display === '' && !isset($byId[$id])) {
                 continue;
             }
-            if (!preg_match('/^[a-z0-9._-]{3,32}$/', $username)) {
-                return 'Benutzername „' . $username . '“ ungültig (3–32 Zeichen: a–z, 0–9, . _ -). Nichts gespeichert.';
+            if ($err = Auth::usernameError($username)) {
+                return $err . ' Nichts gespeichert.';
             }
             if (in_array($username, array_column($out, 'username'), true)) {
                 return 'Benutzername „' . $username . '“ doppelt. Nichts gespeichert.';

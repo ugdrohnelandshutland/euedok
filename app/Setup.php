@@ -45,8 +45,8 @@ final class Setup
         if ($name === '') {
             return 'Bitte den Namen der Einheit eintragen.';
         }
-        if (!preg_match('/^[a-z0-9._-]{3,32}$/', $username)) {
-            return 'Benutzername: 3–32 Zeichen, nur Kleinbuchstaben, Ziffern, Punkt, Bindestrich, Unterstrich.';
+        if ($err = Auth::usernameError($username)) {
+            return $err;
         }
         if ($display === '') {
             return 'Bitte einen Anzeigenamen eintragen.';

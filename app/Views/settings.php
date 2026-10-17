@@ -1,4 +1,5 @@
 <?php
+use Euedok\Auth;
 use Euedok\Divera;
 use Euedok\Log;
 use Euedok\QrAccess;
@@ -367,7 +368,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
     if (Divera::personnelFromDivera()) {
         $people = Divera::personnel()['items'];
     }
-    $grid = 'grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1fr) 90px 64px';
+    $grid = 'grid-template-columns:minmax(0,1.7fr) minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1fr) 90px 64px';
     $userRow = static function ($i, array $u) use ($cell, $swCell, $people, $grid, $user): string {
         $opts = '<option value="">– keine Person –</option>';
         foreach ($people as $p) {
@@ -376,7 +377,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         $self = ($u['id'] ?? '') === $user['id'];
         return '<div class="ed-row' . (isset($u['id']) && empty($u['active']) ? ' inactive' : '') . '" style="' . $grid . '">'
             . '<input type="hidden" name="users[' . $i . '][id]" value="' . e($u['id'] ?? '') . '">'
-            . $cell('Benutzername', '<input class="in" name="users[' . $i . '][username]" value="' . e($u['username'] ?? '') . '" autocapitalize="none" autocomplete="off">', 'wide')
+            . $cell('Benutzername', '<input class="in" name="users[' . $i . '][username]" value="' . e($u['username'] ?? '') . '" maxlength="' . Auth::USERNAME_MAX . '" placeholder="z. B. name oder name@example.org" autocapitalize="none" autocomplete="off">', 'wide')
             . $cell('Anzeigename', '<input class="in" name="users[' . $i . '][display_name]" value="' . e($u['display_name'] ?? '') . '">', 'wide')
             . $cell('Person im Personal', '<select class="in" name="users[' . $i . '][person_id]">' . $opts . '</select>', 'wide')
             . $cell(isset($u['id']) ? 'Neues Passwort (leer = unverändert)' : 'Passwort', '<input class="in" type="password" name="users[' . $i . '][password]" autocomplete="new-password">', 'wide')
