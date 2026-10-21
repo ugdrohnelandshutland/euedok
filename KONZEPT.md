@@ -2,8 +2,10 @@
 
 Name: **EÜDOK** – Einsatz- & Übungsdokumentation (technische Schreibweise für Ordner/Dateien:
 `euedok`)
-Stand: 15.10.2026 · Erste Nutzer: UG-Drohne Landshut Land (ca. 5 Personen mit Zugang)
-Status: **Stufe 1 umgesetzt (15.10.2026) – Divera mit echtem Schlüssel noch zu prüfen**
+Stand: 21.10.2026 · Erste Nutzer: UG-Drohne Landshut Land (ca. 5 Personen mit Zugang)
+Status: **Stufe 1 umgesetzt und im Produktivbetrieb seit 17.10.2026** (Testdaten an diesem Tag
+gelöscht, Einstellungen übernommen). Divera247 mit echtem Schlüssel angebunden. Aktualisierung
+über Einstellungen → Update (Abschnitt 8c).
 
 ## 1. Ziel
 
@@ -18,7 +20,9 @@ dem Handy direkt nach dem Einsatz am Fahrzeug.
 
 Das Tool ist **allgemeingültig** aufgebaut: Alles Einheits-Spezifische steht in der
 Konfiguration, nicht im Code. Jede Einheit / Feuerwehr betreibt **eine eigene
-Installation**. Eine Veröffentlichung ist vorerst nicht geplant.
+Installation**. Der Quellcode liegt öffentlich auf GitHub (`ugdrohnelandshutland/euedok`);
+fertige Versionen werden dort als signierte Releases veröffentlicht (Abschnitt 8c).
+Einheitsdaten, Zugangsdaten und Server-Adressen stehen nie im Repository.
 
 ## 2. Festgelegte Entscheidungen
 
@@ -26,12 +30,15 @@ Installation**. Eine Veröffentlichung ist vorerst nicht geplant.
 |---|---|
 | Technik | PHP ≥ 8.1, kein Framework, keine Datenbank |
 | Speicherung | JSON-Dateien + PDF im Dateisystem, außerhalb des Web-Roots |
-| Zugänge | Verwaltung im Browser (Einstellungen → Zugänge); Passwörter nur als bcrypt-Hash gespeichert |
-| Technische Namen | **Business-Englisch** für alle Pfade, Ordner, Dateinamen, URLs, JSON-Schlüssel und IDs (z. B. `reports/`, `report.php`, `flight_minutes`). **Deutsch** nur für Dokumentation und Oberfläche (Texte, Beschriftungen, Feldbezeichnungen). Siehe Abschnitt 8a |
+| Zugänge | Verwaltung im Browser (Einstellungen → Zugänge); Passwörter (mind. 10 Zeichen) nur als bcrypt-Hash gespeichert. Benutzername: a–z, 0–9, `. _ - @`, 3–100 Zeichen – also auch eine E-Mail-Adresse; Groß-/Kleinschreibung egal |
+| Technische Namen | **Business-Englisch** für alle Pfade, Ordner, Dateinamen, URLs, JSON-Schlüssel und IDs (z. B. `reports/`, `/reports/E-2026-003`, `flight_minutes`). **Deutsch** nur für Dokumentation und Oberfläche (Texte, Beschriftungen, Feldbezeichnungen). Siehe Abschnitt 8a |
+| Adressen | Sprechende Pfade ohne `.php` (z. B. `/reports`, `/settings/users`) – Abschnitt 8b |
+| Updates | Über **Einstellungen → Update**: Suche nach neuen Versionen **nur auf Klick**, Installation nur signierter Pakete aus den GitHub-Releases, vorherige Version bleibt zum Zurückholen (Abschnitt 8c) |
+| Protokolle | Eigenes Protokollsystem je Bereich (Anmeldung, Berichte, Mail, PDF, Divera, QR, Update, Fehler) mit einstellbarer Stufe; im Browser einsehbar und als ZIP herunterladbar |
 | Einstellungen | **Ausschließlich über die Einstellungsseite im Browser – schon ab Stufe 1.** Keine Konfigurationsdateien, die von Hand bearbeitet werden; Ersteinrichtung per Assistent |
 | Rollen | Keine Freigabe-Rollen; jeder schließt seine Berichte selbst ab. Einziges Merkmal: „darf Einstellungen ändern“. Zusätzlich technische QR-Zugänge, die nur „Bericht erstellen“ dürfen (7b) |
 | Unterschriften | Keine. PDF trägt Vermerk „Abgeschlossen durch … am …“ |
-| PDF-Layout | Fest, modern und sauber; Farben, Kopf-/Fußzeile aus Konfiguration |
+| PDF-Layout | Festes **Formular-Layout** (geschlossenes Raster, nummerierte Abschnitte, Personal zweispaltig, Einheitsführer hervorgehoben); Kopf aus der Einheit, Fußzeile mit drei frei gestaltbaren Feldern (links/Mitte/rechts) |
 | PDF-Erzeugung | Serverseitig (sieht auf jedem Gerät gleich aus) |
 | Logo | Erst zum Release; bis dahin Platzhalter (Name der Einheit als Schriftzug) |
 | Mandanten | Eine Installation pro Einheit |
@@ -40,7 +47,8 @@ Installation**. Eine Veröffentlichung ist vorerst nicht geplant.
 | Personenfelder | Je eingesetzter Person **optionale Zusatzfelder**, in der Verwaltung konfigurierbar (wie bei den Fahrzeugen). UG-Drohne: „Flugminuten“ |
 | Flugzeit | Nur pro Person (nicht pro Drohne) – umgesetzt als konfiguriertes Personenfeld „Flugminuten“ (optional, mit Summe) |
 | Auswertungen | **Nicht Teil dieses Projekts** (auch keine Jahresauswertung) – erfolgen extern auf Basis der JSON-Dateien |
-| Pflichtfelder | Konfigurierbar; Standard: Art, Beginn, Ende, Ort, Thema, mind. eine Person, Leiter |
+| Pflichtfelder | Konfigurierbar; Standard: Art, Beginn, Ende, Ort, Thema, mind. eine Person, Einheitsführer |
+| Einheitsführer | Wird **automatisch** gesetzt (Ersteller bzw. angemeldete Person, sonst erste eingesetzte Person) und in der Personalliste mit einem Stern markiert; „Ändern“ wählt aus den eingesetzten Personen. Gleiche Bezeichnung für alle Berichtsarten |
 | Alarmierung | Konfigurierbare Schnellauswahl **plus** freie Eingabe abweichender Quellen; frei eingegebene Quellen bleiben nur im jeweiligen Bericht (kein neuer Vorschlag) |
 | Konfigurierbarkeit | **Alle** Listen und Einstellungen sind konfigurierbar (Personal, Geräte, Fahrzeuge, Alarmierung, Berichtsarten, Kopf/Fußzeile …) – nichts ist im Code festgeschrieben |
 | Funkloch-Schutz | Entwurf wird zusätzlich im Browser zwischengespeichert |
@@ -67,6 +75,15 @@ Installation**. Eine Veröffentlichung ist vorerst nicht geplant.
 **Startseite**
 - Zwei große Knöpfe: **„Neuer Einsatz“** und **„Neue Übung“**
 - Darunter: eigene offene Entwürfe, dann die letzten Berichte
+- Name unter dem App-Symbol auf dem Startbildschirm einstellbar (Einstellungen → Einheit,
+  leer = „EÜDOK“)
+
+**Formular**
+- Handy: eine Spalte mit Schritten (Basisdaten · Personal · Geräte · Bericht), Fortschritt
+  „Pflichtangaben x / y“ und „Weiter“; Beschriftungen stehen über den Feldern
+- PC/Tablet: zwei Spalten, alle Abschnitte auf einer Seite
+- Entwürfe lassen sich löschen – in der Übersicht und im Formular (nur Entwürfe,
+  abgeschlossene Berichte nie)
 
 **Sinnvolle Vorbelegungen**
 - Beginn = jetzt (auf 5 min gerundet), Ende mit Knopf **„Jetzt“** setzen
@@ -84,7 +101,9 @@ Installation**. Eine Veröffentlichung ist vorerst nicht geplant.
 - Keine Funktionen (bewusst gestrichen)
 
 **Geräte auswählen**
-- Alle aktiven Geräte als Kacheln zum An-/Abtippen
+- Alle aktiven Geräte als Kacheln zum An-/Abtippen: ungewählt mit „+“, gewählt mit Haken –
+  gleiche Breite, damit beim Antippen nichts in die nächste Zeile rutscht; die Anzahl
+  „x gewählt“ steht rechts in der Titelzeile
 
 **Fahrzeuge** (nur wenn das Modul aktiv ist)
 - Aktive Fahrzeuge als Kacheln; je gewähltem Fahrzeug die konfigurierten
@@ -116,8 +135,10 @@ EÜDOK soll aussehen wie ein Teil der Werkzeuge, die die UG-Drohne schon nutzt
 - **Teal heißt „bedienbar“:** gewählte Kacheln, eingeschaltete Schalter, Hauptknöpfe,
   Fokus. Signalfarben bleiben Zuständen vorbehalten: Grün `#0b7a3e` = abgeschlossen /
   versendet, Bernstein `#f2b01e` = Hinweis / Mail-Fehler, Rot `#c4202b` = Fehler,
-  Pflichtangabe fehlt – und als einziges „lautes“ Element der Block der Berichtsart
-  **Einsatz** (wie die Slot-Nummer im Hub); Übung in ruhigem Navy/Grau.
+  Pflichtangabe fehlt – und als einziges auffälliges Element der Block der Berichtsart
+  **Einsatz** (wie die Slot-Nummer im Hub); Übung in ruhigem Navy/Grau. Je Berichtsart
+  einstellbar unter „Darstellung“: **„Einsatz (rot)“** (Block mit Sirene) oder
+  **„Neutral (blau)“** (Block mit Zielsymbol) – betrifft nur die Anzeige, nicht PDF oder Nummern.
 - **Formen:** Radien 7 px (Knöpfe, Felder), 12 px (Karten, Kacheln), 16 px (Dialoge);
   1-px-Linien; weicher Schatten nur bei Dialogen und Meldungen.
 - **Schrift:** Systemschriften (`system-ui`, Segoe UI, Roboto …); Wortmarke im Kopf
@@ -139,16 +160,22 @@ Einstellungen als Dateien im geschützten Bereich `data/settings/` ab – das is
 Speicherung, kein Bearbeitungsweg. Beim ersten Aufruf führt ein **Einrichtungsassistent**
 durch Name der Einheit, ersten Zugang (mit Einstellungsrecht) und Grundwerte.
 
-Bereiche der Einstellungsseite: Einheit (Name, Farben, Kopf/Fußzeile, Logo) ·
+Bereiche der Einstellungsseite: Einheit (Name, App-Name, Fußzeile) ·
 Berichtsarten & Nummern · Pflichtfelder & Module · Zusatzfelder · Personal · Geräte ·
-Fahrzeuge · Alarmierung · Mailversand · Divera247 · Zugänge · QR-Zugänge
+Fahrzeuge · Alarmierung · Mailversand · Divera247 · Zugänge · QR-Zugänge · Protokolle ·
+Änderungsprotokoll · Update
 
-- Name, Untertitel, Logo (ab Release), Akzentfarbe, Fußzeile (Leitung, Adresse, Kontakt)
-- Berichtsarten (Standard: Einsatz, Übung; erweiterbar z. B. Ausbildung, Wartung)
+- Name, Untertitel, App-Name (Startbildschirm), Logo (ab Release)
+- **PDF-Fußzeile:** drei Felder (links, Mitte, rechts) mit einfacher Formatierung
+  (`**fett**`, `*kursiv*`, `__unterstrichen__`, Zeilenumbrüche) und Platzhaltern
+  `{nummer}` `{seite}` `{seiten}` `{datum}` `{einheit}`; Standard rechts:
+  „{nummer} · Seite {seite} / {seiten}“
+- Berichtsarten (Standard: Einsatz, Übung; erweiterbar z. B. Ausbildung, Wartung) mit
+  Darstellung „Einsatz (rot)“ / „Neutral (blau)“ und Divera-Quelle (Alarme / Termine / keine)
 - Nummernformat je Art (Standard: `E-{YYYY}-{NNN}`, `U-{YYYY}-{NNN}`, Zählung pro Jahr)
 - Module an/aus: Personal, Geräte, **Fahrzeuge**, Defekte/Vorfälle, Alarmierung
 - Pflichtfelder zum Abschließen (Standard: Art, Beginn, Ende, Ort, Thema,
-  mind. eine Person, Leiter)
+  mind. eine Person, Einheitsführer)
 - **Zusatzfelder** – drei Arten, gleiche Feldtypen (Zahl, Text, Auswahl, Haken, Datum),
   jeweils mit Bezeichnung, Einheit (z. B. „min“, „km“), optional/Pflicht, Reihenfolge und –
   bei Zahlen – „Summe anzeigen“; erscheinen in Formular, PDF und JSON:
@@ -182,8 +209,8 @@ Kreisbrandinspektion · Landratsamt Landshut · Übungsplan / eigene Planung
 **Geräte:** Drohne M30T - 1 · Drohne M30T - 2 · Monitor · Tablet · Notebook ·
 Powerstation · Suchscheinwerfer · Akku-Arbeitsscheinwerfer
 
-**Personal:** vorerst **5 Dummy-Datensätze** zum Testen (z. B. „Muster, Max“). Echte
-Namen werden erst später eingetragen – oder direkt aus Divera247 abgerufen.
+**Personal:** live aus Divera247 (Personalquelle „Divera247“); die 5 Dummy-Datensätze
+der Startkonfiguration werden damit nicht mehr genutzt.
 
 **Personenfelder:** „Flugminuten“ (Zahl, min, optional, Summe anzeigen).
 
@@ -191,7 +218,8 @@ Namen werden erst später eingetragen – oder direkt aus Divera247 abgerufen.
 
 **Fahrzeuge:** Modul vorerst aus; zum Testen ein Dummy-Fahrzeug „MTW UG-Drohne“.
 
-**Divera247:** vorbereitet, aber aus, bis ein API-Schlüssel hinterlegt ist.
+**Divera247:** angebunden (API-Schlüssel hinterlegt) – Einsätze aus Alarmen, Übungen aus
+Terminen, Personal und Fahrzeuge live.
 
 ## 5. Berichtsinhalt (Basis: bisheriges Formular)
 
@@ -210,7 +238,8 @@ Fahrzeug die Fahrzeugfelder (UG-Drohne: „Kilometer“, optional)
 **Eingesetztes Personal** – Auswahl aus Stammdaten oder live aus Divera247, je Person
 die Personenfelder (UG-Drohne: „Flugminuten“, optional)
 
-**Einsatz-/Übungsleiter** – Auswahl aus dem eingesetzten Personal
+**Einheitsführer** – automatisch vorbelegt, änderbar aus dem eingesetzten Personal
+(Abschnitt 2)
 
 **Divera-Bezug** (wenn übernommen) – Alarm-Nummer und Alarmtext aus Divera247
 
@@ -226,7 +255,8 @@ herunterladen.
 
 1. **Neuer Bericht:** „Neuer Einsatz“ / „Neue Übung“ → Nummer wird vergeben
 2. **Ausfüllen:** wird laufend automatisch gespeichert
-3. **Entwurf:** jederzeit weiter bearbeitbar, auch von einem anderen Gerät
+3. **Entwurf:** jederzeit weiter bearbeitbar, auch von einem anderen Gerät; nicht mehr
+   benötigte Entwürfe lassen sich löschen (Übersicht oder Formular, mit Rückfrage)
 4. **Abschließen:** JSON + PDF werden geschrieben und **per Mail versendet**
 5. **Nachträgliche Änderung:** erlaubt; PDF wird neu erzeugt, Änderung wird im
    JSON protokolliert (wer, wann) und die neue Fassung **erneut per Mail versendet**
@@ -244,8 +274,8 @@ deshalb erneut versendet. Entwürfe und das automatische Zwischenspeichern löse
 - Betreff (Vorlage konfigurierbar), z. B.
   `[EÜDOK] Einsatz E-2026-003 – Vermisste Person – 12.10.2026`
 - Bei Änderungen: Betreff mit Zusatz `– Korrektur 1`, `– Korrektur 2` …
-- Text: kurze Zusammenfassung (Art, Nummer, Datum, Ort, Thema, Leiter, abgeschlossen
-  durch)
+- Text: kurze Zusammenfassung (Art, Nummer, Datum, Ort, Thema, Einheitsführer,
+  abgeschlossen durch)
 - Anhänge: `Einsatzbericht_E-2026-003.pdf` und `Einsatzbericht_E-2026-003.json`
 
 **Technik**
@@ -317,6 +347,9 @@ Popup mit Alarmen der letzten 24 h (7c).
 - **Mehrere QR-Zugänge** möglich, jeweils mit Bezeichnung (z. B. „MTW UG-Drohne“,
   „Gerätehaus“); jeder einzeln **sperrbar und erneuerbar** (neuer Schlüssel → neuer
   Aufkleber, alter Link sofort ungültig).
+- Link und Druckvorlage sind nur **30 Minuten** nach dem Anlegen bzw. Erneuern sichtbar
+  (nur in der Sitzung der Person, die ihn erzeugt hat) – danach nur noch über „Schlüssel
+  erneuern“.
 - Entwürfe: werden wie üblich laufend gespeichert (Gerät + Server). Auf dem QR-Gerät
   über ein Geräte-Cookie fortsetzbar; angemeldete Nutzer sehen den Entwurf in der
   Übersicht (Kennzeichen „QR“) und können ihn fertigstellen.
@@ -409,9 +442,12 @@ Die genauen API-Felder für Termine und Zusagen werden bei der Umsetzung geprüf
   wird auf der Einstellungsseite eingegeben, serverseitig verschlüsselt gespeichert und
   danach nie wieder angezeigt (nur „hinterlegt ✓“ / „ersetzen“); er kommt **nie** in den
   Browser.
-- Divera-API v2 (u. a. Alarme mit Rückmeldungen, Benutzer/Gruppen der Einheit). Die
-  genauen Endpunkte und Felder werden bei der Umsetzung gegen die Divera-API-Doku und
-  einen Test-Schlüssel geprüft.
+- Divera-API v2: `/api/v2/pull/all` (Personal, Fahrzeuge, Rückmeldestatus der Einheit),
+  `/api/v2/alarms` (Alarme mit Rückmeldungen) und `/api/v2/events` (Termine mit Zusagen).
+  Antworten werden 60 Sekunden zwischengespeichert. Rückmelde-IDs werden als Text
+  verglichen (Divera liefert sie teils als Zahl, teils als Text).
+- Bei Fehlern und Übernahmen speichert das Protokoll die Rohantwort von Divera (30 Tage), damit sich
+  Abweichungen der API nachvollziehen lassen.
 - Kurzes Zeitlimit (ca. 3 s): Ist Divera langsam oder nicht erreichbar, öffnet das
   Formular trotzdem sofort – Hinweis „Divera nicht erreichbar – bitte manuell ausfüllen“.
 - Es werden nur die übernommenen Daten gespeichert; Divera bleibt die Quelle.
@@ -465,13 +501,17 @@ Personalquelle · Fahrzeugquelle · Divera-Abfrage über QR an/aus · Testabruf-
 ```
 euedok/
   public/                     Web-Root (in Plesk als Dokumentstamm eintragen,
-                              dort heißt der Standard „httpdocs“) – nur Einstiegspunkte
-    index.php                 Login, Startseite, Übersicht
-    report.php                Berichtsformular
-    quick-entry.php           QR-Schnellerfassung (Route /q/<key>)
+                              dort heißt der Standard „httpdocs“) – nur Einstiegspunkte;
+                              aufgerufen über sprechende Pfade (Abschnitt 8b)
+    .htaccess                 HTTPS-Pflicht, Umschreiben der Pfade, Sperren
+    index.php                 Login, Startseite, Übersicht, Aktionen
+    report.php                Berichtsformular und -ansicht
+    quick-entry.php           QR-Schnellerfassung (/q/<key>, /q)
     download.php              PDF/JSON/ZIP-Auslieferung (nur mit Berechtigung)
     settings.php              Einstellungsseite
     setup.php                 Einrichtungsassistent (nur beim ersten Aufruf)
+    api.php                   Speichern/Abschließen aus dem Formular (JSON)
+    manifest.php              Web-App-Manifest (/manifest.webmanifest, App-Name)
     assets/
       css/  js/  icons/
   app/                        Programmlogik (PHP) – nicht per Web erreichbar
@@ -488,19 +528,41 @@ euedok/
       mail.json               Mailversand (SMTP-Passwort verschlüsselt)
       divera.json             Divera247 (API-Schlüssel verschlüsselt)
     keys/                     bei der Einrichtung erzeugter Verschlüsselungsschlüssel
-    cache/                    letzte Divera-Listen (Personal, Fahrzeuge) als Puffer
+                              (unbedingt behalten – ohne ihn sind SMTP-Passwort und
+                              Divera-Schlüssel nicht mehr lesbar)
+    auth/                     „angemeldet bleiben“-Tokens, Sperrzähler (Login, QR-PIN),
+                              gemerkte QR-Geräte
+    sessions/                 Sitzungen (alte werden automatisch entfernt)
+    cache/                    Divera-Antworten (60 s) und letzte Listen als Puffer
     logs/
+      <bereich>.log           app, auth, report, mail, pdf, divera, qr, update, error
+                              (je max. 20 MB, 5 alte Dateien bleiben)
       settings-audit.log      Änderungsprotokoll der Einstellungen
+      divera-raw/             Divera-Rohantworten bei Fehlern/Übernahmen (30 Tage)
+    locks/                    Datei-Sperren für gleichzeitige Zugriffe
+    mail-outbox/              nur lokal: Mails als Datei statt Versand (Entwicklung)
+    updates/
+      previous/               vorherige Programmversion (für „Zurück“)
+      history.json            Verlauf der Updates
+    maintenance.json          nur während eines Updates (wenige Sekunden)
     branding/
       logo.png                (ab Release)
     reports/
+      index.json              Übersicht (jederzeit aus den Dateien neu aufbaubar)
+      counters.json           laufende Nummern je Berichtsart und Jahr
       2026/
         Einsatzbericht_E-2026-003.json
         Einsatzbericht_E-2026-003.pdf
         Uebungsbericht_U-2026-016.json
 ```
 
-Update = `public/`, `app/` und `vendor/` ersetzen. `data/` wird nie überschrieben.
+Update über Einstellungen → Update (Abschnitt 8c); dabei werden nur `public/`, `app/` und
+`vendor/` getauscht. `data/` wird nie überschrieben.
+
+**Neustart des Produktivbetriebs (z. B. nach der Testphase):** In `data/` werden `reports/`,
+`sessions/`, `auth/`, `logs/`, `cache/`, `locks/` und `updates/history.json` geleert;
+`settings/`, `keys/`, `branding/` und `updates/previous/` bleiben. Die Berichtsnummern
+beginnen danach wieder bei `…-001`.
 
 ## 8a. Namenskonvention
 
@@ -520,6 +582,72 @@ Update = `public/`, `app/` und `vendor/` ersetzen. `data/` wird nie überschrieb
   Ohne Umlaute und Leerzeichen (Ü → Ue), damit jedes Mailprogramm sie sauber anzeigt.
   Die Bezeichnung kommt aus der Berichtsart, die Berichtsnummer (z. B. „E-2026-003“) aus
   dem einstellbaren Nummernformat der Einheit. Der Ordner bleibt englisch (`reports/`).
+
+## 8b. Adressen (sprechende Pfade)
+
+Seiten werden ohne `.php` aufgerufen. `public/.htaccess` schreibt die Pfade intern auf die
+PHP-Dateien um; `tools/dev-router.php` bildet dieselben Regeln für den lokalen PHP-Server
+nach. Im Code werden Links immer als Pfad erzeugt (`base_url('reports/…')`), nie mit Dateinamen.
+
+| Pfad | Inhalt |
+|---|---|
+| `/` | Startseite (ohne Anmeldung: Login) |
+| `/login` | Anmeldung; geschützte Seiten leiten hierher und nach der Anmeldung zurück |
+| `/reports` | Übersicht (Filter als Parameter, z. B. `?year=2026&type=incident`) |
+| `/reports/E-2026-003` | Bericht ansehen bzw. Entwurf bearbeiten |
+| `/reports/E-2026-003/edit` | abgeschlossenen Bericht korrigieren |
+| `/reports/E-2026-003/pdf` · `/json` | Download |
+| `/reports/2026.zip` · `/reports/all.zip` | ZIP-Export eines Jahres bzw. aller Berichte |
+| `/settings` · `/settings/<bereich>` | Einstellungen, z. B. `/settings/users`, `/settings/update` |
+| `/setup` | Einrichtungsassistent (nur vor der Einrichtung) |
+| `/q/<schlüssel>` · `/q` | QR-Schnellerfassung (Aufkleber-Link bzw. laufende QR-Sitzung) |
+| `/actions/<aktion>` | Formular-Aktionen (login, logout, new, discard, resend) – nur POST |
+| `/manifest.webmanifest` | Web-App-Manifest |
+
+Unbekannte Pfade ergeben „404“. `api.php` bleibt als interne Schnittstelle des Formulars.
+
+## 8c. Updates und Releases
+
+**Release erstellen (Entwickler-PC)**
+1. Version in `app/bootstrap.php` setzen und committen
+2. `tools\build-release.ps1 -Version x.y.z`: exportiert den Stand aus Git, installiert
+   die Bibliotheken ohne Entwicklungs-Pakete, entfernt nicht benötigte PDF-Schriften,
+   prüft Syntax und erzeugt ein Test-PDF, baut `build\euedok-x.y.z.zip` und signiert es
+   (`.zip.sig`, Ed25519), setzt den Tag `vx.y.z`
+3. `main` und Tag pushen, GitHub-Release zum Tag anlegen und **beide Dateien** anhängen
+   (`gh release create …`)
+
+Der private Signaturschlüssel liegt nur auf dem Entwickler-PC
+(`%USERPROFILE%\.euedok\release-signing.key`, erzeugt mit
+`php tools/release-tool.php keygen`); EÜDOK kennt nur den öffentlichen Schlüssel. Geht der
+private Schlüssel verloren, muss einmal per FTP aktualisiert und ein neuer Schlüssel
+hinterlegt werden.
+
+**Update installieren (Einstellungen → Update, Recht „Einstellungen ändern“)**
+- Zeigt installierte Version, PHP-Version und Hinweise, falls ein Update nicht möglich
+  wäre (fehlende PHP-Erweiterung, Ordner nicht beschreibbar).
+- **„Jetzt nach Updates suchen“** fragt die GitHub-Releases ab – **nur auf Klick**, keine
+  automatische Suche, keine Benachrichtigung.
+- Installation mit Passwortbestätigung:
+  1. ZIP und Signatur laden, **Signatur prüfen** – nur von uns signierte Pakete werden
+     installiert (schützt auch, falls ein Admin- oder GitHub-Konto übernommen wird)
+  2. Entpacken, Inhalt und Mindest-PHP-Version prüfen; Rechte wie beim FTP-Upload
+     (Ordner 0755, Dateien 0644 – sonst antwortet der Webserver mit 403)
+  3. Kurzer **Wartungsmodus** („Update läuft“) für die Sekunden des Tauschs
+  4. `app/`, `public/`, `vendor/` per Umbenennen tauschen; der alte Stand wandert nach
+     `data/updates/previous/`
+  5. **Selbsttest** (Aufruf von `/login`); schlägt er fehl, wird automatisch die vorherige
+     Version wiederhergestellt
+  6. Eintrag im Update-Verlauf und Änderungsprotokoll, Mail an die Leitung
+- **„Vorherige Version wiederherstellen“** tauscht aktuellen und vorherigen Stand (eine
+  Generation).
+- Notfall, falls die Seite gar nicht mehr startet: per FTP `app/`, `public/`, `vendor/`
+  durch die aus `data/updates/previous/` ersetzen.
+
+**Erstinstallation / Notfall per FTP:** `tools\deploy.ps1 -Version x.y.z` lädt
+`public/`, `app/`, `vendor/` per FTPS (WinSCP) hoch; `data/` wird nie angefasst. Server,
+Benutzer und Live-Adresse stehen nur lokal in `tools\deploy.local.psd1` (nicht im
+Repository), das Passwort wird bei jedem Lauf abgefragt.
 
 ## 9. Datenformate (Entwurf)
 
@@ -544,7 +672,7 @@ Update = `public/`, `app/` und `vendor/` ersetzen. `data/` wird nie überschrieb
 ```json
 {
   "personnel": [
-    { "id": "hadersbeck-f", "name": "Hadersbeck, Florian", "active": true },
+    { "id": "muster-m", "name": "Muster, Max", "active": true },
     { "id": "beispiel-e", "name": "Beispiel, Erika", "active": true }
   ],
   "equipment": [
@@ -581,12 +709,12 @@ Update = `public/`, `app/` und `vendor/` ersetzen. `data/` wird nie überschrieb
     { "id": "powerstation", "label": "Powerstation" }
   ],
   "personnel": [
-    { "id": "hadersbeck-f", "name": "Hadersbeck, Florian", "fields": { "flight_minutes": null } },
+    { "id": "muster-m", "name": "Muster, Max", "fields": { "flight_minutes": null } },
     { "id": "beispiel-e", "name": "Beispiel, Erika", "fields": { "flight_minutes": 85 } },
-    { "id": "div-48211", "name": "Muster, Max", "divera_id": 48211,
+    { "id": "div-48211", "name": "Probe, Paul", "divera_id": 48211,
       "fields": { "flight_minutes": 42 } }
   ],
-  "lead": "hadersbeck-f",
+  "lead": "muster-m",
   "vehicles": [
     { "id": "div-veh-311", "label": "MTW UG-Drohne", "source": "divera",
       "fields": { "distance_km": 37 } },
@@ -602,8 +730,8 @@ Update = `public/`, `app/` und `vendor/` ersetzen. `data/` wird nie überschrieb
   "custom_fields": {},
   "status": "closed",
   "history": [
-    { "action": "created", "by": "hadersbeck", "at": "2026-10-13T08:12:00" },
-    { "action": "closed",  "by": "hadersbeck", "at": "2026-10-13T08:30:00" },
+    { "action": "created", "by": "mmuster", "at": "2026-10-13T08:12:00" },
+    { "action": "closed",  "by": "mmuster", "at": "2026-10-13T08:30:00" },
     { "action": "mail_sent", "to": ["leitung@example.org"], "success": true,
       "at": "2026-10-13T08:30:04" }
   ]
@@ -629,10 +757,24 @@ Update = `public/`, `app/` und `vendor/` ersetzen. `data/` wird nie überschrieb
 - Nur HTTPS, Login-Pflicht für alles inkl. PDF-Download – **einzige Ausnahme:**
   QR-Schnellerfassung, die nur das Erstellen eines neuen Berichts erlaubt (7b),
   optional zusätzlich mit PIN abgesichert
-- Daten außerhalb des Web-Roots, zusätzlich `.htaccess`-Sperre als Rückfallebene
-- Angemeldet bleiben auf dem eigenen Gerät (z. B. 30 Tage), damit am Einsatzort kein
-  Passwort getippt werden muss; Abmelden jederzeit möglich
-- Schutz gegen Brute-Force (Sperre nach Fehlversuchen), CSRF-Token
+- Daten außerhalb des Web-Roots, zusätzlich `.htaccess`-Sperre als Rückfallebene;
+  EÜDOK startet nicht, wenn der Dokumentstamm fälschlich auf den Projektordner zeigt
+- Angemeldet bleiben auf dem eigenen Gerät (Standard 30 Tage), damit am Einsatzort kein
+  Passwort getippt werden muss; Abmelden jederzeit möglich. Das Token wird bei jeder
+  Nutzung ausgetauscht (altes gilt nur noch 60 Sekunden)
+- **Anmeldung:** 5 Fehlversuche je Benutzername → 15 Minuten Sperre; 20 Fehlversuche je
+  IP-Adresse (über alle Namen) → 15 Minuten Sperre. Zähler werden vor der Passwortprüfung
+  atomar erhöht (keine Umgehung durch parallele Anfragen); gleiche Antwortzeit für bekannte
+  und unbekannte Benutzernamen
+- Nach einer Passwortänderung enden alle älteren Sitzungen und „angemeldet bleiben“-Tokens;
+  Deaktivieren eines Zugangs beendet alle seine Anmeldungen
+- Weiterleitung nach der Anmeldung nur auf eigene Seiten (kein Umleiten auf fremde Adressen)
+- **QR-PIN:** 10 falsche PINs innerhalb einer Stunde sperren den QR-Zugang 1 Stunde
+  komplett (Abschnitt 7b); höchstens 5 abgeschlossene Berichte je Stunde und QR-Zugang
+- Sicherheits-Header (u. a. Content-Security-Policy ohne Inline-Skripte, HSTS), CSRF-Token
+  für jede Aktion, Sitzungsdateien im geschützten `data/sessions/`
+- Updates nur als signierte Pakete, Installation mit Passwortbestätigung (Abschnitt 8c)
+- Protokolle enthalten nie Passwörter, PINs oder Schlüssel
 - Schreiben mit Datei-Sperre (zwei gleichzeitige Bearbeiter überschreiben sich nicht)
 - Backup: ZIP-Export aller Berichte per Klick; zusätzlich liegt durch den Mailversand
   jeder Bericht automatisch ein zweites Mal im Empfänger-Postfach
@@ -647,7 +789,7 @@ Update = `public/`, `app/` und `vendor/` ersetzen. `data/` wird nie überschrieb
 
 ## 11. Ausbaustufen
 
-**Stufe 1 – nutzbar für die UG-Drohne**
+**Stufe 1 – nutzbar für die UG-Drohne** (umgesetzt, produktiv seit 17.10.2026)
 Login · Startseite · Formular (mobil optimiert) · JSON + PDF · automatischer
 Mailversand · **QR-Schnellerfassung** inkl. Verwaltung und Druckvorlage ·
 **Fahrzeug-Modul** · **Divera247: Einsatz- und Übungsdaten, Personal und Fahrzeuge live** ·
@@ -657,10 +799,18 @@ Pflichtfelder, Module, Zusatzfelder, Personal, Geräte, Fahrzeuge, Alarmierung,
 Mailversand, Divera247, Zugänge, QR-Zugänge) · **Einrichtungsassistent** ·
 Startwerte UG-Drohne (5 Dummy-Personen, Flugminuten, Kilometer)
 
+**Nachgezogen nach Stufe 1 (Versionen 1.1 – 1.4)**
+PDF-Formular-Layout mit Einheitsführer · Fußzeilen-Editor · Entwürfe löschen ·
+automatischer Einheitsführer · Fahrzeugquelle EÜDOK/Divera · Protokolle mit
+Protokollstufe und ZIP-Download · App-Name auf dem Startbildschirm · Sicherheits-Härtung
+(Abschnitt 10) · **Update-Funktion über GitHub-Releases** · Darstellung je Berichtsart ·
+E-Mail-Adresse als Benutzername · ruhige Geräteauswahl am Handy · **sprechende Pfade
+ohne `.php`**
+
 **Stufe 2 – Release für andere Einheiten**
 Logo-Upload · Beispiel-Startwerte „Feuerwehr“ im Einrichtungsassistenten ·
 Einstellungen sichern / auf eine andere Installation übertragen (Export/Import) ·
-Installationsanleitung
+Installationsanleitung (Quellcode und Releases sind bereits öffentlich)
 
 **Stufe 3 – optional**
 Anhänge (Fotos, Flug-Logs) · Import alter Berichte · Ablage der PDFs in Nextcloud
@@ -670,12 +820,11 @@ Anhänge (Fotos, Flug-Logs) · Import alter Berichte · Ablage der PDFs in Nextc
 
 Keine offenen Konzeptfragen.
 
-**Später nachzureichen (blockiert die Umsetzung nicht):**
-- Empfängeradresse(n) und SMTP-Absender-Postfach – bis dahin ist der Mailversand in
-  den Einstellungen ausgeschaltet
-- Logo (zum Release)
-- Divera247-API-Schlüssel (Testzugang) – bis dahin ist die Anbindung aus
+**Später nachzureichen:**
+- Logo (zum Release, Stufe 2)
 - Selbst hinterlegte Fahrzeuge, die nicht in Divera sind (falls es welche gibt)
-- Echte Personaldaten (bis dahin 5 Dummy-Datensätze)
 
-Umsetzung erst nach ausdrücklicher Freigabe.
+Erledigt: Divera247-Schlüssel, Personal und Fahrzeuge aus Divera247.
+
+**Arbeitsweise:** lokal entwickeln und testen (XAMPP, `php -S localhost:8080 -t public
+tools/dev-router.php`), Commits und Releases nur auf ausdrückliche Anweisung.
