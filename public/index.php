@@ -9,7 +9,7 @@ use Euedok\Reports;
 use Euedok\Settings;
 
 if (!Settings::isInstalled()) {
-    redirect('setup.php');
+    redirect('setup');
 }
 
 $action = $_GET['action'] ?? '';
@@ -20,25 +20,31 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $err = Auth::attempt(post_str('username'), (string) ($_POST['password'] ?? ''), post_bool('remember'));
     if ($err !== null) {
         flash($err, 'err');
-        redirect('index.php?login=1');
+        redirect('login');
     }
     $target = $_SESSION['after_login'] ?? '';
     unset($_SESSION['after_login']);
     // nur eigene Pfade: genau ein führender „/“, kein „//“ oder „\“ (sonst Weiterleitung auf fremde Seiten)
     if (is_string($target) && str_starts_with($target, base_url()) && preg_match('#^/(?![/\\\\])[^\\\\\s]*$#', $target)
-        && !str_contains($target, '//') && !str_contains($target, 'action=')) {
+        && !str_contains($target, '//') && !str_contains($target, 'action=') && !str_contains($target, '/actions/')) {
         header('Location: ' . $target);
         exit;
     }
-    redirect('index.php');
+    redirect('');
 }
 if ($action === 'logout' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     Auth::logout();
-    redirect('index.php?login=1');
+    redirect('login');
 }
 
 if (Auth::user() === null) {
+    // z. B. /reports ohne Anmeldung: Ziel merken und auf /login – nach der Anmeldung geht es dorthin zurück
+    $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+    if (!in_array($path, [base_url(''), base_url('login'), base_url('index.php')], true)) {
+        $_SESSION['after_login'] = (string) $_SERVER['REQUEST_URI'];
+        redirect('login');
+    }
     render('partials/head', ['title' => 'Anmelden', 'plain' => true]);
     render('login');
     render('partials/foot');
@@ -50,7 +56,7 @@ $user = Auth::requireLogin();
 if ($action === 'new' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $report = Reports::create(post_str('type'), Actor::fromUser($user));
-    redirect('report.php?n=' . rawurlencode($report['report_number']) . '&new=1');
+    redirect('reports/' . rawurlencode($report['report_number']) . '?new=1');
 }
 if ($action === 'discard' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
@@ -63,7 +69,7 @@ if ($action === 'discard' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     // Zurück zur aufrufenden Seite (nur interne Ziele)
     $back = post_str('back');
-    redirect(preg_match('#^index\.php(\?[\w=&%.\-]*)?$#', $back) ? $back : 'index.php');
+    redirect(preg_match('#^(reports(\?[\w=&%.\-]*)?)?$#', $back) ? $back : '');
 }
 if ($action === 'resend' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
@@ -74,7 +80,7 @@ if ($action === 'resend' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         'off' => 'Mailversand ist ausgeschaltet.',
         default => 'Versand fehlgeschlagen: ' . ($res['error'] ?? ''),
     }, $res['status'] === 'sent' ? 'ok' : 'err');
-    redirect('index.php?view=reports');
+    redirect('reports');
 }
 
 /* ---------- Übersicht ---------- */

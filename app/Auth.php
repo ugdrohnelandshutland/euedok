@@ -106,7 +106,7 @@ final class Auth
     public static function requireLogin(): array
     {
         if (!Settings::isInstalled()) {
-            redirect('setup.php');
+            redirect('setup');
         }
         $u = self::user();
         if ($u === null) {
@@ -115,7 +115,7 @@ final class Auth
             }
             $target = $_SERVER['REQUEST_URI'] ?? '';
             $_SESSION['after_login'] = is_string($target) ? $target : '';
-            redirect('index.php?login=1');
+            redirect('login');
         }
         return $u;
     }

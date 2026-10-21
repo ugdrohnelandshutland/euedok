@@ -421,7 +421,7 @@ final class Updater
     /** @return bool|null true = ok, false = Fehler (zurückrollen), null = nicht prüfbar (Server erreicht sich selbst nicht) */
     private static function selfTest(): ?bool
     {
-        $url = absolute_url('index.php?login=1');
+        $url = absolute_url('login');
         $ch = curl_init($url);
         curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_USERAGENT => 'EUEDOK-Selbsttest']);
         $body = curl_exec($ch);

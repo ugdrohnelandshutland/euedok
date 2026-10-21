@@ -8,12 +8,18 @@ function e(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/** Pfad relativ zum Web-Root dieser Installation (funktioniert auch in Unterordnern). */
+/**
+ * Pfad relativ zum Web-Root dieser Installation (funktioniert auch in Unterordnern).
+ * Seiten werden über sprechende Pfade aufgerufen (z. B. „reports/E-2026-001“, siehe public/.htaccess) –
+ * hier immer den Pfad angeben, nie die .php-Datei.
+ */
 function base_url(string $path = ''): string
 {
     static $base = null;
     if ($base === null) {
-        $dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
+        // Basis aus dem ausgeführten Skript; zeigt SCRIPT_NAME (je nach Server) auf den sprechenden Pfad, gilt das Web-Root
+        $script = (string) ($_SERVER['SCRIPT_NAME'] ?? '/');
+        $dir = str_ends_with($script, '.php') ? str_replace('\\', '/', dirname($script)) : '';
         $base = rtrim($dir, '/');
     }
     return $base . '/' . ltrim($path, '/');

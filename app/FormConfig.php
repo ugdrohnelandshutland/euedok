@@ -62,7 +62,7 @@ final class FormConfig
                 'api' => base_url('api.php'),
                 'home' => $opts['home'],
                 'back' => $opts['back'],
-                'pdf' => base_url('download.php?n=' . rawurlencode($report['report_number']) . '&f=pdf'),
+                'pdf' => base_url('reports/' . rawurlencode($report['report_number']) . '/pdf'),
                 'restart' => $opts['restart'] ?? null,
                 'sprite' => base_url('assets/icons/sprite.svg'),
             ],

@@ -15,7 +15,7 @@ $meta = Reports::meta($number);
 if (!$report || !$meta) {
     http_response_code(404);
     flash('Bericht ' . $number . ' nicht gefunden.', 'err');
-    redirect('index.php');
+    redirect('');
 }
 
 $edit = $report['status'] === 'draft' || isset($_GET['edit']);
@@ -33,8 +33,8 @@ $cfg = FormConfig::build($report, $meta, [
     'correction' => $report['status'] === 'closed',
     'ask_divera' => isset($_GET['new']) && $report['status'] === 'draft' && empty($report['divera']),
     'divera_lookup' => Divera::lookupAllowed($report['type']['id'], false),
-    'home' => base_url('index.php'),
-    'back' => base_url($report['status'] === 'closed' ? 'report.php?n=' . rawurlencode($number) : 'index.php'),
+    'home' => base_url(''),
+    'back' => base_url($report['status'] === 'closed' ? 'reports/' . rawurlencode($number) : ''),
 ]);
 
 render('partials/head', ['title' => $number, 'bodyClass' => 'report', 'plain' => true, 'scripts' => ['js/report.js']]);

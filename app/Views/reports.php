@@ -7,13 +7,12 @@ $mailLabels = ['sent' => ['ok', 'versendet'], 'failed' => ['wa', 'Fehler'], 'off
   <div class="row" style="align-items:center">
     <h1 style="flex:1">Berichte</h1>
     <div style="flex:0 0 auto;display:flex;gap:8px">
-      <a class="btn sm" href="<?= e(base_url('download.php?zip=' . (int) $filter['year'])) ?>"><?= icon('archive') ?>ZIP <?= (int) $filter['year'] ?></a>
-      <a class="btn sm" href="<?= e(base_url('download.php?zip=all')) ?>"><?= icon('archive') ?>ZIP alle</a>
+      <a class="btn sm" href="<?= e(base_url('reports/' . (int) $filter['year'] . '.zip')) ?>"><?= icon('archive') ?>ZIP <?= (int) $filter['year'] ?></a>
+      <a class="btn sm" href="<?= e(base_url('reports/all.zip')) ?>"><?= icon('archive') ?>ZIP alle</a>
     </div>
   </div>
 
   <form class="toolbar" method="get" data-autosubmit>
-    <input type="hidden" name="view" value="reports">
     <input class="in" type="search" name="q" value="<?= e($filter['q']) ?>" placeholder="Nummer, Thema oder Ort suchen …">
     <select class="in" name="year" aria-label="Jahr">
       <?php foreach ($years as $y): ?><option value="<?= $y ?>"<?= $y === $filter['year'] ? ' selected' : '' ?>><?= $y ?></option><?php endforeach; ?>
@@ -40,8 +39,8 @@ $mailLabels = ['sent' => ['ok', 'versendet'], 'failed' => ['wa', 'Fehler'], 'off
         $type = Settings::reportType($r['type']);
         $alert = ($type['style'] ?? '') === 'alert';
         $m = $mailLabels[$r['mail']['status'] ?? ''] ?? null; ?>
-      <tr class="link-row" data-href="<?= e(base_url('report.php?n=' . rawurlencode($r['number']))) ?>">
-        <td><span class="bd <?= $alert ? 'e' : 'u' ?>"><?= e($r['type_label']) ?></span> <a class="num" href="<?= e(base_url('report.php?n=' . rawurlencode($r['number']))) ?>"><?= e($r['number']) ?></a>
+      <tr class="link-row" data-href="<?= e(base_url('reports/' . rawurlencode($r['number']))) ?>">
+        <td><span class="bd <?= $alert ? 'e' : 'u' ?>"><?= e($r['type_label']) ?></span> <a class="num" href="<?= e(base_url('reports/' . rawurlencode($r['number']))) ?>"><?= e($r['number']) ?></a>
           <?php if (!empty($r['qr_access_id'])): ?> <span class="bd qr">QR</span><?php endif; ?></td>
         <td data-label="Beginn"><?= e(fmt_datetime($r['start'] ?? null)) ?></td>
         <td data-label="Thema / Ort"><span><b><?= e($r['subject'] ?: '(noch ohne Thema)') ?></b><br><span class="muted small"><?= e($r['location']) ?></span></span></td>
@@ -49,14 +48,14 @@ $mailLabels = ['sent' => ['ok', 'versendet'], 'failed' => ['wa', 'Fehler'], 'off
         <td data-label="Mail"<?= $m ? '' : ' class="empty-cell"' ?>><?php if ($m): ?><span class="bd <?= $m[0] ?>" title="<?= e($r['mail']['error'] ?? '') ?>"><?= e($m[1]) ?></span><?php endif; ?></td>
         <td class="act">
           <?php if ($r['status'] === 'draft'): ?>
-            <a class="btn sm" href="<?= e(base_url('report.php?n=' . rawurlencode($r['number']))) ?>"><?= icon('edit') ?>Bearbeiten</a>
-            <?php render('partials/discard-button', ['number' => $r['number'], 'back' => 'index.php?' . http_build_query(['view' => 'reports'] + array_filter($filter))]); ?>
+            <a class="btn sm" href="<?= e(base_url('reports/' . rawurlencode($r['number']))) ?>"><?= icon('edit') ?>Bearbeiten</a>
+            <?php render('partials/discard-button', ['number' => $r['number'], 'back' => 'reports' . (array_filter($filter) ? '?' . http_build_query(array_filter($filter)) : '')]); ?>
           <?php endif; ?>
           <?php if ($r['status'] === 'closed'): ?>
-            <a class="btn sm" href="<?= e(base_url('download.php?n=' . rawurlencode($r['number']) . '&f=pdf')) ?>"><?= icon('file') ?>PDF</a>
-            <a class="btn sm" href="<?= e(base_url('download.php?n=' . rawurlencode($r['number']) . '&f=json')) ?>"><?= icon('json') ?>JSON</a>
+            <a class="btn sm" href="<?= e(base_url('reports/' . rawurlencode($r['number']) . '/pdf')) ?>"><?= icon('file') ?>PDF</a>
+            <a class="btn sm" href="<?= e(base_url('reports/' . rawurlencode($r['number']) . '/json')) ?>"><?= icon('json') ?>JSON</a>
             <?php if (($r['mail']['status'] ?? '') === 'failed'): ?>
-            <form method="post" action="<?= e(base_url('index.php?action=resend')) ?>" style="display:inline"><?= csrf_field() ?><input type="hidden" name="n" value="<?= e($r['number']) ?>"><button class="btn sm"><?= icon('send') ?>Erneut senden</button></form>
+            <form method="post" action="<?= e(base_url('actions/resend')) ?>" style="display:inline"><?= csrf_field() ?><input type="hidden" name="n" value="<?= e($r['number']) ?>"><button class="btn sm"><?= icon('send') ?>Erneut senden</button></form>
             <?php endif; ?>
           <?php endif; ?>
         </td>

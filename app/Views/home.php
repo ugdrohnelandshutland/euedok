@@ -13,7 +13,7 @@ $more = array_slice($types, 2);
 
   <div class="hero">
     <?php foreach ($big as $t): $alert = ($t['style'] ?? '') === 'alert'; ?>
-    <form method="post" action="<?= e(base_url('index.php?action=new')) ?>">
+    <form method="post" action="<?= e(base_url('actions/new')) ?>">
       <?= csrf_field() ?><input type="hidden" name="type" value="<?= e($t['id']) ?>">
       <button class="rc big">
         <span class="blk <?= $alert ? 'e' : 'u' ?>"><?= icon($alert ? 'siren' : 'target') ?><small><?= e($t['label']) ?></small></span>
@@ -26,7 +26,7 @@ $more = array_slice($types, 2);
   <?php if ($more): ?>
   <div class="chips">
     <?php foreach ($more as $t): ?>
-    <form method="post" action="<?= e(base_url('index.php?action=new')) ?>"><?= csrf_field() ?><input type="hidden" name="type" value="<?= e($t['id']) ?>">
+    <form method="post" action="<?= e(base_url('actions/new')) ?>"><?= csrf_field() ?><input type="hidden" name="type" value="<?= e($t['id']) ?>">
       <button class="chip"><?= icon('plus') ?><?= e($t['label']) ?></button></form>
     <?php endforeach; ?>
   </div>
@@ -42,7 +42,7 @@ $more = array_slice($types, 2);
   </section>
 
   <section class="stack">
-    <div class="sec-t">Letzte Berichte <a href="<?= e(base_url('index.php?view=reports')) ?>">Alle anzeigen</a></div>
+    <div class="sec-t">Letzte Berichte <a href="<?= e(base_url('reports')) ?>">Alle anzeigen</a></div>
     <?php if (!$recent): ?>
       <div class="empty">Noch keine abgeschlossenen Berichte.</div>
     <?php else: ?>

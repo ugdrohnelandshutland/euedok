@@ -10,7 +10,7 @@ use Euedok\Updater;
 
 $unit = Settings::unit();
 $md = Settings::masterData();
-$action = static fn (string $a) => e(base_url('settings.php?s=' . $section . '&action=' . $a));
+$action = static fn (string $a) => e(base_url('settings/' . $section . '?action=' . $a));
 $sw = static fn (string $name, bool $on, string $extra = '') => '<span class="sw"><input type="checkbox" name="' . e($name) . '" value="1"' . ($on ? ' checked' : '') . $extra . '><span></span></span>';
 $toggle = static fn (string $name, bool $on, string $title, string $sub = '') => '<label class="toggle-row"><span class="tx"><b>' . e($title) . '</b>' . ($sub !== '' ? '<span>' . e($sub) . '</span>' : '') . '</span>' . $sw($name, $on) . '</label>';
 $mv = '<span class="mv"><button type="button" data-move="up" aria-label="nach oben" style="transform:rotate(-90deg)">' . icon('cr') . '</button><button type="button" data-move="down" aria-label="nach unten">' . icon('cd') . '</button></span>';
@@ -54,7 +54,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
   <div class="set">
     <nav class="set-nav" aria-label="Bereiche">
       <?php foreach (SettingsPage::SECTIONS as $k => [$label, $ic]): ?>
-      <a href="<?= e(base_url('settings.php?s=' . $k)) ?>" class="<?= $k === $section ? 'on' : '' ?>"><?= icon($ic) ?><?= e($label) ?></a>
+      <a href="<?= e(base_url('settings/' . $k)) ?>" class="<?= $k === $section ? 'on' : '' ?>"><?= icon($ic) ?><?= e($label) ?></a>
       <?php endforeach; ?>
     </nav>
     <div class="stack">
@@ -405,7 +405,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <h3><?= icon('qr') ?>Neuer Link für „<?= e($ne['label']) ?>“</h3>
         <div class="keybox"><?= e(absolute_url('q/' . $heldKey)) ?></div>
         <p class="hint warn">Der Link ist nur 30 Minuten sichtbar – gespeichert wird nur ein Hash. Jetzt die Druckvorlage öffnen und ausdrucken.</p>
-        <a class="btn pri" href="<?= e(base_url('settings.php?sticker=' . rawurlencode($newId))) ?>" target="_blank"><?= icon('printer') ?>Druckvorlage (PDF) öffnen</a>
+        <a class="btn pri" href="<?= e(base_url('settings/qr?sticker=' . rawurlencode($newId))) ?>" target="_blank"><?= icon('printer') ?>Druckvorlage (PDF) öffnen</a>
       </section>
       <?php endif; ?>
 
@@ -459,9 +459,8 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
     }
     ?>
       <section class="card stack">
-        <h3><?= icon('server') ?>Protokolle <span class="r"><a class="btn sm" href="<?= e(base_url('settings.php?logs-zip=1')) ?>"><?= icon('archive') ?>Alle als ZIP</a></span></h3>
+        <h3><?= icon('server') ?>Protokolle <span class="r"><a class="btn sm" href="<?= e(base_url('settings/logs?logs-zip=1')) ?>"><?= icon('archive') ?>Alle als ZIP</a></span></h3>
         <form method="get" class="toolbar" data-autosubmit>
-          <input type="hidden" name="s" value="logs">
           <select class="in" name="ch" aria-label="Bereich">
             <?php foreach (Log::CHANNELS as $k => $l): ?><option value="<?= e($k) ?>"<?= $k === $ch ? ' selected' : '' ?>><?= e($l) ?> (<?= e(number_format($sizes[$k] / 1024, 0, ',', '.')) ?> KB)</option><?php endforeach; ?>
           </select>

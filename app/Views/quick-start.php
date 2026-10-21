@@ -14,14 +14,14 @@ $types = Settings::activeReportTypes();
     <h1>Bericht erstellen</h1>
   </div>
   <?php if ($draft): ?>
-  <a class="rc" href="<?= e(base_url('quick-entry.php?n=' . rawurlencode($draft))) ?>">
+  <a class="rc" href="<?= e(base_url('q?n=' . rawurlencode($draft))) ?>">
     <span class="blk o"><?= icon('edit') ?><small>Entwurf</small></span>
     <span class="tx"><b>Entwurf <?= e($draft) ?> fortsetzen</b><span>auf diesem Gerät begonnen</span></span>
   </a>
   <?php endif; ?>
   <div class="stack">
     <?php foreach ($types as $t): $alert = ($t['style'] ?? '') === 'alert'; ?>
-    <form method="post" action="<?= e(base_url('quick-entry.php?action=start')) ?>">
+    <form method="post" action="<?= e(base_url('q?action=start')) ?>">
       <?= csrf_field() ?><input type="hidden" name="type" value="<?= e($t['id']) ?>">
       <button class="rc big">
         <span class="blk <?= $alert ? 'e' : 'u' ?>"><?= icon($alert ? 'siren' : 'target') ?><small><?= e($t['label']) ?></small></span>

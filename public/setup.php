@@ -7,7 +7,7 @@ use Euedok\Settings;
 use Euedok\Setup;
 
 if (Settings::isInstalled()) {
-    redirect('index.php');
+    redirect('');
 }
 
 $error = null;
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = Setup::install($_POST);
         if ($error === null) {
             flash('Eingerichtet. Weitere Einstellungen findest du unter „Einstellungen“.');
-            redirect('settings.php');
+            redirect('settings');
         }
     }
 }

@@ -35,15 +35,15 @@ $actions = [
       <p class="muted"><?= e($r['subject']) ?> · <?= e(fmt_datetime($r['start'])) ?></p>
     </div>
     <div style="flex:0 1 auto;display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn" href="<?= e(base_url('download.php?n=' . rawurlencode($r['report_number']) . '&f=pdf')) ?>" target="_blank"><?= icon('file') ?>PDF</a>
-      <a class="btn" href="<?= e(base_url('download.php?n=' . rawurlencode($r['report_number']) . '&f=json')) ?>"><?= icon('json') ?>JSON</a>
-      <a class="btn pri" href="<?= e(base_url('report.php?n=' . rawurlencode($r['report_number']) . '&edit=1')) ?>"><?= icon('edit') ?>Korrigieren</a>
+      <a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/pdf')) ?>" target="_blank"><?= icon('file') ?>PDF</a>
+      <a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/json')) ?>"><?= icon('json') ?>JSON</a>
+      <a class="btn pri" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/edit')) ?>"><?= icon('edit') ?>Korrigieren</a>
     </div>
   </div>
 
   <?php if (($meta['mail']['status'] ?? '') === 'failed'): ?>
   <div class="msg warn"><?= icon('alert') ?><span style="flex:1">Mailversand fehlgeschlagen: <?= e($meta['mail']['error'] ?? '') ?></span>
-    <form method="post" action="<?= e(base_url('index.php?action=resend')) ?>"><?= csrf_field() ?><input type="hidden" name="n" value="<?= e($r['report_number']) ?>"><button class="btn sm"><?= icon('send') ?>Erneut senden</button></form></div>
+    <form method="post" action="<?= e(base_url('actions/resend')) ?>"><?= csrf_field() ?><input type="hidden" name="n" value="<?= e($r['report_number']) ?>"><button class="btn sm"><?= icon('send') ?>Erneut senden</button></form></div>
   <?php endif; ?>
 
   <div class="grid2">

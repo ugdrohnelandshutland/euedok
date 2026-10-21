@@ -13,7 +13,7 @@ ob_start(); ?>
       <span class="bd ok">Abgeschlossen</span>
     <?php endif; ?>
 <?php $badges = ob_get_clean(); ?>
-<a class="rc" href="<?= e(base_url('report.php?n=' . rawurlencode($r['number']))) ?>">
+<a class="rc" href="<?= e(base_url('reports/' . rawurlencode($r['number']))) ?>">
   <span class="blk <?= $alert ? 'e' : 'u' ?>"><?= icon($alert ? 'siren' : 'target') ?><small><?= e($type['label'] ?? $r['type_label']) ?></small></span>
   <span class="tx">
     <b><?= e($r['subject'] !== '' ? $r['subject'] : '(noch ohne Thema)') ?></b>

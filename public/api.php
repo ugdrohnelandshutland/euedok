@@ -66,9 +66,9 @@ switch ($action) {
         if ($res['ok']) {
             if ($qr) {
                 QrAccess::grantPdf($number);
-                $res['pdf_url'] = base_url('download.php?n=' . rawurlencode($number) . '&f=pdf&qr=1');
+                $res['pdf_url'] = base_url('reports/' . rawurlencode($number) . '/pdf?qr=1');
             } else {
-                $res['pdf_url'] = base_url('download.php?n=' . rawurlencode($number) . '&f=pdf');
+                $res['pdf_url'] = base_url('reports/' . rawurlencode($number) . '/pdf');
             }
         }
         unset($res['report'], $res['meta']);

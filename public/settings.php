@@ -19,7 +19,7 @@ use Euedok\Updater;
 $user = Auth::requireSettingsRight();
 $section = is_string($_GET['s'] ?? null) && isset(SettingsPage::SECTIONS[$_GET['s']]) ? $_GET['s'] : 'unit';
 $action = (string) ($_GET['action'] ?? '');
-$self = 'settings.php?s=' . $section;
+$self = 'settings/' . $section;
 
 /* QR-Aufkleber (nur direkt nach Anlegen/Erneuern – der Schlüssel liegt nur in dieser Sitzung) */
 if (isset($_GET['sticker'])) {
@@ -28,7 +28,7 @@ if (isset($_GET['sticker'])) {
     $entry = QrAccess::find($id);
     if (!$key || !$entry) {
         flash('Die Druckvorlage gibt es nur direkt nach dem Anlegen oder Erneuern des Schlüssels.', 'warn');
-        redirect('settings.php?s=qr');
+        redirect('settings/qr');
     }
     $pdf = Pdf::qrSticker(absolute_url('q/' . $key), $entry['label']);
     header('Content-Type: application/pdf');
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             [$entry, $key] = QrAccess::create($label, post_bool('divera'));
             QrAccess::holdNewKey($entry['id'], $key);
             flash('QR-Zugang „' . $label . '“ angelegt. Link und Druckvorlage sind nur jetzt verfügbar.');
-            redirect($self . '&new=' . $entry['id']);
+            redirect($self . '?new=' . $entry['id']);
 
         case 'qr-renew':
             $id = post_str('id');
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 QrAccess::holdNewKey($id, $key);
                 flash('Neuer Schlüssel erzeugt – der alte Link und Aufkleber sind ab sofort ungültig.');
             }
-            redirect($self . '&new=' . $id);
+            redirect($self . '?new=' . $id);
 
         case 'qr-toggle':
             $e = QrAccess::find(post_str('id'));

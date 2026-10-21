@@ -52,11 +52,11 @@ if ($key !== '') {
     if (!empty($entry['pin_enabled']) && !QrAccess::pinRemembered($entry, $device)) {
         $_SESSION['qr_pending'] = $entry['id'];
         Log::info('qr', 'pin_required', 'QR geöffnet, PIN-Abfrage', ['qr' => $entry['label'], 'device' => substr($device, 0, 12)]);
-        redirect('quick-entry.php?pin=1');
+        redirect('q?pin=1');
     }
     Log::info('qr', 'opened', 'QR-Schnellerfassung geöffnet', ['qr' => $entry['label'], 'device' => substr($device, 0, 12)]);
     QrAccess::startSession($entry, $device);
-    redirect('quick-entry.php');
+    redirect('q');
 }
 
 /* 2) PIN-Abfrage */
@@ -73,7 +73,7 @@ if (isset($_GET['pin'])) {
         if ($error === null) {
             unset($_SESSION['qr_pending']);
             QrAccess::startSession($entry, $device);
-            redirect('quick-entry.php');
+            redirect('q');
         }
     }
     $locked = QrAccess::lockedUntil($entry);
@@ -95,7 +95,7 @@ if (($_GET['action'] ?? '') === 'start' && $_SERVER['REQUEST_METHOD'] === 'POST'
         qr_fail('Unbekannte Berichtsart.');
     }
     $report = Reports::create($type, QrAccess::actor($entry, $device));
-    redirect('quick-entry.php?n=' . rawurlencode($report['report_number']) . '&new=1');
+    redirect('q?n=' . rawurlencode($report['report_number']) . '&new=1');
 }
 
 $number = is_string($_GET['n'] ?? null) ? $_GET['n'] : '';
@@ -106,15 +106,15 @@ if ($number !== '') {
     $report = Reports::load($number);
     $meta = Reports::meta($number);
     if ($report['status'] !== 'draft') {
-        redirect('quick-entry.php?new=1');
+        redirect('q?new=1');
     }
     $cfg = FormConfig::build($report, $meta, [
         'mode' => 'qr',
         'ask_divera' => isset($_GET['new']) && empty($report['divera']) && !empty($entry['divera_enabled']),
         'divera_lookup' => !empty($entry['divera_enabled']) ? Divera::lookupAllowed($report['type']['id'], true) : null,
-        'home' => base_url('quick-entry.php?new=1'),
-        'back' => base_url('quick-entry.php?new=1'),
-        'restart' => base_url('quick-entry.php?new=1'),
+        'home' => base_url('q?new=1'),
+        'back' => base_url('q?new=1'),
+        'restart' => base_url('q?new=1'),
     ]);
     render('partials/head', ['title' => $number, 'bodyClass' => 'report', 'plain' => true, 'scripts' => ['js/report.js']]);
     render('report-form', ['cfg' => $cfg, 'r' => $report, 'qrLabel' => $entry['label']]);
@@ -124,6 +124,6 @@ if ($number !== '') {
 
 $draft = QrAccess::openDraft($entry, $device);
 if ($draft && !isset($_GET['new'])) {
-    redirect('quick-entry.php?n=' . rawurlencode($draft));
+    redirect('q?n=' . rawurlencode($draft));
 }
 qr_page('Schnellerfassung', 'quick-start', ['entry' => $entry, 'draft' => $draft]);

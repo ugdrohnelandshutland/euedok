@@ -1,5 +1,5 @@
 # EÜDOK – Web-Root (in Plesk als Dokumentstamm eintragen)
-Options -Indexes
+Options -Indexes -MultiViews
 DirectoryIndex index.php
 
 <IfModule mod_rewrite.c>
@@ -13,8 +13,21 @@ DirectoryIndex index.php
   # altes statisches Manifest → dynamisch (Name aus den Einstellungen)
   RewriteRule ^manifest\.webmanifest$ manifest.php [L]
 
-  # QR-Schnellerfassung: /q/<key>
+  # QR-Schnellerfassung: /q/<key> (Aufkleber) und /q (laufende QR-Sitzung)
   RewriteRule ^q/([0-9A-Za-z-]{20,64})/?$ quick-entry.php?key=$1 [L,QSA]
+  RewriteRule ^q/?$ quick-entry.php [L,QSA]
+
+  # Sprechende Pfade (gleiche Regeln in tools/dev-router.php für den lokalen PHP-Server)
+  RewriteRule ^login/?$ index.php?login=1 [L,QSA]
+  RewriteRule ^actions/(login|logout|new|discard|resend)$ index.php?action=$1 [L,QSA]
+  RewriteRule ^setup/?$ setup.php [L,QSA]
+  RewriteRule ^reports/?$ index.php?view=reports [L,QSA]
+  RewriteRule ^reports/(\d{4}|all)\.zip$ download.php?zip=$1 [L,QSA]
+  RewriteRule ^reports/([A-Za-z0-9._-]+)/(pdf|json)$ download.php?n=$1&f=$2 [L,QSA]
+  RewriteRule ^reports/([A-Za-z0-9._-]+)/edit$ report.php?n=$1&edit=1 [L,QSA]
+  RewriteRule ^reports/([A-Za-z0-9._-]+)/?$ report.php?n=$1 [L,QSA]
+  RewriteRule ^settings/?$ settings.php [L,QSA]
+  RewriteRule ^settings/([a-z]+)/?$ settings.php?s=$1 [L,QSA]
 </IfModule>
 
 # Versteckte Dateien sperren

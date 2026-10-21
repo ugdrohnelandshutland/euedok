@@ -15,7 +15,7 @@ $apiBase = $apiBase ?? base_url('api.php');
 <meta name="theme-color" content="#102031">
 <meta name="csrf" content="<?= e(csrf_token()) ?>">
 <title><?= e($title) ?> · EÜDOK</title>
-<link rel="manifest" href="<?= e(base_url('manifest.php')) ?>">
+<link rel="manifest" href="<?= e(base_url('manifest.webmanifest')) ?>">
 <meta name="apple-mobile-web-app-title" content="<?= e(trim((string) ($unit['app_name'] ?? '')) ?: 'EÜDOK') ?>">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -31,17 +31,17 @@ $apiBase = $apiBase ?? base_url('api.php');
 <body class="<?= e($bodyClass) ?>" data-api="<?= e($apiBase) ?>">
 <?php if (!$plain): ?>
 <header class="top">
-  <a class="brand" href="<?= e(base_url('index.php')) ?>">
+  <a class="brand" href="<?= e(base_url('')) ?>">
     <svg aria-hidden="true"><use href="<?= e(base_url('assets/icons/sprite.svg')) ?>#logo"/></svg>
     <span class="wm">EÜ<em>DOK</em></span>
     <?php if ($unit['name'] !== ''): ?><span class="unit-label"><?= e($unit['name']) ?></span><?php endif; ?>
   </a>
   <?php if ($user): ?>
   <nav class="nav" aria-label="Hauptnavigation">
-    <a href="<?= e(base_url('index.php')) ?>" class="<?= $nav === 'home' ? 'on' : '' ?>"><?= icon('home') ?>Start</a>
-    <a href="<?= e(base_url('index.php?view=reports')) ?>" class="<?= $nav === 'reports' ? 'on' : '' ?>"><?= icon('list') ?>Berichte</a>
+    <a href="<?= e(base_url('')) ?>" class="<?= $nav === 'home' ? 'on' : '' ?>"><?= icon('home') ?>Start</a>
+    <a href="<?= e(base_url('reports')) ?>" class="<?= $nav === 'reports' ? 'on' : '' ?>"><?= icon('list') ?>Berichte</a>
     <?php if (!empty($user['can_manage_settings'])): ?>
-    <a href="<?= e(base_url('settings.php')) ?>" class="<?= $nav === 'settings' ? 'on' : '' ?>"><?= icon('sliders') ?>Einstellungen</a>
+    <a href="<?= e(base_url('settings')) ?>" class="<?= $nav === 'settings' ? 'on' : '' ?>"><?= icon('sliders') ?>Einstellungen</a>
     <?php endif; ?>
   </nav>
   <?php endif; ?>
@@ -49,7 +49,7 @@ $apiBase = $apiBase ?? base_url('api.php');
     <?php if ($user): ?><span class="usr"><?= e($user['display_name']) ?></span><?php endif; ?>
     <button type="button" class="ib lbl" data-theme-toggle title="Tag / Nacht umschalten" aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?><span class="ib-l">Tag/Nacht</span></button>
     <?php if ($user): ?>
-    <form method="post" action="<?= e(base_url('index.php?action=logout')) ?>"><?= csrf_field() ?><button class="ib lbl" title="Abmelden"><?= icon('logout') ?><span class="ib-l">Abmelden</span></button></form>
+    <form method="post" action="<?= e(base_url('actions/logout')) ?>"><?= csrf_field() ?><button class="ib lbl" title="Abmelden"><?= icon('logout') ?><span class="ib-l">Abmelden</span></button></form>
     <?php endif; ?>
   </div>
 </header>

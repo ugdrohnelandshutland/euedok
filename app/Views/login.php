@@ -1,6 +1,6 @@
 <?php $unit = \Euedok\Settings::unit(); ?>
 <main class="auth">
-  <form class="card" method="post" action="<?= e(base_url('index.php?action=login')) ?>">
+  <form class="card" method="post" action="<?= e(base_url('actions/login')) ?>">
     <?= csrf_field() ?>
     <div class="brand">
       <svg aria-hidden="true"><use href="<?= e(base_url('assets/icons/sprite.svg')) ?>#logo"/></svg>

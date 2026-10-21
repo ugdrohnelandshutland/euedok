@@ -16,10 +16,10 @@ header('Content-Type: application/manifest+json; charset=utf-8');
 header('Cache-Control: public, max-age=300');
 echo json_encode([
     // eindeutig je Installation, damit Android zwei Organisationen nicht als dieselbe App ansieht
-    'id' => base_url('index.php') . '?app=' . rawurlencode((string) ($_SERVER['HTTP_HOST'] ?? 'euedok')),
+    'id' => base_url('') . '?app=' . rawurlencode((string) ($_SERVER['HTTP_HOST'] ?? 'euedok')),
     'name' => $full,
     'short_name' => $short,
-    'start_url' => base_url('index.php'),
+    'start_url' => base_url(''),
     'scope' => base_url(),
     'display' => 'standalone',
     'background_color' => '#09111c',
