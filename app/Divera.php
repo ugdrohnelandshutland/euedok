@@ -307,7 +307,8 @@ final class Divera
     private static function answers(array $item): array
     {
         $out = [];
-        foreach ((array) ($item['ucr_answered'] ?? []) as $answerId => $people) {
+        // Alarme: ucr_answered; Termine: participationlist (beides Antwort-ID → Personen)
+        foreach ((array) ($item['ucr_answered'] ?? $item['participationlist'] ?? []) as $answerId => $people) {
             if (!is_array($people)) {
                 continue;
             }
