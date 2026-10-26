@@ -102,7 +102,13 @@ final class Reports
 
     /* ---------- Nummernvergabe ---------- */
 
-    private static function nextNumber(array $type, int $year): string
+    private static function numberFormat(array $type): string
+    {
+        return (string) ($type['number_format'] ?: strtoupper(substr($type['id'], 0, 1)) . '-{YYYY}-{NNN}');
+    }
+
+    /** @return array{0:string,1:int} Berichtsnummer und laufende Nummer */
+    private static function nextNumber(array $type, int $year): array
     {
         return Storage::locked('counters', static function () use ($type, $year) {
             $counters = Storage::read('reports/counters.json', []);
@@ -110,9 +116,57 @@ final class Reports
             $n = ($counters[$key] ?? 0) + 1;
             $counters[$key] = $n;
             Storage::write('reports/counters.json', $counters);
-            $fmt = (string) ($type['number_format'] ?: strtoupper(substr($type['id'], 0, 1)) . '-{YYYY}-{NNN}');
-            $out = str_replace(['{YYYY}', '{YY}'], [(string) $year, substr((string) $year, -2)], $fmt);
-            return (string) preg_replace_callback('/\{(N+)\}/', static fn ($m) => str_pad((string) $n, strlen($m[1]), '0', STR_PAD_LEFT), $out);
+            $out = str_replace(['{YYYY}', '{YY}'], [(string) $year, substr((string) $year, -2)], self::numberFormat($type));
+            return [(string) preg_replace_callback('/\{(N+)\}/', static fn ($m) => str_pad((string) $n, strlen($m[1]), '0', STR_PAD_LEFT), $out), $n];
+        });
+    }
+
+    /** Laufende Nummer eines Index-Eintrags: gespeichert (seit 1.4.2) oder aus dem Nummernformat gelesen; null = unklar */
+    private static function seqOf(array $meta): ?int
+    {
+        if (isset($meta['seq'])) {
+            return (int) $meta['seq'];
+        }
+        $type = Settings::reportType((string) ($meta['type'] ?? ''));
+        if (!$type) {
+            return null;
+        }
+        $year = (string) ($meta['year'] ?? '');
+        $re = str_replace(['\{YYYY\}', '\{YY\}'], [$year, substr($year, -2)], preg_quote(self::numberFormat($type), '/'));
+        $re = (string) preg_replace('/\\\\\{N+\\\\\}/', '(\d+)', $re);
+        return preg_match('/^' . $re . '$/', (string) ($meta['number'] ?? ''), $m) ? (int) $m[1] : null;
+    }
+
+    /**
+     * Nach dem Löschen eines Entwurfs: War er die zuletzt vergebene Nummer, zählt der Zähler auf die höchste
+     * verbliebene Nummer zurück – der nächste Bericht bekommt die Nummer wieder. Lücken in der Mitte bleiben.
+     * Ist eine verbliebene Nummer nicht lesbar (z. B. Format geändert), bleibt der Zähler sicherheitshalber stehen.
+     */
+    private static function releaseNumber(array $meta): void
+    {
+        $seq = self::seqOf($meta);
+        if ($seq === null) {
+            return;
+        }
+        Storage::locked('counters', static function () use ($meta, $seq) {
+            $counters = Storage::read('reports/counters.json', []);
+            $key = $meta['type'] . '-' . $meta['year'];
+            if ((int) ($counters[$key] ?? 0) !== $seq) {
+                return;
+            }
+            $max = 0;
+            foreach (self::index() as $m) {
+                if (($m['type'] ?? null) === $meta['type'] && (int) ($m['year'] ?? 0) === (int) $meta['year']) {
+                    $s = self::seqOf($m);
+                    if ($s === null) {
+                        return;
+                    }
+                    $max = max($max, $s);
+                }
+            }
+            $counters[$key] = $max;
+            Storage::write('reports/counters.json', $counters);
+            Log::info('report', 'number_released', 'Zähler ' . $key . ' zurück auf ' . $max, ['discarded' => $meta['number']]);
         });
     }
 
@@ -128,7 +182,7 @@ final class Reports
             throw new \InvalidArgumentException('Unbekannte Berichtsart.');
         }
         $year = (int) date('Y');
-        $number = self::nextNumber($type, $year);
+        [$number, $seq] = self::nextNumber($type, $year);
         $now = time();
         $rounded = $now - ($now % 300);
 
@@ -170,6 +224,7 @@ final class Reports
         self::persist('reports/' . $file . '.json', $report);
         self::updateIndex($number, [
             'number' => $number,
+            'seq' => $seq,
             'year' => $year,
             'type' => $type['id'],
             'file' => $file,
@@ -603,6 +658,7 @@ final class Reports
             @unlink(Storage::path(self::jsonPath($meta)));
             Log::info('report', 'discarded', $number . ': Entwurf verworfen');
             self::updateIndex($number, null);
+            self::releaseNumber($meta + ['number' => $number]);
             return true;
         });
     }

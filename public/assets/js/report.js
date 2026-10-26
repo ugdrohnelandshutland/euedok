@@ -9,7 +9,8 @@
   var api = function (a, p) { return window.EUEDOK.api(a, p, cfg.urls.api); };
   var toast = function (t, k) { window.EUEDOK.toast(t, k); };
   var $ = function (id) { return document.getElementById(id); };
-  var LS_KEY = 'euedok-draft-' + cfg.number;
+  // an Nummer UND Anlegezeitpunkt gebunden: eine nach dem Löschen neu vergebene Nummer holt keine alten Eingaben zurück
+  var LS_KEY = 'euedok-draft-' + cfg.number + '-' + ((R.history && R.history[0] && R.history[0].at) || '');
   var LS_PERSON = 'euedok-created-by';
   var wide = window.matchMedia('(min-width:1000px)');
 
