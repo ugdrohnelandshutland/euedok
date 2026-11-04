@@ -86,6 +86,20 @@ final class Defaults
         ];
     }
 
+    /** Einsatzbestätigung: CC, Mailtext, Vorlage (PDF unter data/templates/) und Feldpositionen in mm. */
+    public static function confirmation(): array
+    {
+        return [
+            'cc' => [],
+            'subject' => '',
+            'body' => "Hallo {vorname} {nachname},\n\n"
+                . "anbei deine Bestätigung für {berichtsart} {berichtsnummer} am {datum}.\n\n"
+                . 'im Auftrag EÜDOK von {einheit}',
+            'template' => null, // ['file' => 'templates/…pdf', 'name' => Originalname, 'pages' => n, 'uploaded_at' => …]
+            'fields' => [], // je Feld: text, page, x, y, w, size, bold, align (L|C|R), lines
+        ];
+    }
+
     public static function users(): array
     {
         return ['users' => []];

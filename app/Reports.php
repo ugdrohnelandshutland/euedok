@@ -363,7 +363,7 @@ final class Reports
                     $entry['divera_id'] = (int) $diveraId;
                 }
                 $entry['fields'] = self::cleanFields($personFields, (array) ($p['fields'] ?? []));
-                $entry += self::cleanPersonTimes($p, $report['start'], $report['end']);
+                $entry += self::cleanPersonTimes($p);
                 $report['personnel'][] = $entry;
             }
         }
@@ -407,17 +407,17 @@ final class Reports
         return $report;
     }
 
-    /** Abweichende Zeit einer Person: nur exakt `YYYY-MM-DDTHH:MM`, gleich Beginn/Ende → weglassen. */
-    public static function cleanPersonTimes(array $p, ?string $start, ?string $end): array
+    /** Abweichende Zeit einer Person: nur exakt `YYYY-MM-DDTHH:MM`; auch Werte gleich Beginn/Ende bleiben erhalten. */
+    public static function cleanPersonTimes(array $p): array
     {
         $out = [];
-        foreach (['from' => $start, 'to' => $end] as $k => $same) {
+        foreach (['from', 'to'] as $k) {
             $v = $p[$k] ?? null;
             if (!is_string($v) || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $v)) {
                 continue;
             }
             $d = \DateTime::createFromFormat('!Y-m-d\TH:i', $v);
-            if (!$d || $d->format('Y-m-d\TH:i') !== $v || $v === $same) {
+            if (!$d || $d->format('Y-m-d\TH:i') !== $v) {
                 continue;
             }
             $out[$k] = $v;

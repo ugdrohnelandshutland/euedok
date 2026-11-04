@@ -6,6 +6,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/bootstrap.php';
 
 use Euedok\Auth;
+use Euedok\Confirmations;
 use Euedok\Pdf;
 use Euedok\QrAccess;
 use Euedok\Reports;
@@ -74,6 +75,19 @@ if (!$meta) {
 }
 $type = Settings::reportType($meta['type']) ?? ['label' => $meta['type_label']];
 $base = Reports::fileBase($type, $number);
+
+/* Einsatzbestätigung: nur Dateien aus dem Versandprotokoll dieses Berichts */
+if (isset($_GET['c'])) {
+    $r = Reports::load($number);
+    $file = is_string($_GET['c']) ? $_GET['c'] : '';
+    $path = $r ? Confirmations::filePath($r, $meta, $file) : null;
+    if ($path === null) {
+        \Euedok\Log::warning('report', 'confirmation_download_denied', 'Bestätigung nicht ausgeliefert', ['report' => $number, 'file' => mb_substr($file, 0, 120)]);
+        http_response_code(404);
+        exit('Datei nicht gefunden.');
+    }
+    send_file($path, basename($path), 'application/pdf', true);
+}
 
 if ($format === 'json') {
     send_file(Storage::path('reports/' . $meta['file'] . '.json'), $base . '.json', 'application/json', false);

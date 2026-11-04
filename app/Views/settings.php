@@ -1,5 +1,6 @@
 <?php
 use Euedok\Auth;
+use Euedok\Confirmations;
 use Euedok\Divera;
 use Euedok\Log;
 use Euedok\QrAccess;
@@ -140,7 +141,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
           <?= $toggle('mod_vehicles', $unit['modules']['vehicles'], 'Fahrzeuge', 'Eingesetzte Fahrzeuge mit Fahrzeugfeldern') ?>
           <?= $toggle('mod_defects', $unit['modules']['defects'], 'Defekte / Vorfälle', 'Freitext mit Hinweis') ?>
           <?= $toggle('mod_alert_source', $unit['modules']['alert_source'], 'Alarmierung', 'Schnellauswahl plus freie Eingabe') ?>
-          <?= $toggle('mod_person_times', $unit['modules']['person_times'], 'Abweichende Zeiten pro Person', 'Später gekommen / früher gegangen, per Uhr-Knopf am Personen-Chip') ?>
+          <?= $toggle('mod_person_times', $unit['modules']['person_times'], 'Abweichende Zeiten pro Person', 'Später gekommen / früher gegangen, per Zeit-Knopf an der eingesetzten Person') ?>
         </section>
         <section class="card">
           <h3><?= icon('check') ?>Pflichtangaben zum Abschließen</h3>
@@ -273,6 +274,73 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <button class="btn pri"><?= icon('check') ?>Speichern</button>
       </form>
       <form method="post" action="<?= $action('test-mail') ?>"><?= csrf_field() ?><button class="btn"><?= icon('send') ?>Testmail an die Empfänger senden</button></form>
+
+<?php elseif ($section === 'confirmation'):
+    $cf = Settings::get('confirmation');
+    $tpl = $cf['template'];
+    $fieldRow = static function ($i, array $f) use ($swCell): string {
+        $nm = static fn (string $k) => 'fields[' . $i . '][' . $k . ']';
+        $num = static fn (string $k, string $label, string $unit, $def, string $step = '0.1') => '<label class="nf"><span class="cl">' . e($label) . '</span><span class="nw"><input class="in" type="number" inputmode="decimal" step="' . $step . '" min="0" name="' . $nm($k) . '" value="' . e((string) ($f[$k] ?? $def)) . '">' . ($unit !== '' ? '<em>' . e($unit) . '</em>' : '') . '</span></label>';
+        $al = $f['align'] ?? 'L';
+        $seg = '';
+        foreach (['L' => 'Links', 'C' => 'Mitte', 'R' => 'Rechts'] as $k => $l) {
+            $seg .= '<label><input type="radio" name="' . $nm('align') . '" value="' . $k . '"' . ($al === $k ? ' checked' : '') . '><span>' . $l . '</span></label>';
+        }
+        return '<div class="ed-row cfield">'
+            . '<div class="cf-top"><input class="in mono" name="' . $nm('text') . '" list="ph-list" value="' . e($f['text'] ?? '') . '" placeholder="z. B. {nachname}, {vorname}" aria-label="Platzhalter oder Text">'
+            . '<button type="button" class="cf-x" data-remove-field aria-label="Feld entfernen" title="Feld entfernen">×</button></div>'
+            . '<div class="cf-nums">' . $num('page', 'Seite', '', 1, '1') . $num('x', 'X', 'mm', '') . $num('y', 'Y', 'mm', '') . $num('w', 'Breite', 'mm', 0) . $num('size', 'Größe', 'pt', 11, '0.5') . $num('lines', 'Zeilen', '', 1, '1') . '</div>'
+            . '<div class="cf-bot"><div class="cseg" role="radiogroup" aria-label="Ausrichtung">' . $seg . '</div>'
+            . $swCell('Fett', $nm('bold'), !empty($f['bold']))
+            . '</div></div>';
+    };
+    ?>
+      <form method="post" action="<?= $action('save') ?>" class="card stack">
+        <?= csrf_field() ?>
+        <h3><?= icon('send') ?>Einsatzbestätigung – Mail</h3>
+        <p class="hint">Im abgeschlossenen Bericht öffnet „Einsatzbestätigungen“ die Liste der Personen. Jede ausgewählte Person bekommt ihre Bestätigung als PDF per Mail (Versandweg wie unter „Mailversand“).</p>
+        <label class="f">CC-Adressen (eine je Zeile) <textarea class="in" name="cc" rows="2" style="min-height:70px"><?= e(implode("\n", $cf['cc'])) ?></textarea><span class="hint">Erhalten jede Bestätigung in Kopie, z. B. die Verwaltung.</span></label>
+        <label class="f">Betreff <input class="in" name="subject" value="<?= e($cf['subject']) ?>" placeholder="Bestätigung {berichtsnummer}"></label>
+        <label class="f">Mailtext <textarea class="in" name="body" rows="8" style="min-height:180px" placeholder="Hallo {vorname}, &#10;anbei deine Bestätigung für den {berichtsart} am {datum} ({von}–{bis} Uhr)."><?= e($cf['body']) ?></textarea></label>
+        <p class="hint">Platzhalter (Betreff, Mailtext und Felder):
+          <?php foreach (Confirmations::PLACEHOLDERS as $ph => $label): ?><code><?= e($ph) ?></code> <?= e($label) ?> · <?php endforeach; ?>Unbekannte Platzhalter bleiben stehen.</p>
+        <datalist id="ph-list"><?php foreach (array_keys(Confirmations::PLACEHOLDERS) as $ph): ?><option value="<?= e($ph) ?>"><?php endforeach; ?></datalist>
+
+        <h3 style="margin-top:10px"><?= icon('sliders') ?>Felder auf der Vorlage</h3>
+        <ul class="hint cf-help">
+          <li>Gilt nur mit hochgeladener Vorlage. Position in mm ab der linken oberen Ecke, Y = Oberkante der Zeile.</li>
+          <li>Breite 0 = automatisch: X ist dann bei „Mitte“ die Mitte, bei „Rechts“ das rechte Ende.</li>
+          <li>Zeilen 1 = einzeilig (zu lang: kleiner, dann gekürzt), mehr = Umbruch in der Breite. Feld entfernen = ×, dann speichern.</li>
+        </ul>
+        <div id="list-cfields"><?php foreach ($cf['fields'] as $i => $f) { echo $fieldRow($i, $f); } ?></div>
+        <template id="list-cfields-tpl"><?= $fieldRow('__i__', []) ?></template>
+        <div><button type="button" class="btn sm" data-add-row="list-cfields"><?= icon('plus') ?>Feld hinzufügen</button></div>
+        <button class="btn pri"><?= icon('check') ?>Speichern</button>
+      </form>
+
+      <section class="card stack">
+        <h3><?= icon('file') ?>Vorlage (PDF)</h3>
+        <?php if ($tpl): ?>
+        <p>Hochgeladen: <b><?= e($tpl['name']) ?></b> · <?= (int) $tpl['pages'] ?> <?= (int) $tpl['pages'] === 1 ? 'Seite' : 'Seiten' ?> · <?= e(fmt_datetime($tpl['uploaded_at'])) ?></p>
+        <?php else: ?>
+        <div class="msg info"><?= icon('file') ?><span>Keine Vorlage hochgeladen – es gilt das eingebaute Layout (Einheit, Titel, Person, Bericht, Zeitraum, Dauer, Ort, Unterschriftslinie).</span></div>
+        <?php endif; ?>
+        <form method="post" enctype="multipart/form-data" action="<?= $action('confirm-upload') ?>" class="stack">
+          <?= csrf_field() ?>
+          <input type="hidden" name="MAX_FILE_SIZE" value="<?= Confirmations::MAX_UPLOAD ?>">
+          <label class="f"><?= $tpl ? 'Neue Vorlage (ersetzt die bisherige)' : 'PDF-Datei' ?>, max. 5 MB <input class="in" type="file" name="template" accept="application/pdf,.pdf" required></label>
+          <p class="hint">Word: „Speichern unter → PDF → Optionen → PDF/A-kompatibel“ aktivieren. Neuere PDF-Versionen mit komprimierten Querverweisen kann EÜDOK nicht lesen.</p>
+          <div><button class="btn"><?= icon('plus') ?>Hochladen</button></div>
+        </form>
+        <p class="hint">Die Vorschau zeigt den gespeicherten Stand mit Beispieldaten – vorher speichern.</p>
+        <div class="row" style="flex-wrap:wrap">
+          <a class="btn" style="flex:0 1 auto" href="<?= e(base_url('settings/confirmation?preview=1')) ?>" target="_blank"><?= icon('eye') ?>Vorschau</a>
+          <?php if ($tpl): ?>
+          <a class="btn" style="flex:0 1 auto" href="<?= e(base_url('settings/confirmation?preview=1&grid=1')) ?>" target="_blank"><?= icon('sliders') ?>Vorschau mit mm-Raster</a>
+          <form method="post" action="<?= $action('confirm-remove') ?>" style="flex:0 1 auto"><?= csrf_field() ?><button class="btn danger" data-confirm="Vorlage entfernen? Danach gilt das eingebaute Layout."><?= icon('trash') ?>Vorlage entfernen</button></form>
+          <?php endif; ?>
+        </div>
+      </section>
 
 <?php elseif ($section === 'divera'):
     $d = Settings::divera();

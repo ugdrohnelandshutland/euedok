@@ -3,6 +3,11 @@ use Euedok\Pdf;
 use Euedok\Settings;
 
 /** @var array $r @var array $meta */
+// Bestätigungen vorerst nur für Einsätze; für Übungen (Uebungsbestaetigung) später freischalten.
+$cenabled = $r['type']['id'] === 'incident';
+$ctitle = \Euedok\Confirmations::title($r['type']);
+$centries = \Euedok\Confirmations::entries($r, $meta);
+
 $type = Settings::reportType($r['type']['id']) ?? ['style' => 'calm', 'lead_label' => 'Leitung'];
 $alert = ($type['style'] ?? '') === 'alert';
 $defs = $r['field_definitions'] ?? [];
@@ -37,6 +42,7 @@ $actions = [
     <div style="flex:0 1 auto;display:flex;gap:8px;flex-wrap:wrap">
       <a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/pdf')) ?>" target="_blank"><?= icon('file') ?>PDF</a>
       <a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/json')) ?>"><?= icon('json') ?>JSON</a>
+      <?php if ($cenabled): ?><a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations')) ?>"><?= icon('send') ?><?= e($ctitle) ?>en</a><?php endif; ?>
       <a class="btn pri" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/edit')) ?>"><?= icon('edit') ?>Korrigieren</a>
     </div>
   </div>
@@ -86,6 +92,23 @@ $actions = [
     </section>
     <?php endif; ?>
   </div>
+
+  <?php if ($cenabled && $centries): ?>
+  <section class="card">
+    <h3><?= icon('send') ?><?= e($ctitle) ?>en (<?= count($centries) ?>)</h3>
+    <div class="stack" style="gap:10px">
+      <?php foreach (array_reverse($centries, true) as $i => $c): ?>
+      <div class="row" style="align-items:center;gap:8px">
+        <span style="flex:1;min-width:200px"><b><?= e($c['name']) ?></b> <span class="muted small"><?= e(\Euedok\Reports::personTimeText($c, $c['from'], $c['to'])) ?></span><br>
+          <span class="muted small"><?= e(fmt_datetime($c['sent_at'])) ?> · <?= e($c['email']) ?><?= !empty($c['error']) ? ' – ' . e($c['error']) : '' ?></span></span>
+        <span class="bd <?= $c['success'] ? 'ok' : 'er' ?>" style="flex:none"><?= $c['success'] ? 'versendet' : 'fehlgeschlagen' ?></span>
+        <?php if (!empty($c['file'])): ?><a class="btn sm" style="flex:none" target="_blank" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations/' . rawurlencode($c['file']))) ?>"><?= icon('file') ?>PDF</a><?php endif; ?>
+        <a class="btn sm" style="flex:none" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations?e=' . $i)) ?>"><?= icon('refresh') ?>Erneut senden</a>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </section>
+  <?php endif; ?>
 
   <section class="card">
     <h3><?= icon('list') ?>Verlauf</h3>

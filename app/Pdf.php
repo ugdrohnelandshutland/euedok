@@ -8,7 +8,7 @@ use Mpdf\Mpdf;
 /** Serverseitige PDFs: Bericht (festes, modernes Layout) und QR-Aufkleber. */
 final class Pdf
 {
-    private static function make(array $opts = []): Mpdf
+    public static function make(array $opts = []): Mpdf
     {
         $tmp = Storage::path('cache/mpdf');
         Storage::ensureDir($tmp);

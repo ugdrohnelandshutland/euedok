@@ -19,6 +19,7 @@ final class Settings
         'qr-access' => 'qr-access.json',
         'mail' => 'mail.json',
         'divera' => 'divera.json',
+        'confirmation' => 'confirmation.json',
     ];
 
     public static function isInstalled(): bool
@@ -113,6 +114,7 @@ final class Settings
             'qr-access' => Defaults::qrAccess(),
             'mail' => Defaults::mail(),
             'divera' => Defaults::divera(),
+            'confirmation' => Defaults::confirmation(),
         };
     }
 

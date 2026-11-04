@@ -16,6 +16,7 @@ final class SettingsPage
         'vehicles' => ['Fahrzeuge', 'truck'],
         'alerts' => ['Alarmierung', 'radio'],
         'mail' => ['Mailversand', 'mail'],
+        'confirmation' => ['Einsatzbestätigung', 'send'],
         'divera' => ['Divera247', 'radio'],
         'users' => ['Zugänge', 'user'],
         'qr' => ['QR-Zugänge', 'qr'],
@@ -60,6 +61,7 @@ final class SettingsPage
             'vehicles' => self::saveVehicles(),
             'alerts' => self::saveList('alert_sources', 'label', [], 'Alarmierungsquellen'),
             'mail' => self::saveMail(),
+            'confirmation' => self::saveConfirmation(),
             'divera' => self::saveDivera(),
             'users' => self::saveUsers(),
             'logs' => self::saveLogLevel(),
@@ -309,6 +311,89 @@ final class SettingsPage
             $msg .= ' Achtung: keine gültige Empfängeradresse – es wird nichts versendet.';
         }
         return $msg;
+    }
+
+    private static function saveConfirmation(): string
+    {
+        $old = Settings::get('confirmation');
+        $c = $old;
+        $cc = preg_split('/[\s,;]+/', post_str('cc'), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        foreach ($cc as $addr) {
+            if (!filter_var($addr, FILTER_VALIDATE_EMAIL)) {
+                return 'Einsatzbestätigung nicht gespeichert: Ungültige CC-Adresse „' . mb_substr($addr, 0, 120) . '“.';
+            }
+        }
+        $c['cc'] = array_values(array_unique($cc));
+        $c['subject'] = mb_substr(post_str('subject'), 0, 200);
+        $c['body'] = mb_substr(trim(str_replace("\r\n", "\n", is_string($_POST['body'] ?? null) ? $_POST['body'] : '')), 0, 5000);
+        $pages = max(1, (int) ($c['template']['pages'] ?? 1));
+        $fields = [];
+        foreach (self::rows('fields') as $row) {
+            $text = self::s($row, 'text', 300);
+            if ($text === '') {
+                continue; // leerer Text = Feld entfernt
+            }
+            $num = static function (string $k, float $min, float $max, float $def) use ($row): float {
+                $v = str_replace(',', '.', trim((string) ($row[$k] ?? '')));
+                return is_numeric($v) ? max($min, min($max, round((float) $v, 1))) : $def;
+            };
+            $fields[] = [
+                'text' => $text,
+                'page' => (int) $num('page', 1, $pages, 1),
+                'x' => $num('x', 0, 1000, 20),
+                'y' => $num('y', 0, 1000, 20),
+                'w' => $num('w', 0, 1000, 0),
+                'size' => $num('size', 4, 72, 11),
+                'bold' => !empty($row['bold']),
+                'align' => in_array($row['align'] ?? '', ['L', 'C', 'R'], true) ? $row['align'] : 'L',
+                'lines' => (int) $num('lines', 1, 20, 1),
+            ];
+        }
+        $c['fields'] = $fields;
+        Settings::save('confirmation', $c, 'Einsatzbestätigung: ' . self::diff($old, $c));
+        return 'Einsatzbestätigung gespeichert.';
+    }
+
+    /** Vorlage hochladen: max. 5 MB, beginnt mit %PDF, FPDI muss sie lesen können. */
+    public static function uploadConfirmationTemplate(): string
+    {
+        $f = $_FILES['template'] ?? null;
+        $err = is_array($f) ? (int) ($f['error'] ?? UPLOAD_ERR_NO_FILE) : UPLOAD_ERR_NO_FILE;
+        if (in_array($err, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || ($err === UPLOAD_ERR_OK && (int) $f['size'] > Confirmations::MAX_UPLOAD)) {
+            return 'Vorlage nicht gespeichert: Datei zu groß (max. 5 MB).';
+        }
+        if ($err !== UPLOAD_ERR_OK || !is_uploaded_file((string) $f['tmp_name'])) {
+            return 'Vorlage nicht gespeichert: keine Datei empfangen.';
+        }
+        $tmp = (string) $f['tmp_name'];
+        $mime = class_exists(\finfo::class) ? (string) (new \finfo(FILEINFO_MIME_TYPE))->file($tmp) : 'application/pdf';
+        if (!str_starts_with((string) file_get_contents($tmp, false, null, 0, 5), '%PDF-') || $mime !== 'application/pdf') {
+            return 'Vorlage nicht gespeichert: Die Datei ist kein PDF.';
+        }
+        try {
+            $pages = Confirmations::templatePages($tmp);
+        } catch (\Throwable $e) {
+            Log::warning('settings', 'template_rejected', 'Vorlage nicht lesbar: ' . $e->getMessage(), ['name' => mb_substr((string) $f['name'], 0, 120)]);
+            return 'Vorlage nicht gespeichert: Vorlage kann nicht gelesen werden. Bitte in Word beim PDF-Export ‚PDF/A-kompatibel‘ aktivieren oder als PDF 1.4 speichern.';
+        }
+        $target = Storage::path(Confirmations::TEMPLATE_FILE);
+        Storage::ensureDir(dirname($target));
+        if (!move_uploaded_file($tmp, $target)) {
+            return 'Vorlage nicht gespeichert: Datei konnte nicht abgelegt werden.';
+        }
+        $c = Settings::get('confirmation');
+        $c['template'] = ['file' => Confirmations::TEMPLATE_FILE, 'name' => mb_substr(basename((string) $f['name']), 0, 120), 'pages' => $pages, 'uploaded_at' => now_iso()];
+        Settings::save('confirmation', $c, 'Einsatzbestätigung: Vorlage hochgeladen (' . $c['template']['name'] . ', ' . $pages . ' S.)');
+        return 'Vorlage gespeichert (' . $pages . ($pages === 1 ? ' Seite' : ' Seiten') . ').';
+    }
+
+    public static function removeConfirmationTemplate(): string
+    {
+        $c = Settings::get('confirmation');
+        @unlink(Storage::path(Confirmations::TEMPLATE_FILE));
+        $c['template'] = null;
+        Settings::save('confirmation', $c, 'Einsatzbestätigung: Vorlage entfernt');
+        return 'Vorlage entfernt – es gilt das eingebaute Layout.';
     }
 
     private static function saveDivera(): string

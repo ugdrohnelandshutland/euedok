@@ -50,6 +50,7 @@ final class Mailer
         $m = Settings::mail();
         $ctx = [
             'to' => $to,
+            'cc' => array_column($mail->getCcAddresses(), 0),
             'subject' => $mail->Subject,
             'transport' => $m['transport'],
             'host' => $m['transport'] === 'smtp' ? $m['smtp_host'] . ':' . $m['smtp_port'] . ' (' . $m['smtp_security'] . ')' : null,
@@ -145,12 +146,19 @@ final class Mailer
         return self::deliver($mail, $m['recipients']);
     }
 
-    public static function sendText(array $to, string $subject, string $body): array
+    /** @param array<string,string> $attachments Dateipfad => Anzeigename (nur PDF) */
+    public static function sendText(array $to, string $subject, string $body, array $cc = [], array $attachments = []): array
     {
         try {
             $mail = self::make();
             $mail->Subject = $subject;
             $mail->Body = $body;
+            foreach ($cc as $addr) {
+                $mail->addCC($addr);
+            }
+            foreach ($attachments as $file => $name) {
+                $mail->addAttachment($file, $name, PHPMailer::ENCODING_BASE64, 'application/pdf');
+            }
         } catch (MailException $e) {
             Log::error('mail', 'prepare_failed', $e->getMessage(), ['subject' => $subject]);
             return ['success' => false, 'to' => $to, 'error' => $e->getMessage()];

@@ -24,6 +24,8 @@ DirectoryIndex index.php
   RewriteRule ^reports/?$ index.php?view=reports [L,QSA]
   RewriteRule ^reports/(\d{4}|all)\.zip$ download.php?zip=$1 [L,QSA]
   RewriteRule ^reports/([A-Za-z0-9._-]+)/(pdf|json)$ download.php?n=$1&f=$2 [L,QSA]
+  RewriteRule ^reports/([A-Za-z0-9._-]+)/confirmations/([A-Za-z0-9._-]+\.pdf)$ download.php?n=$1&c=$2 [L,QSA]
+  RewriteRule ^reports/([A-Za-z0-9._-]+)/confirmations/?$ confirmations.php?n=$1 [L,QSA]
   RewriteRule ^reports/([A-Za-z0-9._-]+)/edit$ report.php?n=$1&edit=1 [L,QSA]
   RewriteRule ^reports/([A-Za-z0-9._-]+)/?$ report.php?n=$1 [L,QSA]
   RewriteRule ^settings/?$ settings.php [L,QSA]

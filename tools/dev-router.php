@@ -18,6 +18,8 @@ $routes = [
     '#^/reports/?$#' => ['index.php', ['view' => '=reports']],
     '#^/reports/(\d{4}|all)\.zip$#' => ['download.php', ['zip' => 1]],
     '#^/reports/([A-Za-z0-9._-]+)/(pdf|json)$#' => ['download.php', ['n' => 1, 'f' => 2]],
+    '#^/reports/([A-Za-z0-9._-]+)/confirmations/([A-Za-z0-9._-]+\.pdf)$#' => ['download.php', ['n' => 1, 'c' => 2]],
+    '#^/reports/([A-Za-z0-9._-]+)/confirmations/?$#' => ['confirmations.php', ['n' => 1]],
     '#^/reports/([A-Za-z0-9._-]+)/edit$#' => ['report.php', ['n' => 1, 'edit' => '=1']],
     '#^/reports/([A-Za-z0-9._-]+)/?$#' => ['report.php', ['n' => 1]],
     '#^/settings/?$#' => ['settings.php', []],

@@ -11,3 +11,12 @@ Thumbs.db
 
 # lokale Deploy-Zugangsdaten (Server, Benutzer, Live-Adresse)
 tools/deploy.local.psd1
+
+# Vorlagen und Dokumente (z. B. Einsatzbestätigung, Word-Vorlagen) – enthalten
+# Namen, Telefonnummern und Logos, nie ins Repo; Vorlagen liegen unter data/templates/
+*.pdf
+*.doc
+*.docx
+*.dotx
+*.odt
+/templates/

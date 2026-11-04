@@ -131,15 +131,15 @@ textarea.in{min-height:140px;resize:vertical;line-height:1.5;font-weight:500}
 .chip.on .tick{color:inherit}
 .chip .av{width:28px;height:28px;border-radius:50%;background:var(--raised);color:var(--text);font-size:11px;font-weight:800;display:grid;place-items:center;margin-left:-6px}
 .chip.on .av{background:rgba(255,255,255,.2);color:#fff}
-/* gewählte Person + Uhr-Knopf (abweichende Zeit) als ein Block; bricht am Handy nicht aus der Zeile */
-.pchip{display:inline-flex;max-width:100%}
-.pchip .av{flex:none}
-.pchip>.chip:first-child{min-width:0;text-align:left;flex-wrap:wrap;row-gap:2px;padding-top:6px;padding-bottom:6px;border-top-right-radius:0;border-bottom-right-radius:0}
-.chip.pt{padding:0 10px;border-top-left-radius:0;border-bottom-left-radius:0;border-left-color:rgba(255,255,255,.3)}
-.pchip.warn>.chip{background:var(--fault);border-color:var(--fault)}
-.ptm{font-size:12px;font-weight:600;opacity:.85;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
-.ptm .i{width:14px;height:14px}
-.pc .ptm{margin-left:6px;color:var(--quiet);opacity:1}
+/* Marke „abweichende Zeit“ an gewählter Person: nur Overlay, ändert die Chip-Größe nicht */
+.chip{position:relative}
+.chip .pb{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--fill);color:#fff;display:grid;place-items:center;pointer-events:none}
+.chip .pb .i{width:12px;height:12px}
+.chip .pb.bad{background:var(--fault);color:#fff}
+.ptb{min-height:44px;padding:0 12px;border-radius:var(--r-s);border:1px solid var(--accent);background:none;color:var(--accent);display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px;cursor:pointer}
+.ptb.on{background:var(--fill);border-color:var(--fill);color:#fff}
+.pc .ptm{display:flex;align-items:center;gap:6px;min-height:44px;margin-top:2px;padding:0;border:0;background:none;color:var(--accent);font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer}
+.pc .ptm .i{width:16px;height:16px;flex:none}
 .pc .ptm.bad{color:var(--fault)}
 @media (hover:hover){.chip:not(.on):hover{border-color:var(--accent)}}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
@@ -285,6 +285,7 @@ body.report{background:var(--ground)}
 .defects-box[open] .when-closed{display:none}
 .fieldset{display:flex;flex-direction:column;gap:12px}
 .dt-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.dt-row>[data-dwrap]{grid-column:1/-1}
 .dur{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--quiet);font-weight:700}
 .dur b{color:var(--text);font-size:16px}
 .pc{display:flex;flex-direction:column;gap:10px;padding:12px}
@@ -443,3 +444,31 @@ textarea.in.foot-ta{min-height:96px;font-size:14px}
 /* Druck */
 @media print{.top,.bn,.tb,.tabs,.bb{display:none!important}body{background:#fff}}
 .pid{font-size:11px;font-weight:700;opacity:.7;margin-left:2px}
+
+/* Einsatzbestätigung: Felder als Karten */
+.cf-help{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
+#list-cfields{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:10px}
+.cfield[hidden]{display:none}
+.cfield{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin:0!important;padding:12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--ground)}
+.cf-top{display:flex;gap:8px}
+.cf-top .in{flex:1;min-width:0;font-family:ui-monospace,Consolas,monospace}
+.cf-x{flex:none;width:42px;height:42px;border:1px solid var(--line-strong);border-radius:var(--r-s);background:none;color:var(--quiet);font-size:22px;line-height:1;cursor:pointer}
+.cf-x:hover{color:var(--fault);border-color:var(--fault)}
+.cf-nums{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.nf{display:flex;flex-direction:column;gap:4px;min-width:0}
+.nf .cl{display:block;font-size:12px;font-weight:700;color:var(--quiet);text-align:center}
+.nw{position:relative;display:block}
+.nw .in{padding:0 6px;text-align:right;-moz-appearance:textfield}
+.nw .in::-webkit-outer-spin-button,.nw .in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.nw:has(em) .in{padding-right:28px}
+.nw em{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;font-style:normal;color:var(--quiet);pointer-events:none}
+.cf-bot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.cf-bot .sw-cell{flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;min-height:42px;border:0;padding:0;background:none}
+.cf-bot .sw-cell .cl{display:block;font-size:14px;font-weight:700;color:var(--text)}
+.cseg{display:flex;border:1px solid var(--line-strong);border-radius:var(--r-s);padding:3px;gap:3px;flex:1 1 220px;max-width:300px}
+.cseg label{flex:1;position:relative}
+.cseg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.cseg span{display:block;text-align:center;line-height:34px;border-radius:5px;font-weight:700;font-size:14px;color:var(--quiet)}
+.cseg input:checked+span{background:var(--fill);color:#fff}
+.cseg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:1px}
+@media (max-width:640px){.cf-nums{grid-template-columns:repeat(3,minmax(0,1fr))}.cf-bot .cseg{max-width:none}}

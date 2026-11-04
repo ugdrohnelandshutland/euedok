@@ -6,6 +6,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/bootstrap.php';
 
 use Euedok\Auth;
+use Euedok\Confirmations;
 use Euedok\Divera;
 use Euedok\Log;
 use Euedok\Mailer;
@@ -38,6 +39,22 @@ if (isset($_GET['sticker'])) {
     exit;
 }
 
+/* Vorschau der Einsatzbestätigung mit Beispieldaten (gespeicherter Stand), optional mit mm-Raster */
+if ($section === 'confirmation' && isset($_GET['preview'])) {
+    try {
+        $pdf = Confirmations::preview(isset($_GET['grid']));
+    } catch (\Throwable $e) {
+        Log::error('pdf', 'confirmation_preview_failed', $e->getMessage(), ['file' => $e->getFile() . ':' . $e->getLine()]);
+        flash('Vorschau fehlgeschlagen: ' . $e->getMessage(), 'err');
+        redirect($self);
+    }
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: inline; filename="Vorschau_Einsatzbestaetigung.pdf"');
+    header('Cache-Control: private, no-store');
+    echo $pdf;
+    exit;
+}
+
 /* Alle Protokolle als ZIP (zur Analyse oder Weitergabe) */
 if (isset($_GET['logs-zip'])) {
     $tmp = tempnam(sys_get_temp_dir(), 'eul');
@@ -64,6 +81,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'save':
             $msg = SettingsPage::save($section);
             flash($msg, str_contains($msg, 'Nichts gespeichert') || str_contains($msg, 'nicht gespeichert') ? 'err' : 'ok');
+            redirect($self);
+
+        case 'confirm-upload':
+        case 'confirm-remove':
+            $msg = $action === 'confirm-upload' ? SettingsPage::uploadConfirmationTemplate() : SettingsPage::removeConfirmationTemplate();
+            flash($msg, str_contains($msg, 'nicht gespeichert') ? 'err' : 'ok');
             redirect($self);
 
         case 'test-mail':

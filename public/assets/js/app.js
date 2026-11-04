@@ -68,6 +68,14 @@
       }
       return;
     }
+    var rm = ev.target.closest('[data-remove-field]');
+    if (rm) {
+      var card = rm.closest('.ed-row');
+      var t = card.querySelector('input[name$="[text]"]');
+      if (t) t.value = ''; // leerer Text = Feld wird beim Speichern entfernt
+      card.hidden = true;
+      return;
+    }
     var up = ev.target.closest('[data-move]');
     if (up) {
       var row = up.closest('.ed-row');

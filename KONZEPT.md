@@ -2,7 +2,7 @@
 
 Name: **EÜDOK** – Einsatz- & Übungsdokumentation (technische Schreibweise für Ordner/Dateien:
 `euedok`)
-Stand: 21.10.2026 · Erste Nutzer: UG-Drohne Landshut Land (ca. 5 Personen mit Zugang)
+Stand: 04.11.2026 · Erste Nutzer: UG-Drohne Landshut Land (ca. 5 Personen mit Zugang)
 Status: **Stufe 1 umgesetzt und im Produktivbetrieb seit 17.10.2026** (Testdaten an diesem Tag
 gelöscht, Einstellungen übernommen). Divera247 mit echtem Schlüssel angebunden. Aktualisierung
 über Einstellungen → Update (Abschnitt 8c).
@@ -506,6 +506,53 @@ Personalquelle · Fahrzeugquelle · Divera-Abfrage über QR an/aus · Testabruf-
 - **Im JSON:** je Fahrzeug ID, Bezeichnung, Herkunft (Divera / selbst hinterlegt) und die
   Feldwerte (leere Felder = `null`).
 
+## 7e. Einsatzbestätigungen (Teilnahmebestätigung per Mail)
+
+- **Wo:** In der Ansicht eines **abgeschlossenen Einsatzes** öffnet
+  „Einsatzbestätigungen“ (`/reports/<Nr>/confirmations`) die Liste aller Personen: Auswahl,
+  Name, E-Mail (aus den Stammdaten bzw. Divera, änderbar, wird geprüft), **Von/Bis**
+  (Datum + Uhrzeit, vorbelegt mit der abweichenden Zeit der Person, sonst Beginn/Ende).
+- **Die geänderten Zeiten gelten nur für die Bestätigung** – der abgeschlossene Bericht
+  (JSON, PDF, Index) wird nie verändert. Von muss vor Bis liegen.
+- **Versand:** je ausgewählter Person ein PDF und eine Mail an die Person, in Kopie an die
+  CC-Adressen aus den Einstellungen; Ergebnis je Person (versendet / Fehler). Ohne Betreff
+  und Mailtext oder bei ausgeschaltetem Mailversand wird nichts versendet (Hinweis).
+- **Recht:** wie „Erneut senden“ – jeder angemeldete Zugang; ohne Anmeldung bzw. über die
+  QR-Schnellerfassung nicht.
+- **Im Bericht:** Abschnitt „Einsatzbestätigungen“ (nur wenn vorhanden) mit Name, Zeitraum,
+  Versandzeit, Status, PDF-Download (`/reports/<Nr>/confirmations/<Datei>.pdf`, nur Dateien
+  aus dem Versandprotokoll dieses Berichts) und „Erneut senden“ (Person vorausgewählt).
+- **Ablage** im Jahresordner des Berichts, Präfix passend zur Berichtsart
+  (`Einsatzbestaetigung_…`, `Uebungsbestaetigung_…`):
+  `Einsatzbestaetigung_E-2026-040_Muster_Max.pdf`, erneuter Versand →
+  `…_2.pdf`, `…_3.pdf` (alte bleiben). Versandprotokoll `Einsatzbestaetigung_E-2026-040.json`:
+  Liste mit `person_id, name, email, cc, from, to, file, sent_at, by, by_name, success, error`.
+- **Vorerst nur Einsätze:** Bei Übungen ist der Knopf ausgeblendet und `/reports/<Nr>/confirmations`
+  gesperrt (Hinweis, Weiterleitung zum Bericht). Benennung und Ablage für Übungen
+  (`Uebungsbestaetigung_…`) sind vorbereitet und werden später freigeschaltet.
+- **Einstellungen → Einsatzbestätigung** (`settings/confirmation.json`): CC-Adressen,
+  Betreff, Mailtext, Vorlage und Felder. Platzhalter: `{nachname} {vorname} {name} {email}
+  {datum}` (Berichtsbeginn) `{von} {bis}` (Uhrzeit) `{von_datum} {bis_datum}` (Datum)
+  `{dauer} {berichtsnummer} {berichtsart} {stichwort} {ort} {einheit} {leiter} {heute}`;
+  unbekannte Platzhalter bleiben stehen. Standard-Mailtext: „Hallo {vorname} {nachname},
+  anbei deine Bestätigung für {berichtsart} {berichtsnummer} am {datum}. im Auftrag EÜDOK
+  von {einheit}“ (mit Leerzeilen).
+- **Vorlage UG-Drohne (eingerichtet 04.11.2026):** Word-Vorlage als PDF (PDF 1.7 ohne
+  Objekt-Streams, von FPDI lesbar). Felder: Vor- und Nachname, `{datum}`, `{von} – {bis}`,
+  `{dauer}` (Stundenzahl), `{heute}` bei „Datum:“ unter „Für die Richtigkeit“. Die Vorlage
+  enthält Namen, Telefonnummern und Logos und liegt nur in `data/templates/`, nie im Repo
+  (`.gitignore` schließt zusätzlich alle `*.pdf` und `*.doc(x)` aus).
+- **Vorlage (optional):** PDF (max. 5 MB, muss mit `%PDF` beginnen) unter
+  `data/templates/einsatzbestaetigung.pdf`. EÜDOK importiert jede Seite mit FPDI (über mPDF)
+  und setzt die Felder darauf: Text/Platzhalter, Seite, x/y in mm (y = Oberkante),
+  Breite (0 = automatisch), Schriftgröße, fett, Ausrichtung, Zeilen (1 = einzeilig,
+  verkleinert/gekürzt; mehr = Umbruch). „Vorschau“ (optional mit 10-mm-Raster) zeigt den
+  gespeicherten Stand mit Beispieldaten. Ohne Vorlage gilt ein eingebautes Layout.
+- **Einschränkung:** Der freie FPDI-Parser liest keine PDFs mit komprimierten
+  Querverweisen/Objekt-Streams (meist PDF ≥ 1.5, z. B. Word-Standardexport). Solche Dateien
+  werden beim Hochladen abgelehnt – in Word „PDF/A-kompatibel“ aktivieren oder als PDF 1.4
+  speichern.
+
 ## 8. Ablage auf dem Server
 
 ```
@@ -537,6 +584,7 @@ euedok/
       qr-access.json          QR-Zugänge (Schlüssel-Hash, PIN-Hash, aktiv)
       mail.json               Mailversand (SMTP-Passwort verschlüsselt)
       divera.json             Divera247 (API-Schlüssel verschlüsselt)
+      confirmation.json       Einsatzbestätigung: CC, Mailtext, Vorlage, Feldpositionen
     keys/                     bei der Einrichtung erzeugter Verschlüsselungsschlüssel
                               (unbedingt behalten – ohne ihn sind SMTP-Passwort und
                               Divera-Schlüssel nicht mehr lesbar)
@@ -555,6 +603,8 @@ euedok/
       previous/               vorherige Programmversion (für „Zurück“)
       history.json            Verlauf der Updates
     maintenance.json          nur während eines Updates (wenige Sekunden)
+    templates/
+      einsatzbestaetigung.pdf Vorlage der Einsatzbestätigung (optional)
     branding/
       logo.png                (ab Release)
     reports/
@@ -564,6 +614,8 @@ euedok/
         Einsatzbericht_E-2026-003.json
         Einsatzbericht_E-2026-003.pdf
         Uebungsbericht_U-2026-016.json
+        Einsatzbestaetigung_E-2026-003_Muster_Max.pdf   (…_2.pdf bei erneutem Versand)
+        Einsatzbestaetigung_E-2026-003.json             Versandprotokoll der Bestätigungen
 ```
 
 Update über Einstellungen → Update (Abschnitt 8c); dabei werden nur `public/`, `app/` und
@@ -606,6 +658,8 @@ nach. Im Code werden Links immer als Pfad erzeugt (`base_url('reports/…')`), n
 | `/reports` | Übersicht (Filter als Parameter, z. B. `?year=2026&type=incident`) |
 | `/reports/E-2026-003` | Bericht ansehen bzw. Entwurf bearbeiten |
 | `/reports/E-2026-003/edit` | abgeschlossenen Bericht korrigieren |
+| `/reports/E-2026-003/confirmations` | Einsatzbestätigungen versenden |
+| `/reports/E-2026-003/confirmations/<Datei>.pdf` | versendete Bestätigung (nur Dateien aus dem Versandprotokoll) |
 | `/reports/E-2026-003/pdf` · `/json` | Download |
 | `/reports/2026.zip` · `/reports/all.zip` | ZIP-Export eines Jahres bzw. aller Berichte |
 | `/settings` · `/settings/<bereich>` | Einstellungen, z. B. `/settings/users`, `/settings/update` |
@@ -752,11 +806,12 @@ Repository), das Passwort wird bei jedem Lauf abgefragt.
 **Abweichende Zeit pro Person** (optional, Modul „Abweichende Zeiten pro Person“): `from`
 (gekommen) und/oder `to` (gegangen) im Personeneintrag, Format wie `start`/`end` (`YYYY-MM-DDTHH:MM`).
 Fehlt ein Wert, gilt Beginn bzw. Ende des Berichts; ohne Abweichung gibt es keine Schlüssel. Der Server
-verwirft falsche Formate und Werte gleich Beginn/Ende; beim Abschließen muss `from` < `to` gelten und
+verwirft falsche Formate und ungültige Daten; bewusst gesetzte Werte bleiben auch dann erhalten, wenn sie gleich Beginn/Ende sind (z. B. „Jetzt“ in der Startminute); beim Abschließen muss `from` < `to` gelten und
 beides in [Beginn, Ende] liegen (sonst Fehler „ptime“). Eingabe im Formular nur als Uhrzeit: das Datum
 ist der Tag, an dem die Uhrzeit in [Beginn, Ende] liegt (ohne Ende: Beginn + 1 Tag). Dauert der Bericht
 über 24 h oder passt die Uhrzeit auf mehrere Tage, erscheint zusätzlich eine Tagesauswahl. Ist das Modul
 aus, bleiben gespeicherte Zeiten erhalten und stehen weiter im PDF.
+UI: Auswahl-Chips bleiben reine An/Aus-Schalter (nur ein Uhr-Punkt als Overlay bei abweichender Zeit); Zeit-Knopf und Zeitzeile (mit Warnung bei Fehler) stehen an der Person unter „Eingesetzt“; im Dialog setzt „Jetzt“ die echte aktuelle Zeit samt Datum.
 
 
 - IDs **und** Bezeichnungen (`label`) werden gespeichert, damit Berichte auch nach
