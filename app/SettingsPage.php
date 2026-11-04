@@ -55,7 +55,7 @@ final class SettingsPage
             'types' => self::saveTypes(),
             'modules' => self::saveModules(),
             'fields' => self::saveFields(),
-            'personnel' => self::saveList('personnel', 'name', [], 'Personal'),
+            'personnel' => self::saveList('personnel', 'name', ['lastname', 'firstname', 'email'], 'Personal'),
             'equipment' => self::saveList('equipment', 'label', [], 'Geräte'),
             'vehicles' => self::saveVehicles(),
             'alerts' => self::saveList('alert_sources', 'label', [], 'Alarmierungsquellen'),
@@ -228,10 +228,25 @@ final class SettingsPage
         $old = Settings::masterData();
         $existingIds = array_column($old[$key], 'id');
         $list = [];
+        $isPerson = $key === 'personnel';
         foreach (self::rows($key) as $row) {
-            $label = self::s($row, $labelKey, 120);
-            if ($label === '') {
-                continue;
+            if ($isPerson) {
+                $p = MasterData::normalizePerson(['lastname' => self::s($row, 'lastname', 60), 'firstname' => self::s($row, 'firstname', 60), 'email' => self::s($row, 'email', 120)]);
+                $label = $p['name'];
+                if ($label === '' && $p['email'] === '') {
+                    continue;
+                }
+                if ($p['lastname'] === '') {
+                    return 'Personal nicht gespeichert: Nachname fehlt.';
+                }
+                if ($p['email'] !== '' && !filter_var($p['email'], FILTER_VALIDATE_EMAIL)) {
+                    return 'Personal nicht gespeichert: Ungültige E-Mail-Adresse bei ' . $label . '.';
+                }
+            } else {
+                $label = self::s($row, $labelKey, 120);
+                if ($label === '') {
+                    continue;
+                }
             }
             $id = self::s($row, 'id', 60);
             if (!in_array($id, $existingIds, true)) {
@@ -239,7 +254,7 @@ final class SettingsPage
             }
             $item = ['id' => $id, $labelKey => $label];
             foreach ($extra as $x) {
-                $item[$x] = self::s($row, $x, 60);
+                $item[$x] = $isPerson ? $p[$x] : self::s($row, $x, 60);
             }
             $item['active'] = !empty($row['active']);
             $list[] = $item;

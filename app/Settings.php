@@ -52,7 +52,9 @@ final class Settings
 
     public static function masterData(): array
     {
-        return self::get('master-data');
+        $m = self::get('master-data');
+        $m['personnel'] = array_map([MasterData::class, 'normalizePerson'], $m['personnel']); // Alteinträge nur mit „name“
+        return $m;
     }
 
     public static function customFields(): array

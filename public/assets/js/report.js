@@ -29,13 +29,20 @@
   function localIso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
   function fmtDt(iso) { if (!iso) return ''; var d = new Date(iso); return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
   function isReq(f) { return cfg.required.indexOf(f) > -1; }
+  // abweichende Zeit (from/to) nur übernehmen, wenn gesetzt – sonst keine leeren Schlüssel
+  function pEntry(p) {
+    var o = { id: p.id, name: p.name, divera_id: p.divera_id, fields: p.fields || {} };
+    if (p.from) o.from = p.from;
+    if (p.to) o.to = p.to;
+    return o;
+  }
 
   /* ---------- Zustand ---------- */
   var data = {
     start: R.start, end: R.end, location: R.location || '', subject: R.subject || '',
     alert_source: R.alert_source, narrative: R.narrative || '', defects: R.defects || '',
     equipment: (R.equipment || []).map(function (q) { return q.id; }),
-    personnel: (R.personnel || []).map(function (p) { return { id: p.id, name: p.name, divera_id: p.divera_id, fields: p.fields || {} }; }),
+    personnel: (R.personnel || []).map(pEntry),
     lead: R.lead,
     vehicles: (R.vehicles || []).map(function (v) { return { id: v.id, label: v.label, source: v.source, fields: v.fields || {} }; }),
     custom_fields: R.custom_fields && !Array.isArray(R.custom_fields) ? R.custom_fields : {},
@@ -147,7 +154,7 @@
     var el = $(id);
     if (!el) return;
     el.value = data[key] || '';
-    el.addEventListener('input', function () { data[key] = el.value; if (key === 'start' || key === 'end') duration(); changed(); });
+    el.addEventListener('input', function () { data[key] = el.value; if (key === 'start' || key === 'end') rangeChanged(); changed(); });
   }
   bindInput('f-start', 'start');
   bindInput('f-end', 'end');
@@ -169,7 +176,7 @@
       $('dur-hint').textContent = ' · Ende auf den Folgetag gesetzt';
     }
   }
-  $('f-end').addEventListener('change', function () { fixMidnight(); duration(); changed(); });
+  $('f-end').addEventListener('change', function () { fixMidnight(); rangeChanged(); changed(); });
 
   function duration() {
     var out = '–', hint = '';
@@ -186,10 +193,12 @@
     data.end = localIso(new Date());
     $('f-end').value = data.end;
     $('dur-hint').textContent = '';
-    duration();
+    rangeChanged();
     changed();
   });
   duration();
+  // Beginn/Ende geändert → Hinweis an Personen, deren abweichende Zeit nicht mehr passt
+  function rangeChanged() { duration(); if (data.personnel.some(hasTime)) renderPeople(); }
 
   var dl = $('subjects');
   (cfg.subjects || []).forEach(function (s) { var o = document.createElement('option'); o.value = s; dl.appendChild(o); });
@@ -346,12 +355,15 @@
     var src = cfg.lists.personnel;
     $('people-src').innerHTML = src.source === 'divera' ? '<span class="src">Divera · ' + (src.stale ? 'Stand ' + esc(fmtDt(src.fetched_at)) : 'live') + '</span>' : '';
     var selected = {};
-    data.personnel.forEach(function (p) { selected[p.id] = true; });
+    data.personnel.forEach(function (p) { selected[p.id] = p; });
     var q = search.toLowerCase();
     var items = src.items.filter(function (p) { return !q || p.name.toLowerCase().indexOf(q) > -1; });
     var limit = q ? 60 : 24;
     var html = items.slice(0, limit).map(function (p) {
-      return '<button type="button" class="chip' + (selected[p.id] ? ' on' : '') + '" data-person="' + esc(p.id) + '" aria-pressed="' + (selected[p.id] ? 'true' : 'false') + '"><span class="av">' + esc(initials(p.name)) + '</span>' + personLabel(p) + '</button>';
+      var sp = selected[p.id];
+      var chip = '<button type="button" class="chip' + (sp ? ' on' : '') + '" data-person="' + esc(p.id) + '" aria-pressed="' + (sp ? 'true' : 'false') + '"><span class="av">' + esc(initials(p.name)) + '</span>' + personLabel(p) + (sp ? timeMark(sp) : '') + '</button>';
+      if (!sp || !timeBtnOn(sp)) return chip;
+      return '<span class="pchip' + (timeIssue(sp) ? ' warn' : '') + '">' + chip + timeBtn(sp, 'chip on pt') + '</span>';
     }).join('');
     if (items.length > limit) html += '<span class="hint" style="align-self:center">… ' + (items.length - limit) + ' weitere – Suche nutzen</span>';
     if (!items.length) html = '<span class="hint">Keine Person gefunden.</span>';
@@ -360,20 +372,24 @@
     $('people-count').textContent = data.personnel.length;
     $('people-list').innerHTML = data.personnel.map(function (p) {
       var f = cfg.fields.person.map(function (d) { return fieldControl(d, p.fields[d.id], 'person', p.id); }).join('');
-      return '<div class="card pc"><div class="hd"><div class="av2">' + esc(initials(p.name)) + '</div><b>' + personLabel(p) + '</b>' +
-        '<button type="button" class="x" data-person-remove="' + esc(p.id) + '" aria-label="' + esc(p.name) + ' entfernen">' + ic('x') + '</button></div>' + f + '</div>';
+      return '<div class="card pc"' + (timeIssue(p) ? ' data-req="ptime"' : '') + '><div class="hd"><div class="av2">' + esc(initials(p.name)) + '</div><b>' + personLabel(p) + timeMark(p) + '</b>' +
+        (timeBtnOn(p) ? timeBtn(p, 'x') : '') + '<button type="button" class="x" data-person-remove="' + esc(p.id) + '" aria-label="' + esc(p.name) + ' entfernen">' + ic('x') + '</button></div>' + f + '</div>';
     }).join('');
     renderLead();
     sums();
   }
   if ($('people-chips')) {
     $('people-chips').addEventListener('click', function (ev) {
+      var t = ev.target.closest('[data-ptime]');
+      if (t) { timeDialog(t.getAttribute('data-ptime')); return; }
       var b = ev.target.closest('[data-person]');
       if (!b) return;
       togglePerson(b.getAttribute('data-person'));
       changed();
     });
     $('people-list').addEventListener('click', function (ev) {
+      var t = ev.target.closest('[data-ptime]');
+      if (t) { timeDialog(t.getAttribute('data-ptime')); return; }
       var b = ev.target.closest('[data-person-remove]');
       if (!b) return;
       togglePerson(b.getAttribute('data-person-remove'), false);
@@ -383,6 +399,100 @@
     if (cfg.lists.personnel.stale) {
       banner('stale', 'warn', 'Divera nicht erreichbar – Personal-Stand vom ' + esc(fmtDt(cfg.lists.personnel.fetched_at) || 'unbekannt') + '.');
     }
+  }
+
+  /* Abweichende Zeit pro Person: Eingabe nur Uhrzeit, Datum wird in [Beginn, Ende] gesucht.
+     Ohne Ende (läuft noch) gilt Beginn + 1 Tag. Passt die Uhrzeit auf mehrere Tage oder dauert der
+     Bericht über 24 h, erscheint zusätzlich eine Tagesauswahl. */
+  var WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  function hasTime(p) { return !!(p.from || p.to); }
+  function timeBtnOn(p) { return !!cfg.modules.person_times || hasTime(p); }
+  function timeBtn(p, cls) { return '<button type="button" class="' + cls + '" data-ptime="' + esc(p.id) + '" aria-label="Abweichende Zeit für ' + esc(p.name) + '" title="Abweichende Zeit">' + ic('clock') + '</button>'; }
+  function addDay(iso) { var d = new Date(iso); d.setDate(d.getDate() + 1); return localIso(d); }
+  function timeRange() { return data.start ? { s: data.start, e: data.end || addDay(data.start) } : null; }
+  function rangeDays(s, e) {
+    var out = [], d = new Date(s.slice(0, 10) + 'T00:00'), last = e.slice(0, 10);
+    while (localIso(d).slice(0, 10) <= last && out.length < 62) { out.push(localIso(d).slice(0, 10)); d.setDate(d.getDate() + 1); }
+    return out;
+  }
+  function timeCandidates(hm, s, e) { return rangeDays(s, e).map(function (d) { return d + 'T' + hm; }).filter(function (v) { return v >= s && v <= e; }); }
+  function needDaySelect(hm, s, e) { return new Date(e) - new Date(s) > 864e5 || (!!hm && timeCandidates(hm, s, e).length > 1); }
+  function dayLabel(d) { var x = new Date(d + 'T12:00'); return WD[x.getDay()] + ' ' + d.slice(8, 10) + '.' + d.slice(5, 7) + '.'; }
+  // gleiche Prüfung wie Reports::personTimeIssue (Textvergleich, gleiches Format)
+  function timeIssue(p) {
+    if (!hasTime(p)) return '';
+    var s = data.start, e = data.end, f = p.from || s, t = p.to || e;
+    if ((s && f < s) || (e && (f > e || (t && t > e))) || (s && t && t < s)) return 'außerhalb von Beginn/Ende';
+    if (f && t && f >= t) return '„Gekommen“ nach „Gegangen“';
+    return '';
+  }
+  function timeMark(p) {
+    if (!hasTime(p)) return '';
+    var day = (data.start || '').slice(0, 10);
+    var f = function (v) { return (v.slice(0, 10) !== day ? v.slice(8, 10) + '.' + v.slice(5, 7) + '. ' : '') + v.slice(11, 16); };
+    var txt = p.from && p.to ? f(p.from) + '–' + f(p.to) : (p.from ? 'ab ' + f(p.from) : 'bis ' + f(p.to));
+    var bad = timeIssue(p);
+    return ' <small class="ptm' + (bad ? ' bad' : '') + '"' + (bad ? ' title="' + esc(bad) + '"' : '') + '>' + (bad ? ic('alert') : '') + esc(txt) + '</small>';
+  }
+  window.EUEDOK.personTime = { candidates: timeCandidates, needDaySelect: needDaySelect, days: rangeDays }; // für Tests
+
+  function timeDialog(id) {
+    var p = null;
+    data.personnel.forEach(function (x) { if (x.id === id) p = x; });
+    if (!p) return;
+    var rg = timeRange();
+    if (!rg) { toast('Bitte zuerst den Beginn eintragen.', 'warn'); return; }
+    var days = rangeDays(rg.s, rg.e);
+    var row = function (k, label) {
+      var v = p[k] || '';
+      return '<div class="dt-row"><label class="f">' + label + '<input class="in" type="time" data-t="' + k + '" value="' + esc(v.slice(11, 16)) + '"></label>' +
+        '<label class="f" data-dwrap="' + k + '" hidden>Tag<select class="in" data-d="' + k + '">' + days.map(function (d) {
+          return '<option value="' + d + '"' + (v.slice(0, 10) === d ? ' selected' : '') + '>' + dayLabel(d) + '</option>';
+        }).join('') + '</select></label></div>';
+    };
+    var d = dialog('<h2>' + ic('clock') + 'Abweichende Zeit</h2>' +
+      '<p class="muted small"><b>' + personLabel(p) + '</b> · Bericht ' + esc(fmtDt(data.start)) + ' – ' + (data.end ? esc(fmtDt(data.end)) : 'läuft noch') + '. Leer lassen = Beginn bzw. Ende des Berichts.</p>' +
+      row('from', 'Gekommen') + row('to', 'Gegangen') +
+      '<div class="msg warn" data-err hidden>' + ic('alert') + '<span></span></div>' +
+      '<div class="acts"><button type="button" class="btn pri" data-act="ok">' + ic('check') + 'OK</button>' +
+      '<button type="button" class="btn" data-act="reset">Zurücksetzen</button><button type="button" class="btn" data-act="cancel">Abbrechen</button></div>');
+    var q = function (sel) { return d.el.querySelector(sel); };
+    var sync = function (k) {
+      var hm = q('[data-t="' + k + '"]').value, sel = q('[data-d="' + k + '"]');
+      q('[data-dwrap="' + k + '"]').hidden = !needDaySelect(hm, rg.s, rg.e);
+      var c = hm ? timeCandidates(hm, rg.s, rg.e) : [];
+      // gewählter Tag passt nicht (mehr) → ersten passenden Tag vorschlagen
+      if (c.length && c.indexOf(sel.value + 'T' + hm) < 0) sel.value = c[0].slice(0, 10);
+    };
+    var read = function (k, label) {
+      var hm = q('[data-t="' + k + '"]').value;
+      if (!hm) return { v: null };
+      var v = !q('[data-dwrap="' + k + '"]').hidden ? q('[data-d="' + k + '"]').value + 'T' + hm : timeCandidates(hm, rg.s, rg.e)[0];
+      if (!v || v < rg.s || v > rg.e) return { err: '„' + label + '“ liegt außerhalb von Beginn und Ende des Berichts.' };
+      return { v: v };
+    };
+    ['from', 'to'].forEach(function (k) { sync(k); q('[data-t="' + k + '"]').addEventListener('input', function () { sync(k); }); });
+    d.el.addEventListener('click', function (ev) {
+      var a = ev.target.closest('[data-act]');
+      if (!a) { if (ev.target === d.el) d.close(); return; }
+      var act = a.getAttribute('data-act');
+      if (act === 'cancel') { d.close(); return; }
+      if (act === 'ok') {
+        var f = read('from', 'Gekommen'), t = read('to', 'Gegangen');
+        var err = f.err || t.err;
+        var fe = f.v || data.start, te = t.v || data.end;
+        if (!err && fe && te && fe >= te) err = '„Gekommen“ muss vor „Gegangen“ liegen.';
+        if (err) { var box = q('[data-err]'); box.querySelector('span').textContent = err; box.hidden = false; return; }
+        if (f.v && f.v !== data.start) p.from = f.v; else delete p.from;
+        if (t.v && t.v !== data.end) p.to = t.v; else delete p.to;
+      } else {
+        delete p.from;
+        delete p.to;
+      }
+      d.close();
+      renderPeople();
+      changed();
+    });
   }
 
   /* Einheitsführer: automatisch Ersteller bzw. angemeldete Person, sonst erste eingesetzte Person.
@@ -681,7 +791,7 @@
     data.alert_source = rep.alert_source;
     data.personnel = rep.personnel.map(function (p) {
       if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name, divera_id: p.divera_id, frequency: 0 };
-      return { id: p.id, name: p.name, divera_id: p.divera_id, fields: p.fields || {} };
+      return pEntry(p);
     });
     data.vehicles = (rep.vehicles || []).map(function (v) {
       if (!vehById[v.id]) { vehById[v.id] = { id: v.id, label: v.label, source: v.source }; cfg.lists.vehicles.items.push(vehById[v.id]); }
@@ -694,7 +804,7 @@
   if ($('divera-btn')) $('divera-btn').addEventListener('click', function () { diveraLookup(false); });
 
   /* ---------- Abschließen ---------- */
-  function markMissing(miss) {
+  function markMissing(miss, srv) {
     miss.forEach(function (k) {
       var el = document.querySelector('[data-req="' + k + '"]');
       if (el) el.classList.add('miss-field');
@@ -708,12 +818,13 @@
       var f = el.matches('input,textarea,select') ? el : el.querySelector('input,textarea,select');
       if (f) setTimeout(function () { f.focus({ preventScroll: true }); }, 300);
     }
-    var labels = miss.map(function (k) { return cfg.required_labels[k] || (k === 'created_by' ? 'Erstellt durch' : k.replace(/^cf_/, '')); });
+    var labels = miss.map(function (k) { return (srv && srv[k]) || cfg.required_labels[k] || (k === 'created_by' ? 'Erstellt durch' : k === 'ptime' ? 'passende abweichende Zeit' : k.replace(/^cf_/, '')); });
     toast('Es fehlt noch: ' + labels.join(', '), 'warn');
   }
 
   $('btn-close').addEventListener('click', function () {
     var miss = missingList();
+    if (data.personnel.some(timeIssue)) miss.push('ptime');
     if (miss.length) { markMissing(miss); return; }
     var d = dialog('<h2>' + ic('check') + (cfg.correction ? 'Korrektur abschließen?' : 'Bericht abschließen?') + '</h2>' +
       '<p>' + esc(cfg.type.title) + ' <b>' + esc(cfg.number) + '</b> wird als PDF und JSON gespeichert' + (cfg.correction ? ' und als Korrektur erneut versendet.' : ' und per Mail versendet.') + '</p>' +
@@ -729,7 +840,7 @@
       api('close', { n: cfg.number, rev: cfg.correction ? null : rev, data: data }).then(function (res) {
         d.close();
         if (res.ok) { finish(res); return; }
-        if (res.missing) { markMissing(Object.keys(res.missing)); return; }
+        if (res.missing) { markMissing(Object.keys(res.missing), res.missing); return; }
         if (res.offline) { toast('Keine Verbindung – Abschließen braucht Netz. Deine Eingaben sind auf dem Gerät gesichert.', 'warn'); return; }
         if (res.conflict) { banner('conflict', 'warn', esc(res.error), [{ text: 'Neu laden', fn: function () { location.reload(); } }]); return; }
         toast(res.error || 'Abschließen fehlgeschlagen', 'err');

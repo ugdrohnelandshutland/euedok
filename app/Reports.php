@@ -363,6 +363,7 @@ final class Reports
                     $entry['divera_id'] = (int) $diveraId;
                 }
                 $entry['fields'] = self::cleanFields($personFields, (array) ($p['fields'] ?? []));
+                $entry += self::cleanPersonTimes($p, $report['start'], $report['end']);
                 $report['personnel'][] = $entry;
             }
         }
@@ -404,6 +405,59 @@ final class Reports
 
         $report['field_definitions'] = array_merge($report['field_definitions'] ?? [], self::fieldDefinitions());
         return $report;
+    }
+
+    /** Abweichende Zeit einer Person: nur exakt `YYYY-MM-DDTHH:MM`, gleich Beginn/Ende → weglassen. */
+    public static function cleanPersonTimes(array $p, ?string $start, ?string $end): array
+    {
+        $out = [];
+        foreach (['from' => $start, 'to' => $end] as $k => $same) {
+            $v = $p[$k] ?? null;
+            if (!is_string($v) || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $v)) {
+                continue;
+            }
+            $d = \DateTime::createFromFormat('!Y-m-d\TH:i', $v);
+            if (!$d || $d->format('Y-m-d\TH:i') !== $v || $v === $same) {
+                continue;
+            }
+            $out[$k] = $v;
+        }
+        return $out;
+    }
+
+    /** Fehlertext, wenn die abweichende Zeit nicht passt (fehlende Angabe = Beginn/Ende des Berichts). */
+    public static function personTimeIssue(array $p, ?string $start, ?string $end): ?string
+    {
+        if (!isset($p['from']) && !isset($p['to'])) {
+            return null;
+        }
+        $from = $p['from'] ?? $start;
+        $to = $p['to'] ?? $end;
+        // gleiches Format → Textvergleich genügt
+        if (($start && $from < $start) || ($end && ($from > $end || ($to && $to > $end))) || ($start && $to && $to < $start)) {
+            return 'Abweichende Zeit bei ' . $p['name'] . ' liegt außerhalb von Beginn und Ende';
+        }
+        if ($from && $to && $from >= $to) {
+            return 'Abweichende Zeit bei ' . $p['name'] . ': „Gekommen“ muss vor „Gegangen“ liegen';
+        }
+        return null;
+    }
+
+    /** Anzeige der abweichenden Zeit, z. B. „18:30–23:10“ oder „03.11. 22:00–04.11. 01:30“; '' ohne Angabe. */
+    public static function personTimeText(array $p, ?string $start, ?string $end): string
+    {
+        if (!isset($p['from']) && !isset($p['to'])) {
+            return '';
+        }
+        $from = $p['from'] ?? $start;
+        $to = $p['to'] ?? $end;
+        $day = substr((string) $start, 0, 10);
+        $withDate = ($from && substr($from, 0, 10) !== $day) || ($to && substr($to, 0, 10) !== $day);
+        $f = static fn (string $v) => ($withDate ? substr($v, 8, 2) . '.' . substr($v, 5, 2) . '. ' : '') . substr($v, 11, 5);
+        if (!$from) {
+            return 'bis ' . $f($to);
+        }
+        return $to ? $f($from) . '–' . $f($to) : 'ab ' . $f($from);
     }
 
     private static function cleanFields(array $defs, array $values): array
@@ -556,6 +610,12 @@ final class Reports
                         break;
                     }
                 }
+            }
+        }
+        foreach ($r['personnel'] as $p) {
+            if (($issue = self::personTimeIssue($p, $r['start'] ?? null, $r['end'] ?? null)) !== null) {
+                $missing['ptime'] = $issue;
+                break;
             }
         }
         if ($quickEntry && empty($r['created_by'])) {

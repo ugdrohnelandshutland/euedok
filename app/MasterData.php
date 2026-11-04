@@ -14,6 +14,24 @@ final class MasterData
         return array_values(array_filter($list, static fn ($x) => !empty($x['active'])));
     }
 
+    /**
+     * Person mit Nachname/Vorname/E-Mail; `name` bleibt „Nachname, Vorname“ (Berichte speichern nur id + name).
+     * Alteinträge mit nur `name` werden am ersten ", " geteilt (ohne Komma: alles Nachname).
+     */
+    public static function normalizePerson(array $p): array
+    {
+        $last = trim((string) ($p['lastname'] ?? ''));
+        $first = trim((string) ($p['firstname'] ?? ''));
+        if ($last === '' && $first === '') {
+            [$last, $first] = array_map('trim', array_pad(explode(', ', (string) ($p['name'] ?? ''), 2), 2, ''));
+        }
+        $p['lastname'] = $last;
+        $p['firstname'] = $first;
+        $p['email'] = trim((string) ($p['email'] ?? ''));
+        $p['name'] = implode(', ', array_filter([$last, $first], static fn ($x) => $x !== ''));
+        return $p;
+    }
+
     /** @return array{items: array, source: string, stale: bool, fetched_at: ?string, error: ?string} */
     public static function personnel(): array
     {
@@ -26,6 +44,7 @@ final class MasterData
         } else {
             $r = ['items' => self::active(Settings::masterData()['personnel']), 'source' => 'local', 'stale' => false, 'fetched_at' => null, 'error' => null];
         }
+        $r['items'] = array_map([self::class, 'normalizePerson'], $r['items']); // auch alte Puffer ohne Felder
         // häufig Eingesetzte zuerst (letzte 12 Monate), sonst alphabetisch
         $freq = Reports::personnelFrequency();
         usort($r['items'], static function ($a, $b) use ($freq) {

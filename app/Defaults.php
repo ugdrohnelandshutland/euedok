@@ -30,6 +30,7 @@ final class Defaults
                 'vehicles' => false,
                 'defects' => true,
                 'alert_source' => true,
+                'person_times' => true,
             ],
             'required_fields' => ['type', 'start', 'end', 'location', 'subject', 'personnel', 'lead'],
             'defects_hint' => 'Defekte sind sofort dem Leiter zu melden.',

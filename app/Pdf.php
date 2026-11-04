@@ -130,6 +130,7 @@ final class Pdf
             .hd{background:#24394e;color:#fff;font-weight:bold;font-size:7.6pt;letter-spacing:1.4pt;text-transform:uppercase}
             .n,table.g th.n{text-align:right}
             .nr{color:#6f8597;width:7mm}
+            .pt{font-size:7.6pt;color:#3b5063}
             .gap{margin-top:8pt}
         </style>';
 
@@ -197,11 +198,13 @@ final class Pdf
                 $short = mb_strlen($d['label']) > 11 ? mb_substr($d['label'], 0, 9) . '.' : $d['label'];
                 $headCells .= '<th class="n" style="width:22mm">' . $h($short) . '</th>';
             }
-            $cell = static function (?array $p, int $nr) use ($pf, $h): string {
+            $cell = static function (?array $p, int $nr) use ($pf, $h, $r): string {
                 if ($p === null) {
                     return '<td class="nr"></td><td></td>' . str_repeat('<td></td>', count($pf));
                 }
-                $c = '<td class="nr">' . $nr . '</td><td>' . $h($p['name']) . '</td>';
+                // abweichende Zeit nur, wenn gespeichert (auch bei ausgeschaltetem Modul)
+                $time = Reports::personTimeText($p, $r['start'], $r['end']);
+                $c = '<td class="nr">' . $nr . '</td><td>' . $h($p['name']) . ($time !== '' ? '<br><span class="pt">' . $h($time) . '</span>' : '') . '</td>';
                 foreach ($pf as $fid => $d) {
                     $v = $p['fields'][$fid] ?? null;
                     $c .= '<td class="n">' . ($v === null || $v === '' ? '–' : self::fieldValue(['unit' => ''] + $d, $v)) . '</td>';

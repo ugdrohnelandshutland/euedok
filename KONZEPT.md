@@ -173,7 +173,7 @@ Fahrzeuge · Alarmierung · Mailversand · Divera247 · Zugänge · QR-Zugänge 
 - Berichtsarten (Standard: Einsatz, Übung; erweiterbar z. B. Ausbildung, Wartung) mit
   Darstellung „Einsatz (rot)“ / „Neutral (blau)“ und Divera-Quelle (Alarme / Termine / keine)
 - Nummernformat je Art (Standard: `E-{YYYY}-{NNN}`, `U-{YYYY}-{NNN}`, Zählung pro Jahr)
-- Module an/aus: Personal, Geräte, **Fahrzeuge**, Defekte/Vorfälle, Alarmierung
+- Module an/aus: Personal, Geräte, **Fahrzeuge**, Defekte/Vorfälle, Alarmierung, **Abweichende Zeiten pro Person** (Standard an)
 - Pflichtfelder zum Abschließen (Standard: Art, Beginn, Ende, Ort, Thema,
   mind. eine Person, Einheitsführer)
 - **Zusatzfelder** – drei Arten, gleiche Feldtypen (Zahl, Text, Auswahl, Haken, Datum),
@@ -188,7 +188,7 @@ Fahrzeuge · Alarmierung · Mailversand · Divera247 · Zugänge · QR-Zugänge 
 - **Divera247:** an/aus, API-Schlüssel, Zeitfenster, Personalquelle (EÜDOK oder Divera),
   Fahrzeugquelle, Zuordnung der Rückmeldungen (siehe Abschnitt 7c)
 - **Stammdaten:**
-  - **Personal** – Name, aktiv/inaktiv. Entfällt, wenn die
+  - **Personal** – Nachname, Vorname, E-Mail (optional), aktiv/inaktiv. Entfällt, wenn die
     Personalquelle „Divera247“ eingestellt ist.
   - **Geräte** – Bezeichnung, aktiv/inaktiv
   - **Fahrzeuge** (optional) – EÜDOK-Liste oder live aus Divera247 (Bezeichnung,
@@ -436,6 +436,16 @@ Die genauen API-Felder für Termine und Zusagen werden bei der Umsetzung geprüf
   (Divera-Benutzer) zugeordnet, damit „angemeldete Person ist eingetragen“ weiter klappt.
 - Berichte speichern Name **und** Divera-Benutzer-ID → alte Berichte bleiben vollständig,
   auch wenn jemand in Divera gelöscht wird.
+- **Personenfelder:** Nachname, Vorname, E-Mail (lokal oder aus Divera); `name` bleibt
+  „Nachname, Vorname“ und ist die einzige Darstellung in Auswahl, Chips, PDF und Listen.
+  Alteinträge nur mit `name` werden beim Lesen am ersten „, “ geteilt.
+- **E-Mail-Adressen aus Divera:** Endpunkt `GET /api/v3/user-cluster-relations`
+  (gleicher Schlüssel, Zuordnung über die UCR-ID, 60 s Puffer). Dafür muss der Schlüssel
+  zu einem **Systembenutzer mit Admin-Rechten** (inkl. „Verwaltung → Personal“) gehören;
+  sonst antwortet Divera mit 403 und das Personal funktioniert ohne Adressen weiter
+  (Warnung im Protokoll, Verbindung gilt nicht als gestört).
+- **Datenschutz:** E-Mail-Adressen bleiben in Stammdaten bzw. Puffer; Berichte (JSON, PDF)
+  speichern nur ID und Name.
 
 ### Technik & Datenschutz
 - Abruf ausschließlich **serverseitig** (PHP → Divera-API über HTTPS). Der API-Schlüssel
@@ -672,8 +682,8 @@ Repository), das Passwort wird bei jedem Lauf abgefragt.
 ```json
 {
   "personnel": [
-    { "id": "muster-m", "name": "Muster, Max", "active": true },
-    { "id": "beispiel-e", "name": "Beispiel, Erika", "active": true }
+    { "id": "muster-m", "name": "Muster, Max", "lastname": "Muster", "firstname": "Max", "email": "", "active": true },
+    { "id": "beispiel-e", "name": "Beispiel, Erika", "lastname": "Beispiel", "firstname": "Erika", "email": "erika@example.org", "active": true }
   ],
   "equipment": [
     { "id": "m30t-1", "label": "Drohne M30T - 1", "active": true }
@@ -710,7 +720,8 @@ Repository), das Passwort wird bei jedem Lauf abgefragt.
   ],
   "personnel": [
     { "id": "muster-m", "name": "Muster, Max", "fields": { "flight_minutes": null } },
-    { "id": "beispiel-e", "name": "Beispiel, Erika", "fields": { "flight_minutes": 85 } },
+    { "id": "beispiel-e", "name": "Beispiel, Erika", "fields": { "flight_minutes": 85 },
+      "from": "2026-10-12T23:30" },
     { "id": "div-48211", "name": "Probe, Paul", "divera_id": 48211,
       "fields": { "flight_minutes": 42 } }
   ],
@@ -737,6 +748,16 @@ Repository), das Passwort wird bei jedem Lauf abgefragt.
   ]
 }
 ```
+
+**Abweichende Zeit pro Person** (optional, Modul „Abweichende Zeiten pro Person“): `from`
+(gekommen) und/oder `to` (gegangen) im Personeneintrag, Format wie `start`/`end` (`YYYY-MM-DDTHH:MM`).
+Fehlt ein Wert, gilt Beginn bzw. Ende des Berichts; ohne Abweichung gibt es keine Schlüssel. Der Server
+verwirft falsche Formate und Werte gleich Beginn/Ende; beim Abschließen muss `from` < `to` gelten und
+beides in [Beginn, Ende] liegen (sonst Fehler „ptime“). Eingabe im Formular nur als Uhrzeit: das Datum
+ist der Tag, an dem die Uhrzeit in [Beginn, Ende] liegt (ohne Ende: Beginn + 1 Tag). Dauert der Bericht
+über 24 h oder passt die Uhrzeit auf mehrere Tage, erscheint zusätzlich eine Tagesauswahl. Ist das Modul
+aus, bleiben gespeicherte Zeiten erhalten und stehen weiter im PDF.
+
 
 - IDs **und** Bezeichnungen (`label`) werden gespeichert, damit Berichte auch nach
   Änderungen an den Stammdaten korrekt lesbar und auswertbar bleiben.

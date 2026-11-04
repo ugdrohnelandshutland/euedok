@@ -30,7 +30,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         $h .= '<input type="hidden" name="' . $name . '[' . $idx . '][id]" value="' . e($it['id'] ?? '') . '">';
         $first = true;
         foreach ($cols as $k => $title) {
-            $h .= $cell($title, '<input class="in" name="' . $name . '[' . $idx . '][' . $k . ']" value="' . e($it[$k] ?? '') . '" placeholder="' . e($title) . '">', $first ? 'wide' : '');
+            $h .= $cell($title, '<input class="in"' . ($k === 'email' ? ' type="email" inputmode="email" autocapitalize="none"' : '') . ' name="' . $name . '[' . $idx . '][' . $k . ']" value="' . e($it[$k] ?? '') . '" placeholder="' . e($title) . '">', $first || $k === 'email' ? 'wide' : '');
             $first = false;
         }
         $h .= $swCell('aktiv', $name . '[' . $idx . '][active]', !isset($it['id']) || !empty($it['active'])) . $mvCell . '</div>';
@@ -140,6 +140,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
           <?= $toggle('mod_vehicles', $unit['modules']['vehicles'], 'Fahrzeuge', 'Eingesetzte Fahrzeuge mit Fahrzeugfeldern') ?>
           <?= $toggle('mod_defects', $unit['modules']['defects'], 'Defekte / Vorfälle', 'Freitext mit Hinweis') ?>
           <?= $toggle('mod_alert_source', $unit['modules']['alert_source'], 'Alarmierung', 'Schnellauswahl plus freie Eingabe') ?>
+          <?= $toggle('mod_person_times', $unit['modules']['person_times'], 'Abweichende Zeiten pro Person', 'Später gekommen / früher gegangen, per Uhr-Knopf am Personen-Chip') ?>
         </section>
         <section class="card">
           <h3><?= icon('check') ?>Pflichtangaben zum Abschließen</h3>
@@ -203,8 +204,8 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
       <form method="post" action="<?= $action('save') ?>" class="card">
         <?= csrf_field() ?>
         <h3><?= icon('users') ?>Personal</h3>
-        <p class="hint" style="margin-bottom:10px">Schreibweise „Nachname, Vorname“. Ausgeschiedene Personen deaktivieren statt löschen.</p>
-        <?= $listEditor('personnel', $md['personnel'], ['name' => 'Name']) ?>
+        <p class="hint" style="margin-bottom:10px">Angezeigt wird „Nachname, Vorname“; die E-Mail-Adresse ist optional und erscheint in keinem Bericht. Ausgeschiedene Personen deaktivieren statt löschen.</p>
+        <?= $listEditor('personnel', $md['personnel'], ['lastname' => 'Nachname', 'firstname' => 'Vorname', 'email' => 'E-Mail']) ?>
         <div style="margin-top:14px"><button class="btn pri"><?= icon('check') ?>Speichern</button></div>
       </form>
       <?php endif; ?>
@@ -302,6 +303,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
       <?php if ($test): ?>
         <?php if ($test['ok']): $t = $test['data']; ?>
         <div class="msg ok"><?= icon('check') ?><span>Divera erreichbar<?= $t['unit'] !== '' ? ' – Einheit „' . e($t['unit']) . '“' : '' ?>: <?= (int) $t['personnel'] ?> Personen, <?= (int) $t['vehicles'] ?> Fahrzeuge, <?= count($t['statuses']) ?> Status, <?= (int) $t['alarms'] ?> Alarme, <?= (int) $t['events'] ?> Termine.
+          <br>E-Mail-Adressen: <?= $t['emails_ok'] ? (int) $t['emails'] . ' von ' . (int) $t['personnel'] : 'kein Zugriff (Systembenutzer mit Recht „Personal“ nötig)' ?>.
           <?php foreach (['alarm' => 'Rückmeldungen in Alarmen', 'event' => 'Rückmeldungen in Terminen'] as $src => $l): if ($t['answer_keys'][$src]): ?><br><?= e($l) ?>: <?php foreach ($t['answer_keys'][$src] as $k => $n): ?><span class="mono">ID <?= e((string) $k) ?></span> (<?= (int) $n ?>) <?php endforeach; endif; endforeach; ?></span></div>
         <?php else: ?>
         <div class="msg err"><?= icon('alert') ?><span>Testabruf fehlgeschlagen: <?= e($test['error']) ?></span></div>
@@ -316,6 +318,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
             <label class="f" style="flex:1;min-width:240px">API-Schlüssel (Accesskey) <input class="in" type="password" name="api_key" autocomplete="off" placeholder="<?= $d['api_key_enc'] ? 'hinterlegt ✓ – leer lassen zum Behalten' : 'nicht hinterlegt' ?>"></label>
             <?php if ($d['api_key_enc']): ?><label class="check"><input type="checkbox" name="api_key_clear" value="1"> Schlüssel entfernen</label><?php endif; ?>
           </div>
+          <p class="hint">Der Schlüssel muss zu einem Divera-<b>Systembenutzer mit Admin-Rechten</b> (inkl. „Verwaltung → Personal“) gehören, sonst können keine E-Mail-Adressen der Mitglieder abgerufen werden.</p>
           <div class="row">
             <label class="f">Zeitfenster (Stunden) <input class="in" type="number" min="1" max="168" name="window_hours" value="<?= (int) $d['window_hours'] ?>"></label>
             <label class="f">Zeitlimit (Sekunden) <input class="in" type="number" min="1" max="10" name="timeout_seconds" value="<?= (int) $d['timeout_seconds'] ?>"></label>

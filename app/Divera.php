@@ -66,7 +66,8 @@ final class Divera
     /* ---------- HTTP ---------- */
 
     /** @throws \RuntimeException wenn Divera nicht erreichbar ist oder ablehnt */
-    private static function request(string $path, ?string $key = null): array
+    /** $optional: Zusatzabruf – Fehler nur als Warnung, Divera wird nie als „down“ markiert. */
+    private static function request(string $path, ?string $key = null, bool $optional = false): array
     {
         $key ??= self::apiKey();
         if (!$key) {
@@ -99,10 +100,10 @@ final class Divera
         curl_close($ch);
 
         $ctx = ['path' => $path, 'http' => $status, 'ms' => $ms, 'bytes' => is_string($body) ? strlen($body) : 0];
-        $fail = static function (string $msg, bool $markDown) use ($ctx, $body, $path, $key): never {
+        $fail = static function (string $msg, bool $markDown) use ($ctx, $body, $path, $key, $optional): never {
             $raw = is_string($body) && $body !== '' ? Log::raw('error' . str_replace('/', '-', $path), $body) : null;
-            Log::error('divera', 'request_failed', $msg, $ctx + ($raw ? ['raw_file' => $raw] : []));
-            if ($markDown && $key === self::apiKey()) {
+            $optional ? Log::warning('divera', 'request_failed', $msg, $ctx + ($raw ? ['raw_file' => $raw] : [])) : Log::error('divera', 'request_failed', $msg, $ctx + ($raw ? ['raw_file' => $raw] : []));
+            if ($markDown && !$optional && $key === self::apiKey()) {
                 Storage::write('cache/divera-down.json', ['until' => time() + 60, 'error' => $msg]);
             }
             throw new \RuntimeException($msg);
@@ -158,7 +159,7 @@ final class Divera
     private static function refreshBuffers(array $data): void
     {
         $stamp = now_iso();
-        Storage::write('cache/divera-personnel.json', ['fetched_at' => $stamp, 'items' => self::parsePersonnel($data)]);
+        Storage::write('cache/divera-personnel.json', ['fetched_at' => $stamp, 'items' => self::parsePersonnel($data, self::emails()['map'])]);
         Storage::write('cache/divera-vehicles.json', ['fetched_at' => $stamp, 'items' => self::parseVehicles($data)]);
         Storage::write('cache/divera-statuses.json', ['fetched_at' => $stamp, 'items' => self::parseStatuses($data)]);
     }
@@ -168,7 +169,7 @@ final class Divera
     /** @return array{items: array, stale: bool, fetched_at: ?string, error: ?string} */
     public static function personnel(): array
     {
-        return self::listWithBuffer('cache/divera-personnel.json', [self::class, 'parsePersonnel']);
+        return self::listWithBuffer('cache/divera-personnel.json', static fn (array $d) => self::parsePersonnel($d, self::emails()['map']));
     }
 
     public static function vehicles(): array
@@ -220,17 +221,82 @@ final class Divera
         return $out;
     }
 
-    public static function parsePersonnel(array $data): array
+    /**
+     * Name und E-Mail je Benutzer-Einheiten-Beziehung (UCR-ID) über /api/v3/user-cluster-relations, wie pull 60 s gepuffert.
+     * Schlägt der Abruf fehl (z. B. 403 ohne Systembenutzer), bleibt das Personal mit Namen aus pull/all nutzbar – nie eine Exception.
+     * shortcut: keine Seitenumbruch-Behandlung, bei sehr großen Einheiten (Divera paginiert) nachrüsten.
+     * @return array{map: array<string,array{lastname?:string,firstname?:string,email?:string}|string>, ok: bool, total: int} (alte Caches: Text-Wert = nur E-Mail)
+     */
+    public static function emails(bool $fresh = false, ?string $key = null): array
+    {
+        $file = 'cache/divera-ucr.json';
+        $cached = Storage::read($file);
+        if (!$fresh && $key === null && is_array($cached) && ($cached['fetched'] ?? 0) > time() - self::PULL_TTL) {
+            return ['map' => (array) $cached['map'], 'ok' => (bool) $cached['ok'], 'total' => (int) ($cached['total'] ?? 0)];
+        }
+        try {
+            $r = self::parseEmails(self::request('/api/v3/user-cluster-relations', $key, true));
+            $r['ok'] = true;
+        } catch (\Throwable $e) {
+            // Warnung steht bereits im Protokoll (request); alte Adressen behalten, kurz nicht erneut versuchen
+            $r = ['map' => $key === null ? (array) ($cached['map'] ?? []) : [], 'ok' => false, 'total' => 0];
+        }
+        if ($key === null) {
+            Storage::write($file, ['fetched' => time()] + $r);
+        }
+        return $r;
+    }
+
+    /** v3-Antwort (`data` oder Liste auf oberster Ebene) → UCR-ID => [lastname, firstname, email ('' wenn ungültig)]. @return array{map: array<string,array{lastname:string,firstname:string,email:string}>, total: int} */
+    public static function parseEmails(array $json): array
+    {
+        $list = $json['data'] ?? $json;
+        $list = is_array($list) && isset($list['items']) && is_array($list['items']) ? $list['items'] : $list;
+        $map = [];
+        $total = 0;
+        foreach (is_array($list) ? $list : [] as $rel) {
+            if (!is_array($rel) || !isset($rel['id'])) {
+                continue;
+            }
+            $total++;
+            $u = (array) ($rel['user'] ?? []);
+            $mail = trim((string) ($u['email'] ?? ''));
+            $map[(string) $rel['id']] = [
+                'lastname' => trim((string) ($u['lastname'] ?? '')),
+                'firstname' => trim((string) ($u['firstname'] ?? '')),
+                'email' => filter_var($mail, FILTER_VALIDATE_EMAIL) ? $mail : '',
+            ];
+        }
+        return ['map' => $map, 'total' => $total];
+    }
+
+    /** @param array<string,array|string> $emails UCR-ID => v3-Eintrag (Name/E-Mail, optional); v3-Name hat Vorrang vor pull/all */
+    public static function parsePersonnel(array $data, array $emails = []): array
     {
         $out = [];
         foreach (self::items($data['cluster']['consumer'] ?? []) as $c) {
-            $last = trim((string) ($c['lastname'] ?? ''));
-            $first = trim((string) ($c['firstname'] ?? ''));
+            $v3 = $emails[(string) $c['id']] ?? [];
+            $v3 = is_array($v3) ? $v3 : ['email' => (string) $v3];
+            if (trim((string) ($v3['lastname'] ?? '')) !== '') {
+                $last = trim((string) $v3['lastname']);
+                $first = trim((string) ($v3['firstname'] ?? ''));
+            } else {
+                $last = trim((string) ($c['lastname'] ?? ''));
+                $first = trim((string) ($c['firstname'] ?? ''));
+            }
             $name = $last !== '' ? trim($last . ($first !== '' ? ', ' . $first : '')) : trim((string) ($c['stdformat_name'] ?? $c['name'] ?? $first));
             if ($name === '') {
                 continue;
             }
-            $out[] = ['id' => 'div-' . $c['id'], 'name' => $name, 'divera_id' => (int) $c['id'], 'active' => true];
+            $out[] = [
+                'id' => 'div-' . $c['id'],
+                'name' => $name,
+                'lastname' => $last !== '' ? $last : $name,
+                'firstname' => $last !== '' ? $first : '',
+                'email' => trim((string) ($v3['email'] ?? '')),
+                'divera_id' => (int) $c['id'],
+                'active' => true,
+            ];
         }
         usort($out, static fn ($a, $b) => strcasecmp($a['name'], $b['name']));
         return $out;
@@ -475,6 +541,7 @@ final class Divera
     public static function test(?string $key = null): array
     {
         $data = self::pull(true, $key);
+        $mails = self::emails(true, $key);
         if ($key === null) {
             @unlink(Storage::path('cache/divera-alarms.json'));
             @unlink(Storage::path('cache/divera-events.json'));
@@ -493,6 +560,8 @@ final class Divera
         return [
             'unit' => trim((string) ($data['cluster']['name'] ?? '')),
             'personnel' => count(self::parsePersonnel($data)),
+            'emails_ok' => $mails['ok'],
+            'emails' => count(array_filter($mails['map'], static fn ($e) => (is_array($e) ? ($e['email'] ?? '') : $e) !== '')),
             'vehicles' => count(self::parseVehicles($data)),
             'statuses' => self::parseStatuses($data),
             'alarms' => count(self::alarms($data)),

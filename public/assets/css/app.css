@@ -131,6 +131,16 @@ textarea.in{min-height:140px;resize:vertical;line-height:1.5;font-weight:500}
 .chip.on .tick{color:inherit}
 .chip .av{width:28px;height:28px;border-radius:50%;background:var(--raised);color:var(--text);font-size:11px;font-weight:800;display:grid;place-items:center;margin-left:-6px}
 .chip.on .av{background:rgba(255,255,255,.2);color:#fff}
+/* gewählte Person + Uhr-Knopf (abweichende Zeit) als ein Block; bricht am Handy nicht aus der Zeile */
+.pchip{display:inline-flex;max-width:100%}
+.pchip .av{flex:none}
+.pchip>.chip:first-child{min-width:0;text-align:left;flex-wrap:wrap;row-gap:2px;padding-top:6px;padding-bottom:6px;border-top-right-radius:0;border-bottom-right-radius:0}
+.chip.pt{padding:0 10px;border-top-left-radius:0;border-bottom-left-radius:0;border-left-color:rgba(255,255,255,.3)}
+.pchip.warn>.chip{background:var(--fault);border-color:var(--fault)}
+.ptm{font-size:12px;font-weight:600;opacity:.85;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
+.ptm .i{width:14px;height:14px}
+.pc .ptm{margin-left:6px;color:var(--quiet);opacity:1}
+.pc .ptm.bad{color:var(--fault)}
 @media (hover:hover){.chip:not(.on):hover{border-color:var(--accent)}}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 
