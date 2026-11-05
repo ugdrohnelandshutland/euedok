@@ -3,7 +3,7 @@ use Euedok\Confirmations;
 use Euedok\Reports;
 use Euedok\Settings;
 
-/** @var array $r @var array $people @var array $values @var array $errors @var ?array $results @var ?string $notReady */
+/** @var array $r @var array $people @var array $values @var array $errors @var ?array $results @var ?string $notReady @var ?string $templateId @var ?string $resend */
 $title = Confirmations::title($r['type']);
 $n = rawurlencode($r['report_number']);
 $cc = Settings::get('confirmation')['cc'];
@@ -31,6 +31,15 @@ $cc = Settings::get('confirmation')['cc'];
 
   <form method="post" action="<?= e(base_url('reports/' . $n . '/confirmations')) ?>" class="stack">
     <?= csrf_field() ?>
+    <?php if ($resend !== null): ?><input type="hidden" name="e" value="<?= e($resend) ?>"><?php endif; ?>
+    <?php $templates = Confirmations::templates(); ?>
+    <?php if (count($templates) === 1): ?>
+    <p class="muted">Vorlage: <b><?= e($templates[0]['label']) ?></b></p>
+    <?php elseif (!$templates): ?>
+    <p class="muted">Vorlage: eingebautes Layout</p>
+    <?php else: ?>
+    <label class="f">Vorlage <select class="in" name="template"><?php foreach ($templates as $t): ?><option value="<?= e($t['id']) ?>"<?= $t['id'] === $templateId ? ' selected' : '' ?>><?= e($t['label']) ?></option><?php endforeach; ?></select><span class="hint">Gilt für alle ausgewählten Personen.</span></label>
+    <?php endif; ?>
     <?php foreach ($people as $id => $p):
         $v = $values[$id] ?? null;
         $sel = $values ? !empty($v['sel']) : $p['email'] !== '';

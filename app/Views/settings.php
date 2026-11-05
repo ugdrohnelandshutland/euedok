@@ -276,8 +276,8 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
       <form method="post" action="<?= $action('test-mail') ?>"><?= csrf_field() ?><button class="btn"><?= icon('send') ?>Testmail an die Empfänger senden</button></form>
 
 <?php elseif ($section === 'confirmation'):
-    $cf = Settings::get('confirmation');
-    $tpl = $cf['template'];
+    $cf = Confirmations::config();
+    $tpls = $cf['templates'];
     $fieldRow = static function ($i, array $f) use ($swCell): string {
         $nm = static fn (string $k) => 'fields[' . $i . '][' . $k . ']';
         $num = static fn (string $k, string $label, string $unit, $def, string $step = '0.1') => '<label class="nf"><span class="cl">' . e($label) . '</span><span class="nw"><input class="in" type="number" inputmode="decimal" step="' . $step . '" min="0" name="' . $nm($k) . '" value="' . e((string) ($f[$k] ?? $def)) . '">' . ($unit !== '' ? '<em>' . e($unit) . '</em>' : '') . '</span></label>';
@@ -302,9 +302,52 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <label class="f">CC-Adressen (eine je Zeile) <textarea class="in" name="cc" rows="2" style="min-height:70px"><?= e(implode("\n", $cf['cc'])) ?></textarea><span class="hint">Erhalten jede Bestätigung in Kopie, z. B. die Verwaltung.</span></label>
         <label class="f">Betreff <input class="in" name="subject" value="<?= e($cf['subject']) ?>" placeholder="Bestätigung {berichtsnummer}"></label>
         <label class="f">Mailtext <textarea class="in" name="body" rows="8" style="min-height:180px" placeholder="Hallo {vorname}, &#10;anbei deine Bestätigung für den {berichtsart} am {datum} ({von}–{bis} Uhr)."><?= e($cf['body']) ?></textarea></label>
-        <p class="hint">Platzhalter (Betreff, Mailtext und Felder):
-          <?php foreach (Confirmations::PLACEHOLDERS as $ph => $label): ?><code><?= e($ph) ?></code> <?= e($label) ?> · <?php endforeach; ?>Unbekannte Platzhalter bleiben stehen.</p>
+        <?php
+        $phGroups = ['Person' => ['{nachname}', '{vorname}', '{name}', '{email}'], 'Zeiten' => ['{datum}', '{von}', '{bis}', '{von_datum}', '{bis_datum}', '{dauer}'], 'Bericht' => ['{berichtsnummer}', '{berichtsart}', '{stichwort}', '{ort}', '{einheitsfuehrer}'], 'Benutzer (Versender)' => array_filter(array_keys(Confirmations::PLACEHOLDERS), static fn ($p) => str_starts_with($p, '{benutzer_')), 'Sonstiges' => ['{einheit}', '{heute}']];
+        // Nicht zugeordnete Platzhalter landen unter „Sonstiges“, damit keiner fehlt
+        $phGrouped = array_merge(...array_values($phGroups));
+        $phGroups['Sonstiges'] = array_merge($phGroups['Sonstiges'], array_diff(array_keys(Confirmations::PLACEHOLDERS), $phGrouped));
+        ?>
+        <details class="ph-help">
+          <summary>Platzhalter anzeigen</summary>
+          <p class="hint">Gelten in Betreff, Mailtext und Feldern. Unbekannte Platzhalter bleiben stehen.</p>
+          <?php foreach ($phGroups as $gTitle => $gList): ?>
+          <div class="sec-t"><?= e($gTitle) ?></div>
+          <?php foreach ($gList as $ph): if (!isset(Confirmations::PLACEHOLDERS[$ph])) { continue; } ?>
+          <div class="ph-row"><code><?= e($ph) ?></code><span><?= e(Confirmations::PLACEHOLDERS[$ph]) ?></span></div>
+          <?php endforeach; endforeach; ?>
+        </details>
         <datalist id="ph-list"><?php foreach (array_keys(Confirmations::PLACEHOLDERS) as $ph): ?><option value="<?= e($ph) ?>"><?php endforeach; ?></datalist>
+
+        <h3 style="margin-top:10px"><?= icon('file') ?>Vorlagen</h3>
+        <?php if (!$tpls): ?>
+        <div class="msg info"><?= icon('file') ?><span>Keine Vorlage hochgeladen – es gilt das eingebaute Layout (Einheit, Titel, Person, Bericht, Zeitraum, Dauer, Ort, Unterschriftslinie).</span></div>
+        <?php endif; ?>
+        <?php $pv = base_url('settings/confirmation') . '?preview=1'; ?>
+        <?php foreach ($tpls as $t): ?>
+        <div class="cfield tpl-card">
+          <label class="f">Bezeichnung <input class="in" name="tpl[<?= e($t['id']) ?>][label]" value="<?= e($t['label']) ?>" maxlength="80"></label>
+          <span class="muted small tpl-meta"><?= e($t['name']) ?> · <?= (int) $t['pages'] ?> <?= (int) $t['pages'] === 1 ? 'Seite' : 'Seiten' ?> · <?= e(fmt_datetime($t['uploaded_at'])) ?></span>
+          <div class="tpl-act">
+            <label class="tpl-def" title="Standardvorlage (mit „Speichern“ übernehmen)"><input type="radio" name="default_template" value="<?= e($t['id']) ?>"<?= $t['id'] === $cf['default_template'] ? ' checked' : '' ?>><span><b class="off">Als Standard</b><b class="on"><?= icon('check') ?>Standard</b></span></label>
+            <a class="btn sm" href="<?= e($pv . '&t=' . rawurlencode($t['id'])) ?>" target="_blank"><?= icon('eye') ?>Vorschau</a>
+            <a class="btn sm" href="<?= e($pv . '&grid=1&t=' . rawurlencode($t['id'])) ?>" target="_blank"><?= icon('sliders') ?>Mit Raster</a>
+            <button type="submit" form="tpl-del-<?= e($t['id']) ?>" class="btn sm danger" data-confirm="Vorlage „<?= e($t['label']) ?>“ entfernen?"><?= icon('trash') ?>Entfernen</button>
+          </div>
+        </div>
+        <?php endforeach; ?>
+        <div class="cfield tpl-card">
+          <b>+ Vorlage hinzufügen</b>
+          <?php if (!$tpls): ?>
+          <div class="tpl-act"><a class="btn sm" href="<?= e($pv) ?>" target="_blank"><?= icon('eye') ?>Vorschau</a></div>
+          <?php endif; ?>
+          <label class="f">Bezeichnung (optional, sonst Dateiname) <input class="in" form="tpl-up" name="label" maxlength="80" placeholder="z. B. Einsatz Landkreis"></label>
+          <label class="f">PDF-Datei, max. 5 MB <input class="in" form="tpl-up" type="file" name="template" accept="application/pdf,.pdf" required></label>
+          <p class="hint">Word: „Speichern unter → PDF → Optionen → PDF/A-kompatibel“ aktivieren. Neuere PDF-Versionen mit komprimierten Querverweisen kann EÜDOK nicht lesen.</p>
+          <p class="hint">Vorher Änderungen speichern – Hochladen verwirft ungespeicherte Eingaben. Die Vorschau zeigt den gespeicherten Stand mit Beispieldaten.</p>
+          <div><button type="submit" form="tpl-up" class="btn"><?= icon('plus') ?>Hochladen</button></div>
+        </div>
+        <?php if ($tpls): ?><p class="hint">Bezeichnung und Standard werden mit „Speichern“ übernommen. Die Felder unten gelten für alle Vorlagen. Im Versanddialog wählt man die Vorlage (ab zwei Vorlagen).</p><?php endif; ?>
 
         <h3 style="margin-top:10px"><?= icon('sliders') ?>Felder auf der Vorlage</h3>
         <ul class="hint cf-help">
@@ -318,29 +361,11 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <button class="btn pri"><?= icon('check') ?>Speichern</button>
       </form>
 
-      <section class="card stack">
-        <h3><?= icon('file') ?>Vorlage (PDF)</h3>
-        <?php if ($tpl): ?>
-        <p>Hochgeladen: <b><?= e($tpl['name']) ?></b> · <?= (int) $tpl['pages'] ?> <?= (int) $tpl['pages'] === 1 ? 'Seite' : 'Seiten' ?> · <?= e(fmt_datetime($tpl['uploaded_at'])) ?></p>
-        <?php else: ?>
-        <div class="msg info"><?= icon('file') ?><span>Keine Vorlage hochgeladen – es gilt das eingebaute Layout (Einheit, Titel, Person, Bericht, Zeitraum, Dauer, Ort, Unterschriftslinie).</span></div>
-        <?php endif; ?>
-        <form method="post" enctype="multipart/form-data" action="<?= $action('confirm-upload') ?>" class="stack">
-          <?= csrf_field() ?>
-          <input type="hidden" name="MAX_FILE_SIZE" value="<?= Confirmations::MAX_UPLOAD ?>">
-          <label class="f"><?= $tpl ? 'Neue Vorlage (ersetzt die bisherige)' : 'PDF-Datei' ?>, max. 5 MB <input class="in" type="file" name="template" accept="application/pdf,.pdf" required></label>
-          <p class="hint">Word: „Speichern unter → PDF → Optionen → PDF/A-kompatibel“ aktivieren. Neuere PDF-Versionen mit komprimierten Querverweisen kann EÜDOK nicht lesen.</p>
-          <div><button class="btn"><?= icon('plus') ?>Hochladen</button></div>
-        </form>
-        <p class="hint">Die Vorschau zeigt den gespeicherten Stand mit Beispieldaten – vorher speichern.</p>
-        <div class="row" style="flex-wrap:wrap">
-          <a class="btn" style="flex:0 1 auto" href="<?= e(base_url('settings/confirmation?preview=1')) ?>" target="_blank"><?= icon('eye') ?>Vorschau</a>
-          <?php if ($tpl): ?>
-          <a class="btn" style="flex:0 1 auto" href="<?= e(base_url('settings/confirmation?preview=1&grid=1')) ?>" target="_blank"><?= icon('sliders') ?>Vorschau mit mm-Raster</a>
-          <form method="post" action="<?= $action('confirm-remove') ?>" style="flex:0 1 auto"><?= csrf_field() ?><button class="btn danger" data-confirm="Vorlage entfernen? Danach gilt das eingebaute Layout."><?= icon('trash') ?>Vorlage entfernen</button></form>
-          <?php endif; ?>
-        </div>
-      </section>
+      <?php foreach ($tpls as $t): ?>
+      <form id="tpl-del-<?= e($t['id']) ?>" method="post" action="<?= $action('confirm-remove') ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= e($t['id']) ?>"></form>
+      <?php endforeach; ?>
+
+      <form id="tpl-up" method="post" enctype="multipart/form-data" action="<?= $action('confirm-upload') ?>"><?= csrf_field() ?><input type="hidden" name="MAX_FILE_SIZE" value="<?= Confirmations::MAX_UPLOAD ?>"></form>
 
 <?php elseif ($section === 'divera'):
     $d = Settings::divera();

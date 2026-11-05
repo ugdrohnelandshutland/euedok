@@ -12,7 +12,6 @@ use Mpdf\Mpdf;
  */
 final class Confirmations
 {
-    public const TEMPLATE_FILE = 'templates/einsatzbestaetigung.pdf';
     public const MAX_UPLOAD = 5 * 1024 * 1024;
     public const PLACEHOLDERS = [
         '{nachname}' => 'Nachname',
@@ -30,9 +29,78 @@ final class Confirmations
         '{stichwort}' => 'Thema / Stichwort',
         '{ort}' => 'Ort',
         '{einheit}' => 'Name der Einheit',
-        '{leiter}' => 'Einheitsführer',
+        '{einheitsfuehrer}' => 'Einheitsführer (Leitung laut Bericht)',
         '{heute}' => 'heutiges Datum',
+        '{benutzer_nachname}' => 'Nachname des angemeldeten Benutzers (Versender)',
+        '{benutzer_vorname}' => 'Vorname des angemeldeten Benutzers (Versender)',
+        '{benutzer_name}' => '„Nachname, Vorname“ des angemeldeten Benutzers (Versender)',
+        '{benutzer_email}' => 'E-Mail des angemeldeten Benutzers (Versender)',
     ];
+
+    /** Einstellungen mit Vorlagenliste; der alte Einzelwert „template“ wird zur ersten Vorlage („Standard“). */
+    public static function config(): array
+    {
+        $c = Settings::get('confirmation');
+        if (!empty($c['template']) && !$c['templates']) {
+            $t = $c['template'];
+            $c['templates'] = [['id' => 'standard', 'label' => 'Standard'] + array_intersect_key($t, array_flip(['file', 'name', 'pages', 'uploaded_at']))];
+            $c['default_template'] = 'standard';
+        }
+        unset($c['template']);
+        return $c;
+    }
+
+    /** @return list<array> Vorlagen (id, label, file, name, pages, uploaded_at) */
+    public static function templates(): array
+    {
+        return array_values(array_filter(self::config()['templates'], static fn ($t) => is_array($t) && isset($t['id'], $t['file'])));
+    }
+
+    /** Vorlage zur id; null/unbekannt → Standard bzw. erste Vorlage; keine Vorlagen → null (eingebautes Layout). */
+    public static function template(?string $id = null): ?array
+    {
+        $list = self::templates();
+        foreach ($list as $t) {
+            if ($t['id'] === $id) {
+                return $t;
+            }
+        }
+        $def = self::config()['default_template'] ?? null;
+        foreach ($list as $t) {
+            if ($t['id'] === $def) {
+                return $t;
+            }
+        }
+        return $list[0] ?? null;
+    }
+
+    /**
+     * Gewählte Vorlage aus dem Formular prüfen: 0 Vorlagen → null, 1 → diese, sonst muss die id existieren.
+     * @return array{0: ?string, 1: ?string} [id, Fehler]
+     */
+    public static function chooseTemplate(mixed $posted): array
+    {
+        $list = self::templates();
+        if (count($list) < 2) {
+            return [$list[0]['id'] ?? null, null];
+        }
+        foreach ($list as $t) {
+            if ($t['id'] === $posted) {
+                return [$t['id'], null];
+            }
+        }
+        return [self::template()['id'], 'Ungültige Vorlage gewählt.'];
+    }
+
+    /** Angemeldeter Zugang → Versenderwerte (zugeordnete Person im Personal, sonst nur Anzeigename). */
+    public static function sender(array $u): array
+    {
+        $p = !empty($u['person_id']) ? MasterData::findPerson($u['person_id']) : null;
+        if ($p) {
+            return ['lastname' => (string) $p['lastname'], 'firstname' => (string) $p['firstname'], 'name' => (string) $p['name'], 'email' => (string) ($p['email'] ?? '')];
+        }
+        return ['lastname' => '', 'firstname' => '', 'name' => (string) ($u['display_name'] ?? $u['username'] ?? ''), 'email' => ''];
+    }
 
     /** „Einsatzbestätigung“, „Übungsbestätigung“ (passend zu „Einsatzbericht“, „Übungsbericht“). */
     public static function title(array $type): string
@@ -97,7 +165,7 @@ final class Confirmations
     }
 
     /** null = Versand möglich, sonst deutscher Hinweis. */
-    public static function notReady(): ?string
+    public static function notReady(?string $templateId = null): ?string
     {
         $c = Settings::get('confirmation');
         if (trim((string) $c['subject']) === '' || trim((string) $c['body']) === '') {
@@ -106,7 +174,7 @@ final class Confirmations
         if (empty(Settings::mail()['enabled'])) {
             return 'Der Mailversand ist ausgeschaltet (Einstellungen → Mailversand) – es wird nichts versendet.';
         }
-        if (!empty($c['template']) && !is_file(Storage::path($c['template']['file']))) {
+        if (($t = self::template($templateId)) && !is_file(Storage::path($t['file']))) {
             return 'Die Vorlage fehlt auf dem Server. Bitte unter Einstellungen → Einsatzbestätigung neu hochladen oder entfernen.';
         }
         return null;
@@ -159,7 +227,7 @@ final class Confirmations
     }
 
     /** Platzhalter → Wert für eine Person (Zeiten: die für die Bestätigung eingegebenen). */
-    public static function vars(array $r, array $person): array
+    public static function vars(array $r, array $person, array $sender = []): array
     {
         $lead = '';
         foreach ($r['personnel'] as $p) {
@@ -184,24 +252,31 @@ final class Confirmations
             '{stichwort}' => (string) $r['subject'],
             '{ort}' => (string) $r['location'],
             '{einheit}' => (string) Settings::unit()['name'],
-            '{leiter}' => $lead,
+            '{einheitsfuehrer}' => $lead,
             '{heute}' => date('d.m.Y'),
+            '{benutzer_nachname}' => (string) ($sender['lastname'] ?? ''),
+            '{benutzer_vorname}' => (string) ($sender['firstname'] ?? ''),
+            '{benutzer_name}' => (string) ($sender['name'] ?? ''),
+            '{benutzer_email}' => (string) ($sender['email'] ?? ''),
+            '{leiter}' => $lead, // alter Name, nur noch als Alias (nicht in PLACEHOLDERS)
         ];
     }
 
     /**
      * Je Person: PDF erzeugen und ablegen, Mail an die Person (CC laut Einstellungen), Protokolleintrag.
      * @param array $rows Personen-ID => ['email', 'from', 'to'] (aus validate)
+     * @param array $sender Versenderwerte (sender()), werden im Protokoll gespeichert
      * @return list<array> Protokolleinträge dieses Versands
      */
-    public static function send(string $number, array $rows, array $actor): array
+    public static function send(string $number, array $rows, array $actor, array $sender = [], ?string $templateId = null): array
     {
         $r = Reports::load($number);
         $meta = Reports::meta($number);
         if (!$r || !$meta || $r['status'] !== 'closed') {
             return [];
         }
-        $c = Settings::get('confirmation');
+        $c = self::config();
+        $tpl = self::template($templateId);
         $people = self::people($r);
         $results = [];
         foreach ($rows as $id => $row) {
@@ -209,12 +284,15 @@ final class Confirmations
                 continue;
             }
             $person = $row + $people[$id];
-            $vars = self::vars($r, $person);
+            $vars = self::vars($r, $person, $sender);
             $entry = [
                 'person_id' => $id,
                 'name' => $person['name'],
                 'email' => $person['email'],
                 'cc' => $c['cc'],
+                'template' => $tpl['id'] ?? null,
+                'template_label' => $tpl['label'] ?? null,
+                'sender' => $sender,
                 'from' => $person['from'],
                 'to' => $person['to'],
                 'file' => null,
@@ -225,7 +303,7 @@ final class Confirmations
                 'error' => null,
             ];
             try {
-                $entry['file'] = self::store($r, $meta, $person, self::render($vars, self::title($r['type'])));
+                $entry['file'] = self::store($r, $meta, $person, self::render($vars, self::title($r['type']), false, $tpl['id'] ?? null));
                 $res = Mailer::sendText([$person['email']], strtr((string) $c['subject'], $vars), strtr((string) $c['body'], $vars), $c['cc'], [
                     Storage::path(self::dir($meta) . '/' . $entry['file']) => $entry['file'],
                 ]);
@@ -273,7 +351,7 @@ final class Confirmations
     }
 
     /** Vorschau mit Beispieldaten; $grid = 10-mm-Raster mit Beschriftung. */
-    public static function preview(bool $grid): string
+    public static function preview(bool $grid, ?string $templateId = null, array $sender = []): string
     {
         $day = date('Y-m-d');
         $next = date('Y-m-d', strtotime('+1 day'));
@@ -287,14 +365,15 @@ final class Confirmations
             'lead' => 'lead',
         ];
         $person = ['name' => 'Mustermann, Max', 'lastname' => 'Mustermann', 'firstname' => 'Max', 'email' => 'max.mustermann@example.org', 'from' => $day . 'T22:00', 'to' => $next . 'T01:30'];
-        return self::render(self::vars($r, $person), self::title($r['type']), $grid);
+        return self::render(self::vars($r, $person, $sender), self::title($r['type']), $grid, $templateId);
     }
 
     /** PDF als Text: mit Vorlage (FPDI) jede Seite importieren und die Felder setzen, sonst eingebautes Layout. */
-    public static function render(array $vars, string $title, bool $grid = false): string
+    public static function render(array $vars, string $title, bool $grid = false, ?string $templateId = null): string
     {
-        $c = Settings::get('confirmation');
-        $tpl = !empty($c['template']) ? Storage::path($c['template']['file']) : null;
+        $c = self::config();
+        $t = self::template($templateId);
+        $tpl = $t ? Storage::path($t['file']) : null;
         if ($tpl === null || !is_file($tpl)) {
             $m = Pdf::make();
             $m->SetTitle($title);
@@ -432,7 +511,7 @@ final class Confirmations
             . '</table>'
             . '<table width="100%" style="margin-top:40mm;border-collapse:collapse"><tr>'
             . '<td width="45%" style="border-top:0.6pt solid #000;padding-top:3pt;font-size:9pt">Ort, Datum</td><td width="10%"></td>'
-            . '<td width="45%" style="border-top:0.6pt solid #000;padding-top:3pt;font-size:9pt">Unterschrift' . ($v['{leiter}'] !== '' ? ' (' . $h($v['{leiter}']) . ')' : '') . '</td>'
+            . '<td width="45%" style="border-top:0.6pt solid #000;padding-top:3pt;font-size:9pt">Unterschrift' . ($v['{einheitsfuehrer}'] !== '' ? ' (' . $h($v['{einheitsfuehrer}']) . ')' : '') . '</td>'
             . '</tr></table></div>';
     }
 }

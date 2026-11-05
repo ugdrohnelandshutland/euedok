@@ -37,17 +37,26 @@ $self = $back . '/confirmations';
 $people = Confirmations::people($r);
 $values = [];
 $errors = [];
+$templateId = Confirmations::chooseTemplate(null)[0]; // Vorbelegung: Standard
+$resend = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     [$rows, $errors, $values] = Confirmations::validate($people, is_array($_POST['p'] ?? null) ? $_POST['p'] : []);
-    if (($notReady = Confirmations::notReady()) !== null) {
+    [$templateId, $tplError] = Confirmations::chooseTemplate($_POST['template'] ?? null);
+    if ($tplError !== null) {
+        $errors[] = $tplError;
+    }
+    // „Erneut senden“: Versenderwerte aus dem Protokolleintrag, auch wenn jemand anderes angemeldet ist
+    $entry = is_string($_POST['e'] ?? null) && ctype_digit($_POST['e']) ? (Confirmations::entries($r, $meta)[(int) $_POST['e']] ?? null) : null;
+    $resend = $entry && array_keys($rows) === [$entry['person_id']] && is_array($entry['sender'] ?? null) ? $entry['sender'] : null;
+    if (($notReady = Confirmations::notReady($templateId)) !== null) {
         $errors[] = $notReady;
     } elseif (!$rows && !$errors) {
         $errors[] = 'Bitte mindestens eine Person auswählen.';
     }
     if (!$errors) {
-        $_SESSION['confirm_results'] = ['n' => $number, 'items' => Confirmations::send($number, $rows, Actor::fromUser($user))];
+        $_SESSION['confirm_results'] = ['n' => $number, 'items' => Confirmations::send($number, $rows, Actor::fromUser($user), $resend ?? Confirmations::sender($user), $templateId)];
         redirect($self);
     }
 } elseif (isset($_GET['e'])) {
@@ -55,6 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $entry = Confirmations::entries($r, $meta)[(int) $_GET['e']] ?? null;
     if ($entry && isset($people[$entry['person_id']])) {
         $values[$entry['person_id']] = ['sel' => true, 'email' => (string) $entry['email'], 'from' => (string) $entry['from'], 'to' => (string) $entry['to']];
+        if (!empty($entry['template'])) {
+            $templateId = Confirmations::template($entry['template'])['id'] ?? null; // gelöscht → Standard
+        }
     }
 }
 
@@ -65,5 +77,5 @@ if (($_SESSION['confirm_results']['n'] ?? null) === $number) {
 }
 
 render('partials/head', ['title' => Confirmations::title($r['type']) . 'en ' . $number, 'nav' => 'reports']);
-render('confirmations', ['r' => $r, 'people' => $people, 'values' => $values, 'errors' => $errors, 'results' => $results, 'notReady' => Confirmations::notReady()]);
+render('confirmations', ['r' => $r, 'people' => $people, 'values' => $values, 'errors' => $errors, 'results' => $results, 'notReady' => Confirmations::notReady($templateId), 'templateId' => $templateId, 'resend' => isset($_GET['e']) ? (string) (int) $_GET['e'] : (is_string($_POST['e'] ?? null) ? $_POST['e'] : null)]);
 render('partials/foot', ['nav' => 'reports']);

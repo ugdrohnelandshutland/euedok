@@ -315,7 +315,7 @@ final class SettingsPage
 
     private static function saveConfirmation(): string
     {
-        $old = Settings::get('confirmation');
+        $old = Confirmations::config();
         $c = $old;
         $cc = preg_split('/[\s,;]+/', post_str('cc'), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         foreach ($cc as $addr) {
@@ -326,7 +326,18 @@ final class SettingsPage
         $c['cc'] = array_values(array_unique($cc));
         $c['subject'] = mb_substr(post_str('subject'), 0, 200);
         $c['body'] = mb_substr(trim(str_replace("\r\n", "\n", is_string($_POST['body'] ?? null) ? $_POST['body'] : '')), 0, 5000);
-        $pages = max(1, (int) ($c['template']['pages'] ?? 1));
+        // Bezeichnung und Standard der Vorlagen (Dateien/Seitenzahl ändern sich nur über Upload/Entfernen)
+        $in = is_array($_POST['tpl'] ?? null) ? $_POST['tpl'] : [];
+        foreach ($c['templates'] as &$t) {
+            $label = is_array($in[$t['id']] ?? null) && is_string($in[$t['id']]['label'] ?? null) ? trim($in[$t['id']]['label']) : '';
+            $t['label'] = $label !== '' ? mb_substr($label, 0, 80) : $t['label'];
+        }
+        unset($t);
+        $def = post_str('default_template');
+        if ($def !== '' && in_array($def, array_column($c['templates'], 'id'), true)) {
+            $c['default_template'] = $def;
+        }
+        $pages = max(1, ...array_map(static fn ($t) => (int) ($t['pages'] ?? 1), $c['templates']));
         $fields = [];
         foreach (self::rows('fields') as $row) {
             $text = self::s($row, 'text', 300);
@@ -354,7 +365,7 @@ final class SettingsPage
         return 'Einsatzbestätigung gespeichert.';
     }
 
-    /** Vorlage hochladen: max. 5 MB, beginnt mit %PDF, FPDI muss sie lesen können. */
+    /** Vorlage hochladen (zusätzlich zu den vorhandenen): max. 5 MB, beginnt mit %PDF, FPDI muss sie lesen können. */
     public static function uploadConfirmationTemplate(): string
     {
         $f = $_FILES['template'] ?? null;
@@ -376,24 +387,42 @@ final class SettingsPage
             Log::warning('settings', 'template_rejected', 'Vorlage nicht lesbar: ' . $e->getMessage(), ['name' => mb_substr((string) $f['name'], 0, 120)]);
             return 'Vorlage nicht gespeichert: Vorlage kann nicht gelesen werden. Bitte in Word beim PDF-Export ‚PDF/A-kompatibel‘ aktivieren oder als PDF 1.4 speichern.';
         }
-        $target = Storage::path(Confirmations::TEMPLATE_FILE);
+        $id = 'v' . bin2hex(random_bytes(4));
+        $file = 'templates/einsatzbestaetigung_' . $id . '.pdf';
+        $target = Storage::path($file);
         Storage::ensureDir(dirname($target));
         if (!move_uploaded_file($tmp, $target)) {
             return 'Vorlage nicht gespeichert: Datei konnte nicht abgelegt werden.';
         }
-        $c = Settings::get('confirmation');
-        $c['template'] = ['file' => Confirmations::TEMPLATE_FILE, 'name' => mb_substr(basename((string) $f['name']), 0, 120), 'pages' => $pages, 'uploaded_at' => now_iso()];
-        Settings::save('confirmation', $c, 'Einsatzbestätigung: Vorlage hochgeladen (' . $c['template']['name'] . ', ' . $pages . ' S.)');
-        return 'Vorlage gespeichert (' . $pages . ($pages === 1 ? ' Seite' : ' Seiten') . ').';
+        $name = mb_substr(basename((string) $f['name']), 0, 120);
+        $label = mb_substr(trim(post_str('label')) ?: (string) preg_replace('/\.pdf$/i', '', $name), 0, 80);
+        $c = Confirmations::config();
+        $c['templates'][] = ['id' => $id, 'label' => $label, 'file' => $file, 'name' => $name, 'pages' => $pages, 'uploaded_at' => now_iso()];
+        $c['default_template'] = $c['default_template'] ?: $id;
+        Settings::save('confirmation', $c, 'Einsatzbestätigung: Vorlage „' . $label . '“ hochgeladen (' . $name . ', ' . $pages . ' S.)');
+        return 'Vorlage „' . $label . '“ gespeichert (' . $pages . ($pages === 1 ? ' Seite' : ' Seiten') . ').';
     }
 
     public static function removeConfirmationTemplate(): string
     {
-        $c = Settings::get('confirmation');
-        @unlink(Storage::path(Confirmations::TEMPLATE_FILE));
-        $c['template'] = null;
-        Settings::save('confirmation', $c, 'Einsatzbestätigung: Vorlage entfernt');
-        return 'Vorlage entfernt – es gilt das eingebaute Layout.';
+        $c = Confirmations::config();
+        $id = post_str('id');
+        foreach ($c['templates'] as $i => $t) {
+            if ($t['id'] !== $id) {
+                continue;
+            }
+            unset($c['templates'][$i]);
+            $c['templates'] = array_values($c['templates']);
+            if (!array_filter($c['templates'], static fn ($o) => $o['file'] === $t['file'])) {
+                @unlink(Storage::path($t['file']));
+            }
+            if ($c['default_template'] === $id) {
+                $c['default_template'] = $c['templates'][0]['id'] ?? null;
+            }
+            Settings::save('confirmation', $c, 'Einsatzbestätigung: Vorlage „' . $t['label'] . '“ entfernt');
+            return 'Vorlage „' . $t['label'] . '“ entfernt' . ($c['templates'] ? '.' : ' – es gilt das eingebaute Layout.');
+        }
+        return 'Vorlage nicht gefunden – nichts entfernt.';
     }
 
     private static function saveDivera(): string

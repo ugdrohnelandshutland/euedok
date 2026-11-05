@@ -95,7 +95,8 @@ final class Defaults
             'body' => "Hallo {vorname} {nachname},\n\n"
                 . "anbei deine Bestätigung für {berichtsart} {berichtsnummer} am {datum}.\n\n"
                 . 'im Auftrag EÜDOK von {einheit}',
-            'template' => null, // ['file' => 'templates/…pdf', 'name' => Originalname, 'pages' => n, 'uploaded_at' => …]
+            'templates' => [], // je Vorlage: id, label, file (templates/…pdf), name (Originalname), pages, uploaded_at; Felder gelten für alle
+            'default_template' => null, // id der Standardvorlage
             'fields' => [], // je Feld: text, page, x, y, w, size, bold, align (L|C|R), lines
         ];
     }

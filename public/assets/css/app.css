@@ -471,4 +471,18 @@ textarea.in.foot-ta{min-height:96px;font-size:14px}
 .cseg span{display:block;text-align:center;line-height:34px;border-radius:5px;font-weight:700;font-size:14px;color:var(--quiet)}
 .cseg input:checked+span{background:var(--fill);color:#fff}
 .cseg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:1px}
+.tpl-card .f{min-width:0}
+.tpl-meta{overflow-wrap:anywhere}
+.tpl-act{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.tpl-def{position:relative;cursor:pointer}
+.tpl-def input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.tpl-def b{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid var(--line-strong);border-radius:var(--r-s);font-size:14px;font-weight:700;color:var(--quiet)}
+.tpl-def .on,.tpl-def input:checked+span .off{display:none}
+.tpl-def input:checked+span .on{display:inline-flex;background:var(--fill);border-color:var(--fill);color:#fff}
+.tpl-def input:focus-visible+span b{outline:2px solid var(--accent);outline-offset:1px}
+.ph-help{border:1px solid var(--line);border-radius:var(--r-m);padding:10px 12px}
+.ph-help summary{cursor:pointer;font-weight:700;min-height:28px}
+.ph-row{display:flex;flex-wrap:wrap;gap:2px 12px;padding:3px 0;font-size:14px}
+.ph-row code{flex:0 0 auto;min-width:150px}
+.ph-row span{flex:1 1 200px;min-width:0}
 @media (max-width:640px){.cf-nums{grid-template-columns:repeat(3,minmax(0,1fr))}.cf-bot .cseg{max-width:none}}

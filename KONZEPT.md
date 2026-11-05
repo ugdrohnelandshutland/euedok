@@ -2,7 +2,7 @@
 
 Name: **EÜDOK** – Einsatz- & Übungsdokumentation (technische Schreibweise für Ordner/Dateien:
 `euedok`)
-Stand: 04.11.2026 · Erste Nutzer: UG-Drohne Landshut Land (ca. 5 Personen mit Zugang)
+Stand: 05.11.2026 · Erste Nutzer: UG-Drohne Landshut Land (ca. 5 Personen mit Zugang)
 Status: **Stufe 1 umgesetzt und im Produktivbetrieb seit 17.10.2026** (Testdaten an diesem Tag
 gelöscht, Einstellungen übernommen). Divera247 mit echtem Schlüssel angebunden. Aktualisierung
 über Einstellungen → Update (Abschnitt 8c).
@@ -526,15 +526,21 @@ Personalquelle · Fahrzeugquelle · Divera-Abfrage über QR an/aus · Testabruf-
   (`Einsatzbestaetigung_…`, `Uebungsbestaetigung_…`):
   `Einsatzbestaetigung_E-2026-040_Muster_Max.pdf`, erneuter Versand →
   `…_2.pdf`, `…_3.pdf` (alte bleiben). Versandprotokoll `Einsatzbestaetigung_E-2026-040.json`:
-  Liste mit `person_id, name, email, cc, from, to, file, sent_at, by, by_name, success, error`.
+  Liste mit `person_id, name, email, cc, template, template_label, sender, from, to, file,
+  sent_at, by, by_name, success, error` (`sender` = Benutzer-Platzhalterwerte zum Versandzeitpunkt;
+  „Erneut senden“ nutzt sie wieder, auch wenn jemand anderes angemeldet ist).
 - **Vorerst nur Einsätze:** Bei Übungen ist der Knopf ausgeblendet und `/reports/<Nr>/confirmations`
   gesperrt (Hinweis, Weiterleitung zum Bericht). Benennung und Ablage für Übungen
   (`Uebungsbestaetigung_…`) sind vorbereitet und werden später freigeschaltet.
 - **Einstellungen → Einsatzbestätigung** (`settings/confirmation.json`): CC-Adressen,
-  Betreff, Mailtext, Vorlage und Felder. Platzhalter: `{nachname} {vorname} {name} {email}
+  Betreff, Mailtext, Vorlagen und Felder. Platzhalter: `{nachname} {vorname} {name} {email}
   {datum}` (Berichtsbeginn) `{von} {bis}` (Uhrzeit) `{von_datum} {bis_datum}` (Datum)
-  `{dauer} {berichtsnummer} {berichtsart} {stichwort} {ort} {einheit} {leiter} {heute}`;
-  unbekannte Platzhalter bleiben stehen. Standard-Mailtext: „Hallo {vorname} {nachname},
+  `{dauer} {berichtsnummer} {berichtsart} {stichwort} {ort} {einheit} {einheitsfuehrer}
+  {heute}`; **angemeldeter Benutzer (Versender):** `{benutzer_nachname} {benutzer_vorname}
+  {benutzer_name}` („Nachname, Vorname“) `{benutzer_email}` (aus der dem Zugang zugeordneten
+  Person im Personal; ohne Zuordnung ist `{benutzer_name}` der Anzeigename, der Rest leer).
+  `{leiter}` heißt jetzt `{einheitsfuehrer}`, der alte Name wird weiter ersetzt.
+  Unbekannte Platzhalter bleiben stehen. Standard-Mailtext: „Hallo {vorname} {nachname},
   anbei deine Bestätigung für {berichtsart} {berichtsnummer} am {datum}. im Auftrag EÜDOK
   von {einheit}“ (mit Leerzeilen).
 - **Vorlage UG-Drohne (eingerichtet 04.11.2026):** Word-Vorlage als PDF (PDF 1.7 ohne
@@ -542,8 +548,16 @@ Personalquelle · Fahrzeugquelle · Divera-Abfrage über QR an/aus · Testabruf-
   `{dauer}` (Stundenzahl), `{heute}` bei „Datum:“ unter „Für die Richtigkeit“. Die Vorlage
   enthält Namen, Telefonnummern und Logos und liegt nur in `data/templates/`, nie im Repo
   (`.gitignore` schließt zusätzlich alle `*.pdf` und `*.doc(x)` aus).
+- **Mehrere Vorlagen:** `templates` (je `id, label, file, name, pages, uploaded_at`) und
+  `default_template`; die **Felder** sind für alle Vorlagen gleich. Bezeichnung, Standard,
+  Löschen und Upload in den Einstellungen; Vorschau mit Vorlagenauswahl. Im Versanddialog
+  erscheint ab zwei Vorlagen das Feld „Vorlage“ (vorbelegt mit dem Standard, gilt für den ganzen
+  Versand, id wird serverseitig geprüft); bei einer Vorlage wird sie still genommen, bei keiner
+  das eingebaute Layout. Gelöschte Vorlage beim erneuten Senden → Standard. Altbestand
+  (`template`) wird beim Laden zur Vorlage „Standard“ migriert.
 - **Vorlage (optional):** PDF (max. 5 MB, muss mit `%PDF` beginnen) unter
-  `data/templates/einsatzbestaetigung.pdf`. EÜDOK importiert jede Seite mit FPDI (über mPDF)
+  `data/templates/einsatzbestaetigung_<id>.pdf` (die erste, migrierte bleibt
+  `einsatzbestaetigung.pdf`). EÜDOK importiert jede Seite mit FPDI (über mPDF)
   und setzt die Felder darauf: Text/Platzhalter, Seite, x/y in mm (y = Oberkante),
   Breite (0 = automatisch), Schriftgröße, fett, Ausrichtung, Zeilen (1 = einzeilig,
   verkleinert/gekürzt; mehr = Umbruch). „Vorschau“ (optional mit 10-mm-Raster) zeigt den

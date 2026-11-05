@@ -42,7 +42,7 @@ if (isset($_GET['sticker'])) {
 /* Vorschau der Einsatzbestätigung mit Beispieldaten (gespeicherter Stand), optional mit mm-Raster */
 if ($section === 'confirmation' && isset($_GET['preview'])) {
     try {
-        $pdf = Confirmations::preview(isset($_GET['grid']));
+        $pdf = Confirmations::preview(isset($_GET['grid']), is_string($_GET['t'] ?? null) ? $_GET['t'] : null, Confirmations::sender($user));
     } catch (\Throwable $e) {
         Log::error('pdf', 'confirmation_preview_failed', $e->getMessage(), ['file' => $e->getFile() . ':' . $e->getLine()]);
         flash('Vorschau fehlgeschlagen: ' . $e->getMessage(), 'err');
