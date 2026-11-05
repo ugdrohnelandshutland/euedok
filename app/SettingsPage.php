@@ -337,7 +337,7 @@ final class SettingsPage
         if ($def !== '' && in_array($def, array_column($c['templates'], 'id'), true)) {
             $c['default_template'] = $def;
         }
-        $pages = max(1, ...array_map(static fn ($t) => (int) ($t['pages'] ?? 1), $c['templates']));
+        $pages = max([1, ...array_map(static fn ($t) => (int) ($t['pages'] ?? 1), $c['templates'])]); // Array-Form: max(1) ohne Vorlagen wäre ein TypeError
         $fields = [];
         foreach (self::rows('fields') as $row) {
             $text = self::s($row, 'text', 300);
