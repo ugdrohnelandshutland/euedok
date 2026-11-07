@@ -636,8 +636,15 @@ final class Reports
             if (!$meta || !$report) {
                 return ['ok' => false, 'error' => 'Bericht nicht gefunden.'];
             }
-            if ($report['status'] === 'draft' && $rev !== null && $rev !== (int) $meta['rev']) {
-                return ['ok' => false, 'conflict' => true, 'error' => 'Der Bericht wurde inzwischen auf einem anderen Gerät geändert.'];
+            // in der Sperre prüfen: zwei parallele QR-Abschlüsse dürfen nicht als Korrektur durchgehen
+            if ($quickEntry && $report['status'] !== 'draft') {
+                return ['ok' => false, 'error' => 'Korrekturen sind nur nach Anmeldung möglich.'];
+            }
+            // auch bei Korrekturen: veralteter Stand überschreibt sonst still eine andere Korrektur bzw. den Abschluss eines anderen Geräts
+            if ($rev !== null && $rev !== (int) $meta['rev']) {
+                return ['ok' => false, 'conflict' => true, 'error' => $report['status'] === 'closed'
+                    ? 'Der Bericht wurde inzwischen auf einem anderen Gerät abgeschlossen oder korrigiert.'
+                    : 'Der Bericht wurde inzwischen auf einem anderen Gerät geändert.'];
             }
             $wasClosed = $report['status'] === 'closed';
             $report = self::applyInput($report, $input);
@@ -663,17 +670,21 @@ final class Reports
                 'correction' => $correction,
             ] + self::summary($report));
             Log::info('report', $wasClosed ? 'corrected' : 'closed', $number . ($wasClosed ? ' korrigiert (' . $correction . ')' : ' abgeschlossen'), ['by' => $actor['by_name'] ?? $actor['by'], 'source' => $actor['source'] ?? null, 'persons' => count($report['personnel'])]);
-            return ['ok' => true, 'report' => $report, 'meta' => self::meta($number), 'correction' => $correction];
+            // PDF noch in der Sperre: eine parallele Korrektur kann sonst ein PDF zu einem anderen JSON-Stand hinterlassen.
+            // Bei Fehlern bleibt das JSON gespeichert. Die Mail (SMTP kann dauern) geht erst nach der Sperre raus.
+            $pdf = true;
+            try {
+                Pdf::writeReport($report, self::pdfPath($meta));
+            } catch (\Throwable $e) {
+                Log::error('pdf', 'failed', $e->getMessage(), ['report' => $number, 'file' => $e->getFile() . ':' . $e->getLine()]);
+                $pdf = false;
+            }
+            return ['ok' => true, 'pdf' => $pdf, 'correction' => $correction];
         });
         if (!$result['ok']) {
             return $result;
         }
-
-        // PDF außerhalb der Sperre erzeugen; bei Fehlern bleibt das JSON gespeichert.
-        try {
-            Pdf::writeReport($result['report'], self::pdfPath($result['meta']));
-        } catch (\Throwable $e) {
-            Log::error('pdf', 'failed', $e->getMessage(), ['report' => $number, 'file' => $e->getFile() . ':' . $e->getLine()]);
+        if (!$result['pdf']) {
             return ['ok' => true, 'pdf' => false, 'mail' => ['status' => 'failed', 'error' => 'PDF konnte nicht erzeugt werden.'], 'correction' => $result['correction']];
         }
         $mail = self::sendMail($number, $result['correction'], $actor);

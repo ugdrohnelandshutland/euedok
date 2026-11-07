@@ -853,7 +853,7 @@
       a.disabled = true;
       a.innerHTML = 'Wird abgeschlossen …';
       clearTimeout(saveTimer);
-      api('close', { n: cfg.number, rev: cfg.correction ? null : rev, data: data }).then(function (res) {
+      api('close', { n: cfg.number, rev: rev, data: data }).then(function (res) {
         d.close();
         if (res.ok) { finish(res); return; }
         if (res.missing) { markMissing(Object.keys(res.missing), res.missing); return; }
