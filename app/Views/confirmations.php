@@ -42,7 +42,7 @@ $cc = Settings::get('confirmation')['cc'];
     <?php endif; ?>
     <?php foreach ($people as $id => $p):
         $v = $values[$id] ?? null;
-        $sel = $values ? !empty($v['sel']) : $p['email'] !== '';
+        $sel = !empty($v['sel']); // nichts vorausgewählt – meist brauchen nur wenige eine Bestätigung
         $key = 'p[' . e($id) . ']';
         $pt = Reports::personTimeText(['from' => $p['from'], 'to' => $p['to']], $r['start'], $r['end']);
     ?>
@@ -57,7 +57,7 @@ $cc = Settings::get('confirmation')['cc'];
     <?php endforeach; ?>
     <p class="hint">Die Zeiten gelten nur für die Bestätigung – der Bericht bleibt unverändert. Je Person ein PDF und eine Mail<?= $cc ? ', in Kopie an ' . e(implode(', ', $cc)) : '' ?>.</p>
     <div class="row" style="flex-wrap:wrap">
-      <button class="btn pri" style="flex:0 1 auto"<?= $notReady !== null ? ' disabled' : '' ?>><?= icon('send') ?>Bestätigungen senden</button>
+      <button class="btn pri" style="flex:0 1 auto" data-sel-send<?= $notReady !== null ? ' disabled data-not-ready' : '' ?>><?= icon('send') ?><span style="display:inline-grid;font-variant-numeric:tabular-nums"><span data-sel-label aria-live="polite" style="grid-area:1/1">Bestätigungen senden</span><span aria-hidden="true" style="grid-area:1/1;visibility:hidden">88 Bestätigungen senden</span></span></button>
       <a class="btn" style="flex:0 1 auto" href="<?= e(base_url('reports/' . $n)) ?>"><?= icon('cl') ?>Zurück zum Bericht</a>
     </div>
   </form>

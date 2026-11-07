@@ -181,5 +181,20 @@
     renderPreview();
   }
 
+  // Einsatzbestätigungen: Anzahl im Senden-Button, ohne Auswahl gesperrt
+  var selSend = document.querySelector('[data-sel-send]');
+  if (selSend) {
+    var selForm = selSend.closest('form');
+    var selLabel = selSend.querySelector('[data-sel-label]');
+    var updateSel = function () {
+      var c = selForm.querySelectorAll('input[name$="[sel]"]:checked').length;
+      selLabel.textContent = c === 0 ? 'Bestätigungen senden' : c + (c === 1 ? ' Bestätigung senden' : ' Bestätigungen senden');
+      // „nicht bereit“ (Vorlage fehlt o. ä.) bleibt immer gesperrt
+      selSend.disabled = c === 0 || selSend.hasAttribute('data-not-ready');
+    };
+    selForm.addEventListener('change', updateSel);
+    updateSel();
+  }
+
   window.EUEDOK = { api: api, toast: toast, csrf: csrf };
 })();
