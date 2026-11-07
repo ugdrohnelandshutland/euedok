@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>EÜDOK – Social Preview</title>
+<!-- Vorschaubild für GitHub (1280×640): node design/github/render.mjs -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1280px;height:640px;overflow:hidden}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;background:#09111c;color:#e3edf7;display:flex}
+.txt{flex:1;padding:72px 0 64px 80px;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:20px}
+.brand svg{width:72px;height:72px}
+.wm{font-size:64px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.wm em{font-style:normal;color:#58d5cc}
+h1{font-size:40px;font-weight:500;line-height:1.2;margin-top:44px;max-width:620px}
+.lead{font-size:22px;color:#a4bacb;line-height:1.45;margin-top:20px;max-width:600px}
+.tags{display:flex;gap:10px;margin-top:auto;flex-wrap:wrap}
+.tags span{font-size:18px;font-weight:600;color:#a4bacb;border:1px solid #294057;border-radius:8px;padding:8px 14px}
+.tags .e{background:#c4202b;border-color:#c4202b;color:#fff;letter-spacing:.08em}
+.tags .u{background:#2c4560;border-color:#2c4560;color:#fff;letter-spacing:.08em}
+.shot{width:420px;position:relative}
+.phone{position:absolute;left:24px;top:56px;width:340px;border-radius:40px;background:#172b3f;padding:12px;border:1px solid #294057;box-shadow:0 24px 48px -24px rgba(0,0,0,.7)}
+.phone img{display:block;width:100%;border-radius:30px}
+</style>
+</head>
+<body>
+<div class="txt">
+  <div class="brand">
+    <svg viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#102337"/><path d="M128 34L201 60V121C201 167 170 197 128 222C86 197 55 167 55 121V60Z" fill="none" stroke="#58d5cc" stroke-width="13" stroke-linejoin="round"/><path d="M98 76h42l22 22v74a8 8 0 0 1-8 8H98a8 8 0 0 1-8-8V84a8 8 0 0 1 8-8z" fill="#e3edf7"/><path d="M140 76v22h22" fill="none" stroke="#a4bacb" stroke-width="6" stroke-linejoin="round"/><path d="m106 134 15 15 28-30" fill="none" stroke="#1d6f68" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="wm">EÜ<em>DOK</em></div>
+  </div>
+  <h1>Einsatz- und Übungsberichte für Feuerwehr und Hilfsorganisationen</h1>
+  <p class="lead">Am Handy direkt nach dem Einsatz erfassen. PDF und Mail beim Abschließen, Übernahme aus Divera247.</p>
+  <div class="tags"><span class="e">EINSATZ</span><span class="u">ÜBUNG</span><span>PHP-Webhosting</span><span>ohne Datenbank</span><span>MIT</span></div>
+</div>
+<div class="shot"><div class="phone"><img src="../../docs/img/home.jpg" alt=""></div></div>
+</body>
+</html>
