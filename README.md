@@ -12,9 +12,9 @@ EÜDOK läuft auf normalem PHP-Webhosting, braucht keine Datenbank und keine App
 Alle Daten bleiben auf dem eigenen Server.
 
 <p align="center">
-  <img src="docs/img/home.jpg" width="230" alt="Startseite am Handy">
-  <img src="docs/img/form-people.jpg" width="230" alt="Personal erfassen">
-  <img src="docs/img/form-people-dark.jpg" width="230" alt="Nachtansicht">
+  <img src="docs/img/home.jpg?v=2" width="230" alt="Startseite am Handy">
+  <img src="docs/img/form-people.jpg?v=2" width="230" alt="Personal erfassen">
+  <img src="docs/img/form-people-dark.jpg?v=2" width="230" alt="Nachtansicht">
 </p>
 
 ## So funktioniert es
@@ -27,7 +27,7 @@ Alle Daten bleiben auf dem eigenen Server.
 3. **Nachweisen:** Einsatzbestätigungen für den Arbeitgeber gehen mit wenigen Klicks an die
    betroffenen Mitglieder, die Übersicht exportiert alles als ZIP.
 
-![Berichtsübersicht](docs/img/reports-desk.jpg)
+![Berichtsübersicht](docs/img/reports-desk.jpg?v=2)
 
 ## Funktionen
 
@@ -50,8 +50,8 @@ Alle Daten bleiben auf dem eigenen Server.
 - Update in der App: nur signierte Pakete aus den GitHub-Releases, mit Rücksicherung
 
 <p align="center">
-  <img src="docs/img/pdf-page.jpg" width="420" alt="PDF eines Einsatzberichts">
-  <img src="docs/img/confirm-desk.jpg" width="420" alt="Einsatzbestätigungen versenden">
+  <img src="docs/img/pdf-page.jpg?v=2" width="420" alt="PDF eines Einsatzberichts">
+  <img src="docs/img/confirm-desk.jpg?v=2" width="420" alt="Einsatzbestätigungen versenden">
 </p>
 
 ## Installation
