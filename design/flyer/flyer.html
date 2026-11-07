@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>EÜDOK – Flyer</title>
+<link rel="stylesheet" href="flyer.css">
+</head>
+<body>
+<!-- Icons aus public/assets/icons/sprite.svg (inline, damit sie auch per file:// laden) -->
+<svg width="0" height="0" style="position:absolute">
+<defs>
+<symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+<symbol id="i-radio" viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5M19.1 4.9C23 8.8 23 15.1 19.1 19"/><circle cx="12" cy="12" r="2"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M16 13H8M16 17H8"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+<symbol id="i-wifioff" viewBox="0 0 24 24"><path d="M2 2l20 20M8.5 16.5a5 5 0 0 1 7 0M5 12.86a10 10 0 0 1 5.17-2.69M19 12.86a10 10 0 0 0-2.01-1.54M2 8.82a15 15 0 0 1 4.17-2.65M10.66 5c4.01-.36 8.14.9 11.34 3.76M12 20h.01"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+<symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 1-1-1v-1a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1z"/><path d="M21 12h1M18.5 4.5 18 5M2 12h1M12 2v1M4.93 4.93l.71.71"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+<symbol id="i-archive" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></symbol>
+<symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+<symbol id="i-server" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+<symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h3v3M20 20v1"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+<symbol id="logo" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#102337"/><path d="M128 34L201 60V121C201 167 170 197 128 222C86 197 55 167 55 121V60Z" fill="none" stroke="#58d5cc" stroke-width="13" stroke-linejoin="round"/><path d="M98 76h42l22 22v74a8 8 0 0 1-8 8H98a8 8 0 0 1-8-8V84a8 8 0 0 1 8-8z" fill="#e3edf7"/><path d="M140 76v22h22" fill="none" stroke="#a4bacb" stroke-width="6" stroke-linejoin="round"/><path d="m106 134 15 15 28-30" fill="none" stroke="#1d6f68" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs>
+</svg>
+
+<!-- ================= 1 · TITEL ================= -->
+<section class="page cover">
+  <svg class="bg" viewBox="0 0 794 1123" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="rgba(164,186,203,.06)"/></pattern>
+      <radialGradient id="glow" cx="70%" cy="68%" r="55%"><stop offset="0" stop-color="#172b3f"/><stop offset="1" stop-color="#09111c" stop-opacity="0"/></radialGradient>
+      <radialGradient id="glow2" cx="0%" cy="100%" r="50%"><stop offset="0" stop-color="#58d5cc" stop-opacity=".14"/><stop offset="1" stop-color="#58d5cc" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="794" height="1123" fill="url(#grid)"/>
+    <rect width="794" height="1123" fill="url(#glow)"/>
+    <rect width="794" height="1123" fill="url(#glow2)"/>
+    <g fill="none" stroke="rgba(88,213,204,.08)" stroke-width="1.2">
+      <circle cx="560" cy="760" r="110"/><circle cx="560" cy="760" r="190"/><circle cx="560" cy="760" r="280"/><circle cx="560" cy="760" r="380"/><circle cx="560" cy="760" r="490"/>
+    </g>
+    <path d="M560 760 L742 452" stroke="rgba(88,213,204,.4)" stroke-width="1.2" stroke-dasharray="3 5"/>
+    <circle cx="742" cy="452" r="4" fill="#58d5cc"/><circle cx="742" cy="452" r="11" fill="none" stroke="rgba(88,213,204,.4)"/>
+  </svg>
+
+  <div class="cv-top">
+    <div class="cv-brand">
+      <svg width="52" height="52"><use href="#logo"/></svg>
+      <div class="lbl">Einsatz- &amp; Übungsdokumentation<br><span>für Feuerwehr-Einheiten</span></div>
+    </div>
+    <div class="cv-wm">EÜ<em>DOK</em></div>
+    <h1 class="cv-h">Der Einsatzbericht in wenigen Minuten –<br>direkt am Handy, noch am Fahrzeug.</h1>
+    <div class="cv-bar"></div>
+    <p class="cv-lead">Einsatz- und Übungsberichte im Browser erfassen, auf Handy, Tablet und PC. Beim Abschließen entsteht automatisch ein PDF, das per Mail an die Leitung geht. Sauber abgelegt, jederzeit auffindbar.</p>
+  </div>
+
+  <ul class="cv-facts">
+    <li><span class="ic"><svg class="i"><use href="#i-phone"/></svg></span><div><b>Tippen statt schreiben</b>Personal, Geräte und Fahrzeuge als Kacheln</div></li>
+    <li><span class="ic"><svg class="i"><use href="#i-qr"/></svg></span><div><b>QR-Code im Fahrzeug</b>Bericht starten, ohne Anmeldung</div></li>
+    <li><span class="ic"><svg class="i"><use href="#i-mail"/></svg></span><div><b>PDF und Mail automatisch</b>beim Abschließen, ohne Nacharbeit</div></li>
+    <li><span class="ic"><svg class="i"><use href="#i-server"/></svg></span><div><b>Eigener Webspace</b>keine Datenbank, die Daten bleiben bei euch</div></li>
+  </ul>
+
+  <div class="cv-phones">
+    <div class="phone p1"><div class="scr"><img src="shots/home.jpg" alt="Startseite am Handy"></div></div>
+    <div class="phone p2"><div class="scr"><img src="shots/form-people-dark.jpg" alt="Personal erfassen in der Nachtansicht"></div></div>
+  </div>
+
+  <div class="cv-foot"><span>Freiwillige Feuerwehr Musterstadt</span><span>Alle Bildschirme zeigen Beispieldaten</span></div>
+</section>
+
+<!-- ================= 2 · ABLAUF ================= -->
+<section class="page">
+  <div class="ph"><span class="l"><span class="wm">EÜ<em>DOK</em></span>So funktioniert es</span><span>2</span></div>
+  <div class="kick">01 · Ablauf</div>
+  <h1>Vom Einsatzende zur Ablage in vier Schritten</h1>
+  <p class="lead">Gemacht für die Minuten nach dem Einsatz: große Tippflächen, kaum Tipparbeit, nichts geht verloren.</p>
+
+  <div class="steps3">
+    <div class="step">
+      <div class="phone sm"><div class="scr"><img src="shots/qr-start.jpg" alt="QR-Schnellerfassung"></div></div>
+      <div class="st-t"><span class="n">1</span><b>Starten</b></div>
+      <p>„Neuer Einsatz“ antippen – oder den <b>QR-Code im Fahrzeug</b> scannen. Das geht ohne Anmeldung und erlaubt nur das Erstellen neuer Berichte.</p>
+    </div>
+    <div class="step">
+      <div class="phone sm"><div class="scr"><img src="shots/form-people.jpg" alt="Personal als Kacheln"></div></div>
+      <div class="st-t"><span class="n">2</span><b>Antippen statt tippen</b></div>
+      <p>Personal, Geräte und Fahrzeuge als Kacheln, häufig Eingesetzte zuerst. Auf Wunsch kommen Alarm, Personal und Fahrzeuge aus <b>Divera247</b>.</p>
+    </div>
+    <div class="step">
+      <div class="phone sm"><div class="scr"><img src="shots/form-time.jpg" alt="Abweichende Zeit je Person"></div></div>
+      <div class="st-t"><span class="n">3</span><b>Zeiten je Person</b></div>
+      <p>Wer später kam oder früher ging, bekommt eine <b>abweichende Zeit</b>. Alles wird laufend gespeichert, auch im Funkloch auf dem Gerät.</p>
+    </div>
+  </div>
+
+  <div class="step4">
+    <div class="paper"><img src="shots/pdf-page.jpg" alt="Erste Seite eines Einsatzberichts als PDF"></div>
+    <div class="s4-tx">
+      <div class="st-t"><span class="n">4</span><b>Abschließen – fertig</b></div>
+      <p>Ein Knopf. Fehlende Pflichtangaben werden markiert. Danach entsteht der Bericht als <b>PDF im festen Formular-Layout</b> und geht automatisch <b>per Mail</b> an die hinterlegten Adressen, zum Beispiel an Leitung und Ablage-Postfach.</p>
+      <ul class="ticks">
+        <li><svg class="i"><use href="#i-check"/></svg>Kopf und Fußzeile mit dem Namen der Einheit</li>
+        <li><svg class="i"><use href="#i-check"/></svg>Personal mit Einheitsführer, Atemschutz-Minuten mit Summe</li>
+        <li><svg class="i"><use href="#i-check"/></svg>Vermerk „Abgeschlossen durch … am …“ statt Unterschrift</li>
+        <li><svg class="i"><use href="#i-check"/></svg>Zusätzlich als Datensatz (JSON) für spätere Auswertungen</li>
+      </ul>
+    </div>
+  </div>
+  <div class="pf"><span>EÜDOK · Einsatz- &amp; Übungsdokumentation</span><span>Bildschirme mit Beispieldaten</span></div>
+</section>
+
+<!-- ================= 3 · FÜHRUNG ================= -->
+<section class="page">
+  <div class="ph"><span class="l"><span class="wm">EÜ<em>DOK</em></span>Für Leitung und Kommandanten</span><span>3</span></div>
+  <div class="kick">02 · Überblick &amp; Nachweis</div>
+  <h1>Alles abgelegt. Alles nachvollziehbar.</h1>
+  <p class="lead">Jeder Bericht liegt vollständig, einheitlich und auffindbar vor. Ohne Zettel, ohne Nachfragen, ohne Abtippen.</p>
+
+  <div class="stack">
+    <div class="browser b1">
+      <div class="bar"><i></i><i></i><i></i><span class="url"><svg class="i"><use href="#i-lock"/></svg>euedok.example.org/reports</span></div>
+      <img src="shots/reports-desk.jpg" alt="Berichtsübersicht am PC">
+    </div>
+    <div class="browser b2">
+      <div class="bar"><i></i><i></i><i></i><span class="url"><svg class="i"><use href="#i-lock"/></svg>…/E-2026-004/confirmations</span></div>
+      <img src="shots/confirm-desk.jpg" alt="Einsatzbestätigungen versenden">
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><span class="ic"><svg class="i"><use href="#i-archive"/></svg></span><b>Vollständige Ablage</b><p>Jeder Bericht als PDF und Datensatz. Übersicht mit Suche und Filter, alle Berichte als ZIP.</p></div>
+    <div class="card"><span class="ic"><svg class="i"><use href="#i-mail"/></svg></span><b>Sofort informiert</b><p>Beim Abschließen geht der Bericht per Mail raus. Scheitert der Versand, ist das markiert – „Erneut senden“.</p></div>
+    <div class="card"><span class="ic"><svg class="i"><use href="#i-edit"/></svg></span><b>Korrekturen mit Verlauf</b><p>Änderungen nach dem Abschluss werden als „Korrektur 1, 2 …“ mit Wer und Wann festgehalten und neu versendet.</p></div>
+    <div class="card"><span class="ic"><svg class="i"><use href="#i-send"/></svg></span><b>Einsatzbestätigungen</b><p>Für jedes Mitglied ein PDF per Mail – mit eigener Vorlage, Zeiten je Person, Kopie z. B. an die Verwaltung.</p></div>
+    <div class="card"><span class="ic"><svg class="i"><use href="#i-radio"/></svg></span><b>Divera247 (optional)</b><p>Alarm bzw. Termin, Rückmeldungen, Personal und Fahrzeuge übernehmen statt abtippen.</p></div>
+    <div class="card"><span class="ic"><svg class="i"><use href="#i-sliders"/></svg></span><b>Eigene Felder</b><p>Zusatzfelder je Bericht, Person oder Fahrzeug – etwa Atemschutz-Minuten oder Kilometer mit Summe.</p></div>
+  </div>
+  <div class="pf"><span>EÜDOK · Einsatz- &amp; Übungsdokumentation</span><span>Bildschirme mit Beispieldaten</span></div>
+</section>
+
+<!-- ================= 4 · BETRIEB ================= -->
+<section class="page">
+  <div class="ph"><span class="l"><span class="wm">EÜ<em>DOK</em></span>Betrieb und Datenschutz</span><span>4</span></div>
+  <div class="kick">03 · Betrieb &amp; Sicherheit</div>
+  <h1>Einfach zu betreiben. Sicher abgelegt.</h1>
+  <p class="lead">Jede Einheit betreibt ihre eigene Installation – auf normalem Webhosting, ohne Datenbank, eingerichtet und gepflegt im Browser.</p>
+
+  <div class="browser b3">
+    <div class="bar"><i></i><i></i><i></i><span class="url"><svg class="i"><use href="#i-lock"/></svg>euedok.example.org/settings</span></div>
+    <img src="shots/settings-desk.jpg" alt="Einstellungen im Browser">
+  </div>
+
+  <div class="two">
+    <div>
+      <h2><svg class="i"><use href="#i-sliders"/></svg>Betrieb</h2>
+      <ul class="list">
+        <li><b>Alles im Browser einstellbar</b>Personal, Geräte, Fahrzeuge, Pflichtfelder, Mailversand, QR-Zugänge. Ein Assistent führt durch die Einrichtung.</li>
+        <li><b>Update per Klick</b>Nur signierte Pakete. Der vorherige Stand bleibt gesichert und lässt sich wiederherstellen.</li>
+        <li><b>Handy, Tablet, PC – Tag und Nacht</b>Wie eine App auf dem Startbildschirm, mit heller und dunkler Ansicht.</li>
+        <li><b>Doppelt gesichert</b>ZIP-Export aller Berichte, zusätzlich liegt jeder Bericht im Mail-Postfach.</li>
+      </ul>
+    </div>
+    <div>
+      <h2><svg class="i"><use href="#i-shield"/></svg>Sicherheit &amp; Datenschutz</h2>
+      <ul class="list">
+        <li><b>Daten bleiben bei der Einheit</b>Eigener Webspace, Ablage außerhalb des öffentlichen Bereichs, nur über HTTPS.</li>
+        <li><b>Anmeldung für alles</b>Einzige Ausnahme: der QR-Zugang – er darf nur neue Berichte erstellen, optional mit PIN, jederzeit sperrbar.</li>
+        <li><b>Zugangsdaten geschützt</b>Passwörter nur als Hash, Sperre nach Fehlversuchen. Mail-Passwort und Divera-Schlüssel verschlüsselt.</li>
+        <li><b>Nachvollziehbar</b>Jede Änderung an den Einstellungen wird protokolliert – wer, wann, was.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="cta">
+    <div class="cta-t"><b>EÜDOK auf GitHub</b><span>Installationsdateien, Installationsanleitung, Versionshinweise und Quellcode – frei verfügbar.</span></div>
+    <div class="cta-c"><div class="lbl">Projektseite</div><a href="https://github.com/ugdrohnelandshutland/euedok" style="color:inherit;text-decoration:none"><b>github.com/ugdrohnelandshutland/euedok</b></a></div>
+  </div>
+
+  <div class="pf"><span>EÜDOK · Einsatz- &amp; Übungsdokumentation</span><span>Bildschirme mit Beispieldaten</span></div>
+</section>
+</body>
+</html>

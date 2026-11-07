@@ -1,0 +1,109 @@
+/* EÜDOK-Flyer – Werte aus design/euedok-ui-design-v0.3.html und public/assets/css/app.css (Tag/Nacht, Navy/Teal) */
+@page { size: A4 portrait; margin: 0; }
+:root{
+  --ground:#e8eef3; --strip:#ffffff; --raised:#dbe5ec;
+  --text:#0b1a28; --quiet:#3b5063; --line:#b9c8d4; --line-strong:#6f8597;
+  --accent:#0f6f68; --fill:#1d6f68; --accent-soft:#d4eae7;
+  --live:#0b7a3e; --fault:#c4202b; --uebung:#24394e;
+  --night:#09111c; --navy:#102031; --n-accent:#58d5cc; --n-text:#e3edf7; --n-quiet:#a4bacb;
+  --doc-line:#d3dde6; --muted2:#6f8597;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;color:var(--text);background:#fff;font-size:12.5px;line-height:1.5}
+svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+img{display:block}
+
+.page{width:210mm;height:297mm;position:relative;overflow:hidden;break-after:page;page-break-after:always;padding:22mm 16mm 16mm;background:#fff}
+.page:last-child{break-after:auto;page-break-after:auto}
+.wm{font-weight:800;letter-spacing:-.01em;color:var(--text);white-space:nowrap}
+.wm em{font-style:normal;color:var(--accent)}
+.lbl{font-size:9px;font-weight:800;letter-spacing:.17em;text-transform:uppercase;color:var(--quiet)}
+
+/* Kopf- und Fußzeile wie im Konzept */
+.ph{position:absolute;top:8mm;left:16mm;right:16mm;display:flex;justify-content:space-between;align-items:center;font-size:9px;color:var(--muted2);letter-spacing:.14em;text-transform:uppercase;font-weight:800;padding-bottom:2.5mm;border-bottom:1px solid var(--doc-line)}
+.ph .l{display:flex;align-items:center;gap:9px}
+.ph .wm{font-size:13px;letter-spacing:-.01em;text-transform:none}
+.pf{position:absolute;bottom:7mm;left:16mm;right:16mm;display:flex;justify-content:space-between;font-size:9px;color:var(--muted2);border-top:1px solid var(--doc-line);padding-top:2.5mm}
+.kick{font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:30px;line-height:1.12;font-weight:800;letter-spacing:-.025em;margin:4px 0 8px}
+h2{font-size:15px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+h2 svg.i{color:var(--accent);width:18px;height:18px}
+.lead{font-size:14px;color:var(--quiet);max-width:680px;line-height:1.5}
+
+/* Geräterahmen */
+.phone{background:#05090f;border-radius:34px;padding:7px;position:relative;box-shadow:inset 0 0 0 1.5px #33445a,0 24px 40px -20px rgba(11,26,40,.55)}
+.phone .scr{border-radius:28px;overflow:hidden;background:var(--ground);aspect-ratio:390/844}
+.phone .scr img{width:100%;height:100%;object-fit:cover;object-position:top}
+.phone.sm{border-radius:30px;padding:6px}
+.phone.sm .scr{border-radius:25px}
+.browser{background:#fff;border-radius:10px;overflow:hidden;border:1px solid var(--line);box-shadow:0 26px 46px -24px rgba(11,26,40,.5)}
+.browser .bar{height:28px;background:#eef3f7;border-bottom:1px solid var(--doc-line);display:flex;align-items:center;gap:6px;padding:0 11px}
+.browser .bar i{width:9px;height:9px;border-radius:50%;background:#c9d5df}
+.browser .url{margin-left:12px;flex:1;max-width:330px;height:18px;border-radius:9px;background:#fff;border:1px solid var(--doc-line);font-size:9px;color:var(--quiet);display:flex;align-items:center;gap:5px;padding:0 9px;white-space:nowrap;overflow:hidden}
+.browser .url svg.i{width:9px;height:9px;color:var(--live)}
+.browser img{width:100%}
+
+/* ---------- Titel ---------- */
+.cover{background:var(--night);color:var(--n-text);padding:0}
+.cover .bg{position:absolute;inset:0;width:100%;height:100%}
+.cv-top{position:absolute;left:16mm;right:16mm;top:18mm}
+.cv-brand{display:flex;align-items:center;gap:14px}
+.cv-brand .lbl{color:var(--n-quiet);font-size:10px;line-height:1.6}
+.cv-brand .lbl span{color:var(--n-accent)}
+.cv-wm{font-size:112px;font-weight:900;letter-spacing:-.045em;line-height:.9;margin-top:38px;color:var(--n-text)}
+.cv-wm em{font-style:normal;color:var(--n-accent)}
+.cv-h{font-size:27px;font-weight:300;color:var(--n-text);margin-top:18px;letter-spacing:-.015em;line-height:1.25}
+.cv-bar{width:56px;height:3px;background:var(--n-accent);border-radius:2px;margin:22px 0 18px}
+.cv-lead{font-size:14px;color:var(--n-quiet);line-height:1.6;max-width:520px}
+.cv-facts{position:absolute;left:16mm;top:575px;width:262px;list-style:none;display:flex;flex-direction:column;gap:20px}
+.cv-facts li{display:flex;gap:13px;align-items:flex-start;font-size:12px;color:var(--n-quiet);line-height:1.4}
+.cv-facts b{display:block;color:var(--n-text);font-size:13.5px;margin-bottom:1px}
+.cv-facts .ic{width:36px;height:36px;border-radius:9px;border:1px solid #294057;background:rgba(16,32,49,.8);display:grid;place-items:center;color:var(--n-accent);flex:none}
+.cv-facts .ic svg.i{width:18px;height:18px}
+.cv-phones{position:absolute;left:330px;top:500px;width:420px;height:560px}
+.cv-phones .phone{position:absolute;width:212px;box-shadow:inset 0 0 0 1.5px #33445a,0 40px 60px -20px rgba(0,0,0,.85)}
+.cv-phones .p1{left:0;top:30px;transform:rotate(-6deg)}
+.cv-phones .p2{left:188px;top:70px;transform:rotate(5deg)}
+.cv-foot{position:absolute;left:16mm;right:16mm;bottom:8mm;display:flex;justify-content:space-between;font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:#5f7890;border-top:1px solid #1d3247;padding-top:2.5mm}
+
+/* ---------- Ablauf ---------- */
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:20px}
+.step .phone{width:176px;margin:0 auto 14px}
+.st-t{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.st-t b{font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+.n{width:24px;height:24px;border-radius:50%;background:var(--fill);color:#fff;font-weight:800;font-size:12px;display:grid;place-items:center;flex:none}
+.step p,.s4-tx p{color:var(--quiet);font-size:12px;line-height:1.5}
+.step p b,.s4-tx p b{color:var(--text)}
+.step4{display:flex;gap:26px;align-items:flex-start;margin-top:22px;padding-top:20px;border-top:1px solid var(--doc-line)}
+.paper{width:226px;flex:none;border:1px solid var(--doc-line);box-shadow:0 18px 34px -18px rgba(11,26,40,.5);transform:rotate(-1.5deg);background:#fff}
+.paper img{width:100%}
+.s4-tx{flex:1;padding-top:4px}
+.ticks{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:7px}
+.ticks li{display:flex;gap:8px;align-items:flex-start;font-size:12px}
+.ticks svg.i{color:var(--live);width:15px;height:15px;stroke-width:2.6;margin-top:1px}
+
+/* ---------- Führung ---------- */
+.stack{position:relative;height:478px;margin-top:26px}
+.stack .b1{position:absolute;left:0;top:0;width:540px}
+.stack .b2{position:absolute;right:0;top:186px;width:380px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
+.card{border:1px solid var(--doc-line);border-radius:12px;padding:13px 14px 14px;background:#fff}
+.card .ic{width:32px;height:32px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:9px}
+.card b{display:block;font-size:13.5px;letter-spacing:-.01em;margin-bottom:3px}
+.card p{font-size:11.5px;color:var(--quiet);line-height:1.45}
+
+/* ---------- Betrieb ---------- */
+.b3{margin-top:24px;width:100%}
+.b3 img{height:350px;object-fit:cover;object-position:top}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:30px}
+.list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.list li{font-size:11.8px;color:var(--quiet);line-height:1.45;padding-left:13px;border-left:2px solid var(--accent-soft)}
+.list b{display:block;color:var(--text);font-size:12.8px}
+.cta{position:absolute;left:16mm;right:16mm;bottom:19mm;background:var(--night);color:var(--n-text);border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:18px}
+.cta-t{flex:1}
+.cta-t b{display:block;font-size:18px;letter-spacing:-.015em}
+.cta-t span{color:var(--n-quiet);font-size:12px}
+.cta-c{border-left:1px solid #294057;padding-left:18px;font-size:11.5px;color:var(--n-quiet)}
+.cta-c .lbl{color:var(--n-accent);margin-bottom:2px}
+.cta-c b{display:block;color:var(--n-text);font-size:13px}

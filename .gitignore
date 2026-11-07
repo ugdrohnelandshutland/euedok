@@ -20,3 +20,6 @@ tools/deploy.local.psd1
 *.dotx
 *.odt
 /templates/
+
+# Flyer-Screenshots (werden mit design/flyer/shots.mjs aus der lokalen App erzeugt)
+/design/flyer/shots/
