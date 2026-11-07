@@ -54,8 +54,6 @@ Alle Daten bleiben auf dem eigenen Server.
   <img src="docs/img/confirm-desk.jpg" width="420" alt="Einsatzbestätigungen versenden">
 </p>
 
-Mehr auf einen Blick: [Flyer (PDF)](design/flyer/EUEDOK_Flyer.pdf)
-
 ## Installation
 
 Voraussetzung: Webhosting mit PHP ≥ 8.1 (Erweiterungen `sodium`, `gd`, `zip`, `curl`, `mbstring`)
