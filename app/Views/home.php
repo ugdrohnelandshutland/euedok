@@ -8,7 +8,7 @@ $more = array_slice($types, 2);
 <main class="wrap">
   <div>
     <div class="kick"><?= e(Settings::unit()['name']) ?></div>
-    <h1>Hallo <?= e(explode(' ', $user['display_name'])[0]) ?></h1>
+    <h1>Start</h1>
   </div>
 
   <div class="hero">

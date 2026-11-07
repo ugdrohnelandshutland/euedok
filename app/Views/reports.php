@@ -40,7 +40,7 @@ $mailLabels = ['sent' => ['ok', 'versendet'], 'failed' => ['wa', 'Fehler'], 'off
         $alert = ($type['style'] ?? '') === 'alert';
         $m = $mailLabels[$r['mail']['status'] ?? ''] ?? null; ?>
       <tr class="link-row" data-href="<?= e(base_url('reports/' . rawurlencode($r['number']))) ?>">
-        <td><span class="bd <?= $alert ? 'e' : 'u' ?>"><?= e($r['type_label']) ?></span> <a class="num" href="<?= e(base_url('reports/' . rawurlencode($r['number']))) ?>"><?= e($r['number']) ?></a>
+        <td class="numcell"><span class="bd <?= $alert ? 'e' : 'u' ?>"><?= e($r['type_label']) ?></span> <a class="num" href="<?= e(base_url('reports/' . rawurlencode($r['number']))) ?>"><?= e($r['number']) ?></a>
           <?php if (!empty($r['qr_access_id'])): ?> <span class="bd qr">QR</span><?php endif; ?></td>
         <td data-label="Beginn"><?= e(fmt_datetime($r['start'] ?? null)) ?></td>
         <td data-label="Thema / Ort"><span><b><?= e($r['subject'] ?: '(noch ohne Thema)') ?></b><br><span class="muted small"><?= e($r['location']) ?></span></span></td>

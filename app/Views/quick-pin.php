@@ -9,7 +9,7 @@
     <?php if ($locked): ?>
       <div class="msg err"><?= icon('lock') ?><span><?= e(\Euedok\QrAccess::lockText($locked)) ?></span></div>
     <?php else: ?>
-      <p style="text-align:center;font-weight:700">PIN eingeben</p>
+      <p style="text-align:center;font-weight:600">PIN eingeben</p>
       <?php if ($error): ?><div class="msg err"><?= icon('alert') ?><span><?= e($error) ?></span></div><?php endif; ?>
       <input type="hidden" name="pin" id="pin">
       <div class="pindots" id="pindots"><i></i><i></i><i></i><i></i></div>
