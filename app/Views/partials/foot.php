@@ -8,6 +8,7 @@ if ($user && empty($noBottomNav)): ?>
   <?php if (!empty($user['can_manage_settings'])): ?>
   <a href="<?= e(base_url('settings')) ?>" class="<?= $nav === 'settings' ? 'on' : '' ?>"><?= icon('sliders') ?>Einstellungen</a>
   <?php endif; ?>
+  <a href="<?= e(base_url('account')) ?>" class="<?= $nav === 'account' ? 'on' : '' ?>"><?= icon('user') ?>Zugang</a>
 </nav>
 <?php endif; ?>
 </body>

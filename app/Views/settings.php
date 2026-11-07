@@ -464,34 +464,74 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
     if (Divera::personnelFromDivera()) {
         $people = Divera::personnel()['items'];
     }
-    $grid = 'grid-template-columns:minmax(0,1.7fr) minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1fr) 90px 64px';
-    $userRow = static function ($i, array $u) use ($cell, $swCell, $people, $grid, $user): string {
+    $userRow = static function ($i, array $u) use ($cell, $sw, $people, $user): string {
         $opts = '<option value="">– keine Person –</option>';
+        $personName = '';
         foreach ($people as $p) {
-            $opts .= '<option value="' . e($p['id']) . '"' . (($u['person_id'] ?? '') === $p['id'] ? ' selected' : '') . '>' . e($p['name']) . '</option>';
+            $on = ($u['person_id'] ?? '') === $p['id'];
+            $personName = $on ? $p['name'] : $personName;
+            $opts .= '<option value="' . e($p['id']) . '"' . ($on ? ' selected' : '') . '>' . e($p['name']) . '</option>';
         }
-        $self = ($u['id'] ?? '') === $user['id'];
-        return '<div class="ed-row' . (isset($u['id']) && empty($u['active']) ? ' inactive' : '') . '" style="' . $grid . '">'
-            . '<input type="hidden" name="users[' . $i . '][id]" value="' . e($u['id'] ?? '') . '">'
-            . $cell('Benutzername', '<input class="in" name="users[' . $i . '][username]" value="' . e($u['username'] ?? '') . '" maxlength="' . Auth::USERNAME_MAX . '" placeholder="z. B. name oder name@example.org" autocapitalize="none" autocomplete="off">', 'wide')
-            . $cell('Anzeigename', '<input class="in" name="users[' . $i . '][display_name]" value="' . e($u['display_name'] ?? '') . '">', 'wide')
-            . $cell('Person im Personal', '<select class="in" name="users[' . $i . '][person_id]">' . $opts . '</select>', 'wide')
-            . $cell(isset($u['id']) ? 'Neues Passwort (leer = unverändert)' : 'Passwort', '<input class="in" type="password" name="users[' . $i . '][password]" autocomplete="new-password">', 'wide')
-            . $swCell('Darf Einstellungen ändern', 'users[' . $i . '][can_manage_settings]', !empty($u['can_manage_settings']), $self ? ' disabled' : '')
-            . $swCell('aktiv', 'users[' . $i . '][active]', !isset($u['id']) || !empty($u['active']), $self ? ' disabled' : '')
-            . '</div>';
+        $isNew = !isset($u['id']);
+        $self = !$isNew && $u['id'] === $user['id'];
+        $tfa = !$isNew && Auth::twoFactorActive($u);
+        $nm = static fn (string $k) => 'users[' . $i . '][' . $k . ']';
+        $swRow = static fn (string $label, string $hint, string $k, bool $on) => '<label class="uc-sw">' . $sw($nm($k), $on, $self ? ' disabled' : '') . '<span><b>' . e($label) . '</b><span class="hint">' . e($hint) . '</span></span></label>';
+        $tags = '';
+        if (!$isNew) {
+            $tags .= $self ? '<span class="ut">Du</span>' : '';
+            $tags .= !empty($u['can_manage_settings']) ? '<span class="ut acc">Admin</span>' : '';
+            $tags .= $tfa ? '<span class="ut ok">2FA an</span>' : (Auth::twoFactorRequired($u) ? '<span class="ut wa">2FA fehlt</span>' : '<span class="ut">2FA aus</span>');
+            $tags .= !empty($u['must_change_password']) ? '<span class="ut wa">PW-Wechsel offen</span>' : '';
+            $tags .= empty($u['active']) ? '<span class="ut er">inaktiv</span>' : '';
+        }
+        return '<details class="ucard' . (!$isNew && empty($u['active']) ? ' inactive' : '') . '"' . ($isNew ? ' open' : '') . '>'
+            . '<summary><span class="uc-name"><b>' . e($isNew ? 'Neuer Zugang' : $u['username']) . '</b>'
+            . ($isNew ? '' : '<span class="muted">' . e($u['display_name'] ?? '') . ($personName !== '' && $personName !== ($u['display_name'] ?? '') ? ' · ' . e($personName) : '') . '</span>') . '</span>'
+            . '<span class="uc-tags">' . $tags . '</span>' . icon('cd', 'uc-chev') . '</summary>'
+            . '<div class="uc-body">'
+            . '<input type="hidden" name="' . $nm('id') . '" value="' . e($u['id'] ?? '') . '">'
+            . '<div class="uc-fields">'
+            . $cell('Benutzername', '<input class="in" name="' . $nm('username') . '" value="' . e($u['username'] ?? '') . '" maxlength="' . Auth::USERNAME_MAX . '" placeholder="z. B. name oder name@example.org" autocapitalize="none" autocomplete="off">', 'wide')
+            . $cell('Anzeigename', '<input class="in" name="' . $nm('display_name') . '" value="' . e($u['display_name'] ?? '') . '">', 'wide')
+            . $cell('Person im Personal', '<select class="in" name="' . $nm('person_id') . '">' . $opts . '</select>', 'wide')
+            . $cell($isNew ? 'Passwort (mind. 10 Zeichen)' : 'Neues Passwort (leer = unverändert)', '<input class="in" type="password" name="' . $nm('password') . '" autocomplete="new-password">', 'wide')
+            . '</div><div class="uc-sws">'
+            . $swRow('Admin', 'Darf Einstellungen ändern', 'can_manage_settings', !empty($u['can_manage_settings']))
+            . $swRow('PW beim nächsten Login ändern', 'z. B. nach einem Startpasswort', 'must_change_password', !empty($u['must_change_password']))
+            . '<label class="uc-sw">' . $sw($nm('tfa_required'), !empty($u['tfa_required'])) . '<span><b>2FA Pflicht</b><span class="hint">Muss die Zwei-Faktor-Anmeldung einrichten</span></span></label>'
+            . $swRow('aktiv', 'Aus = alle Anmeldungen beendet', 'active', $isNew || !empty($u['active']))
+            . '</div>'
+            . ($isNew ? '' : '<div class="uc-tfa"><span class="hint">' . ($tfa ? 'Zwei-Faktor eingerichtet am ' . e(fmt_datetime((string) ($u['tfa_enabled_at'] ?? ''))) : 'Zwei-Faktor nicht eingerichtet') . ($self ? ' · Eigener Zugang: Admin und aktiv bleiben fest an.' : '') . '</span>'
+                . ($tfa ? '<span class="uc-reset"><input class="in" type="password" name="confirm_password" form="tfa-reset-' . e($u['id']) . '" placeholder="Dein Passwort" aria-label="Dein Passwort zur Bestätigung" autocomplete="current-password">'
+                    . '<button type="submit" form="tfa-reset-' . e($u['id']) . '" class="btn sm" data-confirm="Zwei-Faktor-Anmeldung für „' . e($u['username']) . '“ zurücksetzen? Gemerkte Geräte werden abgemeldet.">' . icon('refresh') . '2FA zurücksetzen</button></span>' : '')
+                . '</div>')
+            . '</div></details>';
     };
+    $allUsers = Settings::get('users')['users'];
+    uasort($allUsers, static fn ($a, $b) => empty($a['active']) <=> empty($b['active'])); // inaktive ans Ende, sonst Reihenfolge wie gespeichert
     ?>
-      <form method="post" action="<?= $action('save') ?>" class="card" autocomplete="off">
+      <form method="post" action="<?= $action('save') ?>" class="stack" autocomplete="off">
         <?= csrf_field() ?>
-        <h3><?= icon('user') ?>Zugänge</h3>
-        <p class="hint" style="margin-bottom:10px">Passwort leer lassen = unverändert (mind. 10 Zeichen). Die zugeordnete Person ist in neuen Berichten automatisch eingetragen. Deaktivieren beendet alle Anmeldungen.</p>
-        <div class="ed-head" style="<?= $grid ?>"><span>Benutzername</span><span>Anzeigename</span><span>Person</span><span>Passwort</span><span title="darf Einstellungen ändern">Admin</span><span>aktiv</span></div>
-        <div id="list-users"><?php foreach (Settings::get('users')['users'] as $i => $u) { echo $userRow($i, $u); } ?></div>
-        <template id="list-users-tpl"><?= $userRow('__i__', []) ?></template>
-        <button type="button" class="btn sm" data-add-row="list-users" style="margin-top:10px"><?= icon('plus') ?>Zugang hinzufügen</button>
-        <div style="margin-top:14px"><button class="btn pri"><?= icon('check') ?>Speichern</button></div>
+        <section class="card">
+          <h3><?= icon('shield') ?>Sicherheit</h3>
+          <?= $toggle('admins_require_tfa', !empty(Settings::get('users')['admins_require_tfa']), '2FA für alle Admins Pflicht', 'Jeder Zugang mit „Admin“ muss die Zwei-Faktor-Anmeldung (Authenticator-App) einrichten.') ?>
+        </section>
+        <section class="card">
+          <h3><?= icon('user') ?>Zugänge</h3>
+          <p class="hint" style="margin-bottom:10px">Zum Bearbeiten einen Zugang aufklappen. Jeder kann sein Passwort und die Zwei-Faktor-Anmeldung selbst unter „Mein Zugang“ ändern. Die zugeordnete Person ist in neuen Berichten automatisch eingetragen.</p>
+          <div id="list-users" class="ucards"><?php foreach ($allUsers as $i => $u) { echo $userRow($i, $u); } ?></div>
+          <template id="list-users-tpl"><?= $userRow('__i__', []) ?></template>
+          <button type="button" class="btn sm" data-add-row="list-users" style="margin-top:10px"><?= icon('plus') ?>Zugang hinzufügen</button>
+        </section>
+        <section class="card">
+          <label class="f" style="max-width:360px">Dein Passwort zur Bestätigung <input class="in" type="password" name="confirm_password" autocomplete="current-password"><span class="hint">Nur nötig, wenn ein Passwort gesetzt oder ein Zugang angelegt wird.</span></label>
+        </section>
+        <div><button class="btn pri"><?= icon('check') ?>Speichern</button></div>
       </form>
+      <?php foreach (Settings::get('users')['users'] as $u): if (Auth::twoFactorActive($u)): ?>
+      <form id="tfa-reset-<?= e($u['id']) ?>" method="post" action="<?= $action('tfa-reset') ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= e($u['id']) ?>"></form>
+      <?php endif; endforeach; ?>
 
 <?php elseif ($section === 'qr'):
     $newId = is_string($_GET['new'] ?? null) ? $_GET['new'] : '';

@@ -103,7 +103,7 @@ final class Defaults
 
     public static function users(): array
     {
-        return ['users' => []];
+        return ['users' => [], 'admins_require_tfa' => false];
     }
 
     public static function qrAccess(): array

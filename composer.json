@@ -12,7 +12,8 @@
         "ext-zip": "*",
         "mpdf/mpdf": "^8.2",
         "mpdf/qrcode": "^1.2",
-        "phpmailer/phpmailer": "^6.9"
+        "phpmailer/phpmailer": "^6.9",
+        "spomky-labs/otphp": "^11.5"
     },
     "config": {
         "platform": {

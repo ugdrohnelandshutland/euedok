@@ -46,7 +46,7 @@ $apiBase = $apiBase ?? base_url('api.php');
   </nav>
   <?php endif; ?>
   <div class="right">
-    <?php if ($user): ?><span class="usr"><?= e($user['display_name']) ?></span><?php endif; ?>
+    <?php if ($user): ?><a class="usr<?= $nav === 'account' ? ' on' : '' ?>" href="<?= e(base_url('account')) ?>" title="Mein Zugang – Passwort ändern"><?= e($user['display_name']) ?></a><?php endif; ?>
     <button type="button" class="ib lbl" data-theme-toggle title="Tag / Nacht umschalten" aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?><span class="ib-l">Tag/Nacht</span></button>
     <?php if ($user): ?>
     <form method="post" action="<?= e(base_url('actions/logout')) ?>"><?= csrf_field() ?><button class="ib lbl" title="Abmelden"><?= icon('logout') ?><span class="ib-l">Abmelden</span></button></form>

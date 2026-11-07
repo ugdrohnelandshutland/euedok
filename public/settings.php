@@ -196,6 +196,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             redirect($self);
 
+        case 'tfa-reset':
+            if (!Auth::confirmPasswordLimited((string) ($_POST['confirm_password'] ?? ''))) {
+                flash('Dein Passwort ist falsch – 2FA nicht zurückgesetzt.', 'err');
+                redirect($self);
+            }
+            $u = Auth::resetTwoFactor(post_str('id'));
+            flash($u ? 'Zwei-Faktor-Anmeldung für „' . $u['username'] . '“ zurückgesetzt.' : 'Zugang nicht gefunden.', $u ? 'ok' : 'err');
+            redirect($self);
+
         case 'rebuild-index':
             $n = Reports::rebuildIndex();
             Log::audit('reports', 'Index neu aufgebaut (' . $n . ' Berichte)');

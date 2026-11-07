@@ -19,8 +19,10 @@ DirectoryIndex index.php
 
   # Sprechende Pfade (gleiche Regeln in tools/dev-router.php für den lokalen PHP-Server)
   RewriteRule ^login/?$ index.php?login=1 [L,QSA]
-  RewriteRule ^actions/(login|logout|new|discard|resend)$ index.php?action=$1 [L,QSA]
+  RewriteRule ^login/code/?$ index.php?login=code [L,QSA]
+  RewriteRule ^actions/(login|logout|code|new|discard|resend)$ index.php?action=$1 [L,QSA]
   RewriteRule ^setup/?$ setup.php [L,QSA]
+  RewriteRule ^account/?$ index.php?view=account [L,QSA]
   RewriteRule ^reports/?$ index.php?view=reports [L,QSA]
   RewriteRule ^reports/(\d{4}|all)\.zip$ download.php?zip=$1 [L,QSA]
   RewriteRule ^reports/([A-Za-z0-9._-]+)/(pdf|json)$ download.php?n=$1&f=$2 [L,QSA]

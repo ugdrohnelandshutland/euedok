@@ -475,6 +475,15 @@ final class SettingsPage
 
     private static function saveUsers(): string
     {
+        // ganze Änderung unter derselben Sperre wie Auth::updateUser, mit frisch gelesener users.json
+        return Storage::locked('users', static function (): string {
+            Settings::clearCache();
+            return self::saveUsersLocked();
+        });
+    }
+
+    private static function saveUsersLocked(): string
+    {
         $me = Auth::user();
         $all = Settings::get('users');
         $byId = [];
@@ -483,7 +492,14 @@ final class SettingsPage
         }
         $out = [];
         $notes = [];
-        foreach (self::rows('users') as $row) {
+        $revoke = []; // Widerruf gemerkter Geräte erst nach allen Prüfungen, sonst wirkt er auch bei „Nichts gespeichert“
+        $rows = self::rows('users');
+        // Passwort setzen/anlegen nur mit eigenem Passwort – sonst übernimmt eine fremde Admin-Sitzung beliebige Konten
+        $setsPassword = array_filter($rows, static fn ($r) => (string) ($r['password'] ?? '') !== '') !== [];
+        if ($setsPassword && !Auth::confirmPasswordLimited((string) ($_POST['confirm_password'] ?? ''))) {
+            return 'Zum Setzen von Passwörtern bitte unten dein eigenes Passwort zur Bestätigung eingeben. Nichts gespeichert.';
+        }
+        foreach ($rows as $row) {
             $id = self::s($row, 'id', 20);
             $username = strtolower(self::s($row, 'username', 500)); // nicht kürzen – zu lange Namen bekommen eine klare Meldung
             $display = self::s($row, 'display_name', 80);
@@ -513,23 +529,35 @@ final class SettingsPage
             $u['person_id'] = self::s($row, 'person_id', 60) ?: null;
             $u['can_manage_settings'] = !empty($row['can_manage_settings']);
             $u['active'] = !empty($row['active']);
+            $mustChange = !empty($row['must_change_password']);
+            if ($mustChange && empty($u['must_change_password'])) {
+                $notes[] = 'Passwortwechsel verlangt ' . $username;
+            }
+            $u['must_change_password'] = $mustChange;
+            $tfaRequired = !empty($row['tfa_required']);
+            if ($tfaRequired !== !empty($u['tfa_required'])) {
+                $notes[] = '2FA-Pflicht ' . ($tfaRequired ? 'an' : 'aus') . ' ' . $username;
+            }
+            $u['tfa_required'] = $tfaRequired;
             if ($u['id'] === $me['id']) {
                 // sich selbst nicht aussperren
                 $u['can_manage_settings'] = true;
                 $u['active'] = true;
+                $u['must_change_password'] = false;
             }
             if ($pw !== '') {
                 $u['password_hash'] = password_hash($pw, PASSWORD_DEFAULT);
                 $u['password_changed_at'] = now_iso();
+                $u['sessions_invalid_before'] = time();
                 // alle gemerkten Geräte abmelden; andere laufende Sitzungen enden über password_changed_at
-                Auth::revokeRememberTokens($u['id']);
+                $revoke[] = $u['id'];
                 if ($u['id'] === $me['id']) {
                     $_SESSION['login_at'] = time(); // eigene, gerade aktive Sitzung bleibt bestehen
                 }
                 $notes[] = 'Passwort ' . $username;
             }
             if (!$u['active'] && ($byId[$u['id']]['active'] ?? false)) {
-                Auth::revokeRememberTokens($u['id']);
+                $revoke[] = $u['id'];
             }
             $out[] = $u;
         }
@@ -539,7 +567,14 @@ final class SettingsPage
                 $out[] = $u;
             }
         }
-        Settings::save('users', ['users' => $out], 'Zugänge: ' . implode(', ', array_map(static fn ($u) => $u['username'] . ($u['active'] ? '' : ' (inaktiv)') . ($u['can_manage_settings'] ? ' [Einstellungen]' : ''), $out)) . ($notes ? ' · ' . implode(', ', $notes) : ''));
+        $adminsTfa = post_bool('admins_require_tfa');
+        if ($adminsTfa !== !empty($all['admins_require_tfa'])) {
+            $notes[] = '2FA für alle Admins Pflicht: ' . ($adminsTfa ? 'an' : 'aus');
+        }
+        foreach (array_unique($revoke) as $rid) {
+            Auth::revokeRememberTokens($rid);
+        }
+        Settings::save('users', ['users' => $out, 'admins_require_tfa' => $adminsTfa], 'Zugänge: ' . implode(', ', array_map(static fn ($u) => $u['username'] . ($u['active'] ? '' : ' (inaktiv)') . ($u['can_manage_settings'] ? ' [Einstellungen]' : ''), $out)) . ($notes ? ' · ' . implode(', ', $notes) : ''));
         return 'Zugänge gespeichert.';
     }
 }

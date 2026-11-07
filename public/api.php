@@ -20,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 csrf_check();
 
 $user = Auth::user();
+if ($user && ($pending = Auth::pendingAccountAction()) !== null) {
+    json_out(['ok' => false, 'error' => $pending], 403);
+}
 $qr = $user ? null : QrAccess::current();
 if (!$user && !$qr) {
     json_out(['ok' => false, 'error' => 'Sitzung abgelaufen. Bitte neu anmelden bzw. QR-Code erneut scannen.'], 401);

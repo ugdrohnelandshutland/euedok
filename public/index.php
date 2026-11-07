@@ -15,13 +15,7 @@ if (!Settings::isInstalled()) {
 $action = $_GET['action'] ?? '';
 
 /* ---------- Anmelden / Abmelden ---------- */
-if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    csrf_check();
-    $err = Auth::attempt(post_str('username'), (string) ($_POST['password'] ?? ''), post_bool('remember'));
-    if ($err !== null) {
-        flash($err, 'err');
-        redirect('login');
-    }
+$afterLogin = static function (): never {
     $target = $_SESSION['after_login'] ?? '';
     unset($_SESSION['after_login']);
     // nur eigene Pfade: genau ein führender „/“, kein „//“ oder „\“ (sonst Weiterleitung auf fremde Seiten)
@@ -31,6 +25,37 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     redirect('');
+};
+if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+    $err = Auth::attempt(post_str('username'), (string) ($_POST['password'] ?? ''), post_bool('remember'));
+    if ($err !== null) {
+        flash($err, 'err');
+        redirect('login');
+    }
+    if (Auth::twoFactorPending() !== null) {
+        redirect('login/code');
+    }
+    $afterLogin();
+}
+/* Zweiter Schritt: Code aus der Authenticator-App */
+if ($action === 'code' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+    $err = Auth::completeTwoFactor(post_str('code'));
+    if ($err !== null) {
+        flash($err, 'err');
+        redirect(Auth::twoFactorPending() !== null ? 'login/code' : 'login');
+    }
+    $afterLogin();
+}
+if (($_GET['login'] ?? '') === 'code') {
+    if (Auth::twoFactorPending() === null) {
+        redirect('login');
+    }
+    render('partials/head', ['title' => 'Anmelden – Code', 'plain' => true]);
+    render('login-code');
+    render('partials/foot');
+    exit;
 }
 if ($action === 'logout' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
@@ -50,7 +75,43 @@ if (Auth::user() === null) {
     render('partials/foot');
     exit;
 }
-$user = Auth::requireLogin();
+$isAccount = ($_GET['view'] ?? '') === 'account';
+$user = Auth::requireLogin($isAccount);
+
+/* ---------- Mein Zugang (eigenes Passwort, Zwei-Faktor) ---------- */
+if ($isAccount) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        csrf_check();
+        $forced = Auth::pendingAccountAction() !== null;
+        $do = post_str('do');
+        if ($do === 'tfa-enable') {
+            $err = Auth::enableTwoFactor(post_str('code'), (string) ($_POST['current'] ?? ''));
+            $ok = 'Zwei-Faktor-Anmeldung eingerichtet. Ab jetzt fragt EÜDOK nach dem Passwort den Code aus der App ab.';
+        } elseif ($do === 'tfa-disable') {
+            $err = Auth::disableTwoFactor(post_str('code'));
+            $ok = 'Zwei-Faktor-Anmeldung ausgeschaltet.';
+        } else {
+            $err = Auth::changeOwnPassword(
+                (string) ($_POST['current'] ?? ''),
+                (string) ($_POST['new'] ?? ''),
+                (string) ($_POST['repeat'] ?? '')
+            );
+            $ok = 'Passwort geändert. Auf anderen Geräten ist eine neue Anmeldung nötig.';
+        }
+        if ($err !== null) {
+            flash($err, 'err');
+            redirect('account');
+        }
+        flash($ok);
+        // erst wenn alles Verlangte erledigt ist, geht es weiter zur Startseite
+        redirect($forced && Auth::pendingAccountAction() === null ? '' : 'account');
+    }
+    $person = !empty($user['person_id']) ? \Euedok\MasterData::findPerson((string) $user['person_id']) : null;
+    render('partials/head', ['title' => 'Mein Zugang', 'nav' => 'account']);
+    render('account', ['user' => $user, 'person' => $person, 'forced' => Auth::mustChangePassword()]);
+    render('partials/foot', ['nav' => 'account']);
+    exit;
+}
 
 /* ---------- Neuer Bericht ---------- */
 if ($action === 'new' && $_SERVER['REQUEST_METHOD'] === 'POST') {
