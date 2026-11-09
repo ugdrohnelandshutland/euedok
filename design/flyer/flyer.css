@@ -1,4 +1,4 @@
-/* EÜDOK-Flyer – Werte aus design/euedok-ui-design-v0.3.html und public/assets/css/app.css (Tag/Nacht, Navy/Teal) */
+/* EÜDOK-Flyer – Werte aus public/assets/css/app.css (Tag/Nacht, Navy/Teal) */
 @page { size: A4 portrait; margin: 0; }
 :root{
   --ground:#e8eef3; --strip:#ffffff; --raised:#dbe5ec;

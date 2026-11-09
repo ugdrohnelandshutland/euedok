@@ -171,17 +171,17 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
             }
             return '<div class="ed-row' . (!$isNew && empty($f['active']) ? ' inactive' : '') . '" style="' . $grid . '">'
                 . '<input type="hidden" name="' . $n . '[id]" value="' . e($f['id'] ?? '') . '">'
-                . $cell('Bezeichnung', '<input class="in" name="' . $n . '[label]" value="' . e($f['label'] ?? '') . '" placeholder="z. B. Flugminuten">', 'wide')
+                . $cell('Bezeichnung', '<input class="in" name="' . $n . '[label]" value="' . e($f['label'] ?? '') . '" placeholder="z. B. Atemschutz-Minuten">', 'wide')
                 . $cell('Typ', '<select class="in" name="' . $n . '[type]" data-field-type>' . $opts . '</select>')
                 . $cell('Einheit', '<input class="in" name="' . $n . '[unit]" value="' . e($f['unit'] ?? '') . '" placeholder="z. B. min">')
                 . $swCell('Pflicht', $n . '[required]', !empty($f['required']))
                 . $swCell('Summe', $n . '[show_total]', !empty($f['show_total']))
                 . $swCell('aktiv', $n . '[active]', $isNew || !empty($f['active'])) . $mvCell
                 . '<label class="cell wide full" data-options' . (($f['type'] ?? 'number') === 'select' ? '' : ' hidden') . '><span class="cl" style="display:block">Auswahlwerte (mit Komma getrennt)</span><input class="in" name="' . $n . '[options]" value="' . e(implode(', ', $f['options'] ?? [])) . '"></label>'
-                . ($isNew ? $cell('Technische ID', '<input class="in" name="' . $n . '[new_id]" placeholder="Englisch, z. B. flight_minutes">', 'wide full') : '<span class="hint wide full">ID: <span class="mono">' . e($f['id']) . '</span></span>')
+                . ($isNew ? $cell('Technische ID', '<input class="in" name="' . $n . '[new_id]" placeholder="Englisch, z. B. breathing_minutes">', 'wide full') : '<span class="hint wide full">ID: <span class="mono">' . e($f['id']) . '</span></span>')
                 . '</div>';
         };
-        $kinds = ['report' => ['Berichtsfelder', 'einmal je Bericht', 'file'], 'person' => ['Personenfelder', 'je eingesetzter Person (z. B. Flugminuten)', 'users'], 'vehicle' => ['Fahrzeugfelder', 'je eingesetztem Fahrzeug (z. B. Kilometer)', 'truck']];
+        $kinds = ['report' => ['Berichtsfelder', 'einmal je Bericht', 'file'], 'person' => ['Personenfelder', 'je eingesetzter Person (z. B. Atemschutz-Minuten)', 'users'], 'vehicle' => ['Fahrzeugfelder', 'je eingesetztem Fahrzeug (z. B. Kilometer)', 'truck']];
         foreach ($kinds as $kind => [$title, $sub, $ic]): ?>
         <section class="card">
           <h3><?= icon($ic) ?><?= e($title) ?> <span class="r muted small"><?= e($sub) ?></span></h3>
@@ -442,7 +442,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
               <div class="msg warn"><?= icon('alert') ?><span>Status „<?= e($label) ?>“ heißt in Divera jetzt „<?= e($statusList[$sid]) ?>“ – bitte prüfen und speichern.</span></div>
             <?php endif; endforeach; ?>
           <?php endif; ?>
-          <p class="hint">Mehrfachauswahl. UG-Drohne: „JA zur Drohne“ und „JA zur ES“.</p>
+          <p class="hint">Mehrfachauswahl, z. B. „5 Minuten“ und „10 Minuten“.</p>
           <label class="f">Weitere Antwort-IDs (mit Komma) <input class="in" name="attendance_extra" inputmode="numeric" placeholder="z. B. 123456, 123457"><span class="hint">Eigene Antwortoptionen am Alarm erscheinen erst, wenn jemand so geantwortet hat. Der Testabruf zeigt dann ihre IDs unter „Rückmeldungen in Alarmen“.</span></label>
           <?= $toggle('event_accept_counts', (bool) $d['event_accept_counts'], 'Übungen: Zusage zählt als eingesetzt') ?>
           <label class="f">Antwort-IDs für „Zusage“ bei Terminen (mit Komma) <input class="in" name="event_accept_ids" value="<?= e(implode(', ', $d['event_accept_ids'])) ?>"><span class="hint">Nach dem Testabruf oben ablesbar („Rückmeldungen in Terminen“).</span></label>
@@ -575,7 +575,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
       <form method="post" action="<?= $action('qr-create') ?>" class="card stack">
         <?= csrf_field() ?>
         <h3><?= icon('plus') ?>QR-Zugang anlegen</h3>
-        <label class="f">Bezeichnung (z. B. „MTW UG-Drohne“, „Gerätehaus“) <input class="in" name="label" required></label>
+        <label class="f">Bezeichnung (z. B. „MTW“, „Gerätehaus“) <input class="in" name="label" required></label>
         <?= $toggle('divera', Divera::configured(), 'Divera-Abfrage über diesen QR-Code') ?>
         <p class="hint">Über den QR-Code kann man nur neue Berichte erstellen und das eigene PDF 24 h abrufen. Höchstens <?= QrAccess::RATE_LIMIT_PER_HOUR ?> Berichte pro Stunde. Aufkleber nur innen anbringen.</p>
         <button class="btn pri"><?= icon('qr') ?>Anlegen</button>

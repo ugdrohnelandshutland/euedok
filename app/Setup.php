@@ -70,15 +70,14 @@ final class Setup
         $unit['subtitle'] = trim((string) ($in['subtitle'] ?? ''));
         $unit['footer'] = ['left' => '', 'center' => '', 'right' => Footer::DEFAULT_RIGHT];
 
-        $preset = ($in['preset'] ?? 'drone') === 'drone' ? Defaults::presetDrone() : [];
         Settings::save('unit', $unit);
-        Settings::save('master-data', $preset['master-data'] ?? Defaults::masterData());
-        Settings::save('custom-fields', $preset['custom-fields'] ?? Defaults::customFields());
-        Settings::save('divera', $preset['divera'] ?? Defaults::divera());
+        Settings::save('master-data', Defaults::masterData());
+        Settings::save('custom-fields', Defaults::customFields());
+        Settings::save('divera', Defaults::divera());
         Settings::save('mail', Defaults::mail());
         Settings::save('qr-access', Defaults::qrAccess());
 
-        // Erste Person des Zugangs: bei Startwerten die erste Dummy-Person nicht – Zugang bleibt ohne Zuordnung
+        // Stammdaten sind noch leer, der Zugang bleibt deshalb ohne Personenzuordnung
         $user = [
             'id' => bin2hex(random_bytes(6)),
             'username' => $username,
@@ -91,7 +90,7 @@ final class Setup
         ];
         Settings::save('users', ['users' => [$user]]);
         Settings::clearCache();
-        Log::audit('setup', 'Einrichtung abgeschlossen (' . (($in['preset'] ?? 'drone') === 'drone' ? 'Startwerte UG-Drohne' : 'leer') . '), Zugang ' . $username . ' angelegt');
+        Log::audit('setup', 'Einrichtung abgeschlossen, Zugang ' . $username . ' angelegt');
         Auth::login($user, true);
         return null;
     }

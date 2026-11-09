@@ -110,39 +110,4 @@ final class Defaults
     {
         return ['entries' => []];
     }
-
-    /** Startwerte UG-Drohne Landshut Land (Konzept Abschnitt 4). */
-    public static function presetDrone(): array
-    {
-        $people = ['Muster, Max', 'Beispiel, Erika', 'Test, Tobias', 'Probe, Paula', 'Dummy, Daniel'];
-        $equipment = ['Drohne M30T - 1', 'Drohne M30T - 2', 'Monitor', 'Tablet', 'Notebook', 'Powerstation', 'Suchscheinwerfer', 'Akku-Arbeitsscheinwerfer'];
-        $sources = [
-            'ils' => 'ILS Landshut',
-            'police' => 'Polizei',
-            'fire-command' => 'Einsatzleitung Feuerwehr vor Ort',
-            'district-fire-inspection' => 'Kreisbrandinspektion',
-            'district-office' => 'Landratsamt Landshut',
-            'exercise-plan' => 'Übungsplan / eigene Planung',
-        ];
-        $master = self::masterData();
-        foreach ($people as $p) {
-            $master['personnel'][] = ['id' => slugify($p), 'name' => $p, 'active' => true];
-        }
-        foreach ($equipment as $q) {
-            $master['equipment'][] = ['id' => slugify($q), 'label' => $q, 'active' => true];
-        }
-        $master['vehicles'][] = ['id' => 'mtw-ug-drohne', 'label' => 'MTW UG-Drohne', 'radio_call_sign' => '', 'license_plate' => '', 'active' => true];
-        foreach ($sources as $id => $label) {
-            $master['alert_sources'][] = ['id' => $id, 'label' => $label, 'active' => true];
-        }
-
-        $fields = self::customFields();
-        $fields['person'][] = ['id' => 'flight_minutes', 'label' => 'Flugminuten', 'type' => 'number', 'unit' => 'min', 'options' => [], 'required' => false, 'show_total' => true, 'active' => true];
-        $fields['vehicle'][] = ['id' => 'distance_km', 'label' => 'Kilometer', 'type' => 'number', 'unit' => 'km', 'options' => [], 'required' => false, 'show_total' => true, 'active' => true];
-
-        $divera = self::divera();
-        $divera['default_alert_source'] = ['incident' => 'ils', 'exercise' => 'exercise-plan'];
-
-        return ['master-data' => $master, 'custom-fields' => $fields, 'divera' => $divera];
-    }
 }

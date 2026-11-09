@@ -33,7 +33,7 @@ render('partials/head', ['title' => 'Einrichtung', 'plain' => true]);
     <div><div class="wm" style="font-size:26px">EÜ<em>DOK</em></div><div class="kick">Einrichtung</div></div>
     <button type="button" class="ib lbl" style="margin-left:auto" data-theme-toggle aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?><span class="ib-l">Tag/Nacht</span></button>
   </div>
-  <p class="muted">Einmalig: Name der Einheit, erster Zugang mit Einstellungsrecht und Startwerte. Alles lässt sich danach auf der Einstellungsseite ändern.</p>
+  <p class="muted">Einmalig: Name der Einheit und erster Zugang mit Einstellungsrecht. Personal, Geräte und alles Weitere trägst du danach auf der Einstellungsseite ein.</p>
 
   <?php if ($error): ?><div class="msg err"><?= icon('alert') ?><span><?= e($error) ?></span></div><?php endif; ?>
 
@@ -53,20 +53,15 @@ render('partials/head', ['title' => 'Einrichtung', 'plain' => true]);
     <?= csrf_field() ?>
     <section class="card stack">
       <h3><?= icon('shield') ?>2 · Einheit</h3>
-      <label class="f">Name der Einheit <input class="in" name="unit_name" required value="<?= e(post_str('unit_name', 'UG-Drohne Landshut Land')) ?>"></label>
-      <label class="f">Untertitel (optional) <input class="in" name="subtitle" value="<?= e(post_str('subtitle', 'Unterstützungsgruppe Drohne')) ?>"></label>
+      <label class="f">Name der Einheit <input class="in" name="unit_name" required value="<?= e(post_str('unit_name')) ?>"></label>
+      <label class="f">Untertitel (optional) <input class="in" name="subtitle" value="<?= e(post_str('subtitle')) ?>"></label>
     </section>
     <section class="card stack">
       <h3><?= icon('user') ?>3 · Erster Zugang (darf Einstellungen ändern)</h3>
       <label class="f">Benutzername <input class="in" name="username" required autocomplete="username" autocapitalize="none" value="<?= e(post_str('username')) ?>"></label>
-      <label class="f">Anzeigename <input class="in" name="display_name" required value="<?= e(post_str('display_name')) ?>" placeholder="z. B. Florian Hadersbeck"></label>
+      <label class="f">Anzeigename <input class="in" name="display_name" required value="<?= e(post_str('display_name')) ?>" placeholder="z. B. Max Mustermann"></label>
       <label class="f">Passwort (mind. 10 Zeichen) <input class="in" type="password" name="password" required minlength="10" autocomplete="new-password"></label>
       <label class="f">Passwort wiederholen <input class="in" type="password" name="password2" required minlength="10" autocomplete="new-password"></label>
-    </section>
-    <section class="card stack">
-      <h3><?= icon('sparkle') ?>4 · Startwerte</h3>
-      <label class="check"><input type="radio" name="preset" value="drone" checked> UG-Drohne: Alarmierungsquellen, Geräte, 5 Test-Personen, Flugminuten, Kilometer</label>
-      <label class="check"><input type="radio" name="preset" value="empty"> Leer beginnen</label>
     </section>
     <button class="btn pri block"<?= Setup::requirementsMet() ? '' : ' disabled' ?>><?= icon('check') ?>Einrichten</button>
   </form>

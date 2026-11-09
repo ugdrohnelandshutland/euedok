@@ -2,7 +2,7 @@
 
 Name: **EÜDOK** – Einsatz- & Übungsdokumentation (technische Schreibweise für Ordner/Dateien:
 `euedok`)
-Stand: 05.11.2026 · Erste Nutzer: UG-Drohne Landshut Land (ca. 5 Personen mit Zugang)
+Stand: 05.11.2026 · Erste Nutzer: ein kleines Team (ca. 5 Personen mit Zugang)
 Status: **Stufe 1 umgesetzt und im Produktivbetrieb seit 17.10.2026** (Testdaten an diesem Tag
 gelöscht, Einstellungen übernommen). Divera247 mit echtem Schlüssel angebunden. Aktualisierung
 über Einstellungen → Update (Abschnitt 8c).
@@ -31,7 +31,7 @@ Einheitsdaten, Zugangsdaten und Server-Adressen stehen nie im Repository.
 | Technik | PHP ≥ 8.1, kein Framework, keine Datenbank |
 | Speicherung | JSON-Dateien + PDF im Dateisystem, außerhalb des Web-Roots |
 | Zugänge | Verwaltung im Browser (Einstellungen → Zugänge); Passwörter (mind. 10 Zeichen) nur als bcrypt-Hash gespeichert. Benutzername: a–z, 0–9, `. _ - @`, 3–100 Zeichen – also auch eine E-Mail-Adresse; Groß-/Kleinschreibung egal. Jeder Benutzer ändert sein Passwort selbst unter „Mein Zugang“ (`/account`, aktuelles Passwort nötig, nach 5 Fehlversuchen Abmeldung). Admins können je Zugang „Passwort beim nächsten Login ändern“ setzen: Bis dahin ist nur „Mein Zugang“ erreichbar. Optional Zwei-Faktor-Anmeldung per Authenticator-App (TOTP, `spomky-labs/otphp`): Einrichten unter „Mein Zugang“ (QR-Code, erster Code schaltet ein), Code nach dem Passwort auf `/login/code` (±30 s, jeder Code nur einmal, Fehlversuche zählen zur Login-Sperre); „angemeldet bleiben“ fragt bis zum Ablauf keinen Code. Admins können 2FA je Zugang oder für alle Admins vorschreiben (Einrichtung vor allem anderen) und zurücksetzen; keine Wiederherstellungscodes. Schlüssel verschlüsselt in `users.json`. Erneute Eingabe des eigenen Passworts bei: Passwort eines Zugangs setzen/Zugang anlegen, „2FA zurücksetzen“, eigene 2FA einschalten (Fehlversuche zählen zur Sitzungssperre) |
-| Technische Namen | **Business-Englisch** für alle Pfade, Ordner, Dateinamen, URLs, JSON-Schlüssel und IDs (z. B. `reports/`, `/reports/E-2026-003`, `flight_minutes`). **Deutsch** nur für Dokumentation und Oberfläche (Texte, Beschriftungen, Feldbezeichnungen). Siehe Abschnitt 8a |
+| Technische Namen | **Business-Englisch** für alle Pfade, Ordner, Dateinamen, URLs, JSON-Schlüssel und IDs (z. B. `reports/`, `/reports/E-2026-003`, `breathing_minutes`). **Deutsch** nur für Dokumentation und Oberfläche (Texte, Beschriftungen, Feldbezeichnungen). Siehe Abschnitt 8a |
 | Adressen | Sprechende Pfade ohne `.php` (z. B. `/reports`, `/settings/users`) – Abschnitt 8b |
 | Updates | Über **Einstellungen → Update**: Suche nach neuen Versionen **nur auf Klick**, Installation nur signierter Pakete aus den GitHub-Releases, vorherige Version bleibt zum Zurückholen (Abschnitt 8c) |
 | Protokolle | Eigenes Protokollsystem je Bereich (Anmeldung, Berichte, Mail, PDF, Divera, QR, Update, Fehler) mit einstellbarer Stufe; im Browser einsehbar und als ZIP herunterladbar |
@@ -44,8 +44,8 @@ Einheitsdaten, Zugangsdaten und Server-Adressen stehen nie im Repository.
 | Mandanten | Eine Installation pro Einheit |
 | Personalliste im PDF | Nur eingesetzte Personen (nicht alle mit Leerzeilen) |
 | Funktionen | **Gestrichen** – weder im Bericht noch in der Verwaltung |
-| Personenfelder | Je eingesetzter Person **optionale Zusatzfelder**, in der Verwaltung konfigurierbar (wie bei den Fahrzeugen). UG-Drohne: „Flugminuten“ |
-| Flugzeit | Nur pro Person (nicht pro Drohne) – umgesetzt als konfiguriertes Personenfeld „Flugminuten“ (optional, mit Summe) |
+| Personenfelder | Je eingesetzter Person **optionale Zusatzfelder**, in der Verwaltung konfigurierbar (wie bei den Fahrzeugen). Beispiel: „Atemschutz-Minuten“ |
+| Atemschutzzeit | Nur pro Person (nicht pro Gerät) – umgesetzt als konfiguriertes Personenfeld „Atemschutz-Minuten“ (optional, mit Summe) |
 | Auswertungen | **Nicht Teil dieses Projekts** (auch keine Jahresauswertung) – erfolgen extern auf Basis der JSON-Dateien |
 | Pflichtfelder | Konfigurierbar; Standard: Art, Beginn, Ende, Ort, Thema, mind. eine Person, Einheitsführer |
 | Einheitsführer | Wird **automatisch** gesetzt (Ersteller bzw. angemeldete Person, sonst erste eingesetzte Person) und in der Personalliste mit einem Stern markiert; „Ändern“ wählt aus den eingesetzten Personen. Gleiche Bezeichnung für alle Berichtsarten |
@@ -56,16 +56,16 @@ Einheitsdaten, Zugangsdaten und Server-Adressen stehen nie im Repository.
 | QR-Schnellerfassung | QR-Aufkleber im Fahrzeug / Gerätehaus führt **ohne Anmeldung** über einen kryptischen Link direkt zu „Neuer Bericht“ – nur erstellen und verschicken, nichts ansehen (siehe Abschnitt 7b) |
 | Divera247 – Einsatzdaten | Optional, sauber getrennt: **Einsatz** ← Divera-**Alarme**, **Übung** ← Divera-**Termine** der letzten 24 h; gefundene Daten inkl. Personal (Rückmeldung bzw. Zusage) werden nach Rückfrage übernommen – auch über den QR-Zugang (siehe Abschnitt 7c) |
 | Divera247 – Personal | Optional einschaltbar: Personalliste wird **live** aus Divera247 abgerufen statt in EÜDOK gepflegt – kein Sync, keine doppelte Pflege (siehe Abschnitt 7c) |
-| Fahrzeuge | Optionales Modul: eingesetzte Fahrzeuge erfassen, je Fahrzeug **optionale Zusatzfelder** (konfigurierbar; UG-Drohne: nur „Kilometer“ = gefahrene km); Fahrzeugquelle wie beim Personal: **EÜDOK-Liste oder Divera247 live**; erscheint auch im PDF (siehe Abschnitt 7d) |
-| Gestaltung | Passend zum bestehenden **Drone Live Stream Hub** der UG-Drohne: Navy/Teal, Schemata „Tag“ und „Nacht“, Systemschriften, gleiche Radien, Linien und Wortmarke (siehe Abschnitt 3a) |
+| Fahrzeuge | Optionales Modul: eingesetzte Fahrzeuge erfassen, je Fahrzeug **optionale Zusatzfelder** (konfigurierbar; Beispiel: nur „Kilometer“ = gefahrene km); Fahrzeugquelle wie beim Personal: **EÜDOK-Liste oder Divera247 live**; erscheint auch im PDF (siehe Abschnitt 7d) |
+| Gestaltung | Eigenständige Gestaltung: Navy/Teal, Schemata „Tag“ und „Nacht“, Systemschriften, einheitliche Radien, Linien und Wortmarke (siehe Abschnitt 3a) |
 
 ## 3. Bedienkonzept – schnell und einfach
 
 **Grundsätze**
 - **Mobile first:** Eine Spalte auf dem Handy, zwei Spalten auf Tablet/PC
-- **Große Tippflächen** (mind. 48 px – wie im Drone Live Stream Hub), keine winzigen Checkboxen
+- **Große Tippflächen** (mind. 48 px), keine winzigen Checkboxen
 - **Tippen statt Tippen:** Auswahl-Kacheln („Chips“) statt Dropdowns, wo immer möglich
-- **Passende Tastaturen:** Zahlenfeld für Zahlenfelder (z. B. Flugminuten, Kilometer), Datums-/Uhrzeit-Auswahl des Geräts
+- **Passende Tastaturen:** Zahlenfeld für Zahlenfelder (z. B. Atemschutz-Minuten, Kilometer), Datums-/Uhrzeit-Auswahl des Geräts
 - **Kein Speichern-Vergessen:** automatisches Zwischenspeichern bei jeder Änderung
 - **Sehr schnell:** kein Framework, keine externen Bibliotheken oder Schriften im
   Browser, Seiten wenige KB groß – lädt auch bei schlechtem Netz sofort
@@ -96,8 +96,8 @@ Einheitsdaten, Zugangsdaten und Server-Adressen stehen nie im Repository.
 **Personal auswählen**
 - Alle aktiven Personen als Kacheln, **häufig eingesetzte zuerst**, mit Suchfeld
 - Antippen = hinzugefügt; darunter erscheinen pro Person die konfigurierten
-  **Personenfelder** – bei der UG-Drohne nur **„Flugminuten“** (optional, Zahlentastatur)
-- Bei Zahlenfeldern mit „Summe“ wird die Summe live angezeigt (z. B. Flugzeit gesamt)
+  **Personenfelder** – Beispiel: **„Atemschutz-Minuten“** (optional, Zahlentastatur)
+- Bei Zahlenfeldern mit „Summe“ wird die Summe live angezeigt (z. B. Atemschutzzeit gesamt)
 - Keine Funktionen (bewusst gestrichen)
 
 **Geräte auswählen**
@@ -107,7 +107,7 @@ Einheitsdaten, Zugangsdaten und Server-Adressen stehen nie im Repository.
 
 **Fahrzeuge** (nur wenn das Modul aktiv ist)
 - Aktive Fahrzeuge als Kacheln; je gewähltem Fahrzeug die konfigurierten
-  **Fahrzeugfelder** – bei der UG-Drohne nur **„Kilometer“** (optional) – Details Abschnitt 7d
+  **Fahrzeugfelder** – Beispiel: **„Kilometer“** (optional) – Details Abschnitt 7d
 
 **Alarmierung**
 - Konfigurierte Quellen als Kacheln zur Schnellauswahl
@@ -121,13 +121,12 @@ Einheitsdaten, Zugangsdaten und Server-Adressen stehen nie im Repository.
 - Rückmeldung „Per Mail versendet an …“ bzw. deutlicher Hinweis, falls der Versand
   fehlgeschlagen ist
 
-## 3a. Gestaltung – passend zum Drone Live Stream Hub
+## 3a. Gestaltung
 
-EÜDOK soll aussehen wie ein Teil der Werkzeuge, die die UG-Drohne schon nutzt
-(Drone Live Stream Hub, `ugdrohnelandshutland/drone-live-stream-hub`, ADR 0010
-„Navy and teal look“). Übernommen werden nur die Gestaltungswerte, kein Code:
+EÜDOK hat eine eigenständige, einheitliche Gestaltung (Navy und Teal, Schemata „Tag“
+und „Nacht“, Systemschriften). Festgelegt sind folgende Gestaltungswerte:
 
-- **Zwei Schemata wie im Hub:** „Nacht“ (Navy: Grund `#09111c`, Flächen `#102031`,
+- **Zwei Schemata:** „Nacht“ (Navy: Grund `#09111c`, Flächen `#102031`,
   Linien `#294057`/`#476079`, Text `#e3edf7`/`#a4bacb`, Akzent Teal `#58d5cc`,
   gefüllte Bedienelemente `#258078`) und „Tag“ (Grund `#e8eef3`, Flächen weiß,
   Linien `#b9c8d4`, Text `#0b1a28`/`#3b5063`, Teal `#0f6f68`/`#1d6f68`).
@@ -136,17 +135,17 @@ EÜDOK soll aussehen wie ein Teil der Werkzeuge, die die UG-Drohne schon nutzt
   Fokus. Signalfarben bleiben Zuständen vorbehalten: Grün `#0b7a3e` = abgeschlossen /
   versendet, Bernstein `#f2b01e` = Hinweis / Mail-Fehler, Rot `#c4202b` = Fehler,
   Pflichtangabe fehlt – und als einziges auffälliges Element der Block der Berichtsart
-  **Einsatz** (wie die Slot-Nummer im Hub); Übung in ruhigem Navy/Grau. Je Berichtsart
+  **Einsatz**; Übung in ruhigem Navy/Grau. Je Berichtsart
   einstellbar unter „Darstellung“: **„Einsatz (rot)“** (Block mit Sirene) oder
   **„Neutral (blau)“** (Block mit Zielsymbol) – betrifft nur die Anzeige, nicht PDF oder Nummern.
 - **Formen:** Radien 7 px (Knöpfe, Felder), 12 px (Karten, Kacheln), 16 px (Dialoge);
   1-px-Linien; weicher Schatten nur bei Dialogen und Meldungen.
-- **Schrift:** Systemschriften (`system-ui`, Segoe UI, Roboto …); Wortmarke im Kopf
-  wie „Drohnen-**Livestream**“: „EÜ**DOK**“ mit Teal-Teil; daneben ein Label in
-  gesperrten Großbuchstaben (z. B. „UG-DROHNE LANDSHUT LAND“), dünne Linie unter
+- **Schrift:** Systemschriften (`system-ui`, Segoe UI, Roboto …); Wortmarke im Kopf:
+  „EÜ**DOK**“ mit Teal-Teil; daneben ein Label in
+  gesperrten Großbuchstaben (z. B. „FF MUSTERSTADT“), dünne Linie unter
   dem Kopf.
-- **Karten wie die Drohnen-Karten:** farbiger Block links (Einsatz/Übung statt
-  Slot-Nummer), daneben Titel und Metazeile.
+- **Berichtskarten mit Farbblock links:** farbiger Block links (Einsatz/Übung),
+  daneben Titel und Metazeile.
 - **Tippflächen ≥ 48 px**, Hover nur mit Maus, `:active` als Rückmeldung bei Touch.
 - **App-Symbol** aus derselben Familie: Navy-Quadrat, Teal-Schild, darin ein Bericht
   mit Haken.
@@ -180,8 +179,8 @@ Fahrzeuge · Alarmierung · Mailversand · Divera247 · Zugänge · QR-Zugänge 
   jeweils mit Bezeichnung, Einheit (z. B. „min“, „km“), optional/Pflicht, Reihenfolge und –
   bei Zahlen – „Summe anzeigen“; erscheinen in Formular, PDF und JSON:
   - **Berichtsfelder** – einmal je Bericht
-  - **Personenfelder** – je eingesetzter Person (UG-Drohne: „Flugminuten“, Zahl, min, Summe)
-  - **Fahrzeugfelder** – je eingesetztem Fahrzeug (UG-Drohne: „Kilometer“, Zahl, km, Summe)
+  - **Personenfelder** – je eingesetzter Person (z. B. „Atemschutz-Minuten“, Zahl, min, Summe)
+  - **Fahrzeugfelder** – je eingesetztem Fahrzeug (z. B. „Kilometer“, Zahl, km, Summe)
   Felder werden deaktiviert statt gelöscht, damit alte Berichte vollständig bleiben.
 - **Mailversand:** an/aus, Empfänger (eine oder mehrere Adressen), Absender,
   SMTP-Zugang, Betreffvorlage (siehe Abschnitt 7a)
@@ -198,27 +197,30 @@ Fahrzeuge · Alarmierung · Mailversand · Divera247 · Zugänge · QR-Zugänge 
 Ausgeschiedene Personen / Geräte / Fahrzeuge werden auf *inaktiv* gesetzt, nicht gelöscht – so
 bleiben alte Berichte und Auswertungen vollständig.
 
-### Startkonfiguration UG-Drohne (festgelegt)
+### Beispiel einer Konfiguration
 
-Alle Listen sind nur Startwerte, die bei der Einrichtung vorbelegt werden, und jederzeit
-über die Einstellungsseite im Browser änderbar.
+Der Einrichtungsassistent startet **komplett leer**: ohne Preset und ohne Demodaten.
+Alle Listen legt die Einheit selbst an, und sie sind jederzeit über die Einstellungsseite
+im Browser änderbar. Die folgenden Werte der fiktiven Freiwilligen Feuerwehr Musterstadt
+zeigen nur beispielhaft, wie eine Konfiguration aussehen kann; sie werden **nicht**
+installiert.
 
-**Alarmierungsquellen:** ILS Landshut · Polizei · Einsatzleitung Feuerwehr vor Ort ·
-Kreisbrandinspektion · Landratsamt Landshut · Übungsplan / eigene Planung
+**Alarmierungsquellen:** ILS Musterkreis · Polizei · Einsatzleitung Feuerwehr vor Ort ·
+Kreisbrandinspektion · Landratsamt Musterkreis · Übungsplan / eigene Planung
 
-**Geräte:** Drohne M30T - 1 · Drohne M30T - 2 · Monitor · Tablet · Notebook ·
-Powerstation · Suchscheinwerfer · Akku-Arbeitsscheinwerfer
+**Geräte:** Tauchpumpe 1 · Tauchpumpe 2 · Stromerzeuger · Beleuchtungssatz ·
+Funkgeräte · Verkehrsabsicherung
 
-**Personal:** live aus Divera247 (Personalquelle „Divera247“); die 5 Dummy-Datensätze
-der Startkonfiguration werden damit nicht mehr genutzt.
+**Personal:** live aus Divera247 (Personalquelle „Divera247“) oder als eigene
+EÜDOK-Liste.
 
-**Personenfelder:** „Flugminuten“ (Zahl, min, optional, Summe anzeigen).
+**Personenfelder:** „Atemschutz-Minuten“ (Zahl, min, optional, Summe anzeigen).
 
 **Fahrzeugfelder:** „Kilometer“ (Zahl, km, optional).
 
-**Fahrzeuge:** Modul vorerst aus; zum Testen ein Dummy-Fahrzeug „MTW UG-Drohne“.
+**Fahrzeuge:** Modul optional; Beispiel: ein Fahrzeug „MTW“.
 
-**Divera247:** angebunden (API-Schlüssel hinterlegt) – Einsätze aus Alarmen, Übungen aus
+**Divera247:** optional angebunden (API-Schlüssel in den Einstellungen) – Einsätze aus Alarmen, Übungen aus
 Terminen, Personal und Fahrzeuge live.
 
 ## 5. Berichtsinhalt (Basis: bisheriges Formular)
@@ -233,10 +235,10 @@ Thema/Stichwort · Alarmierung durch
 **Eingesetzte Geräte** – Auswahl aus Stammdaten
 
 **Eingesetzte Fahrzeuge** (optional) – Auswahl aus Stammdaten oder live aus Divera247, je
-Fahrzeug die Fahrzeugfelder (UG-Drohne: „Kilometer“, optional)
+Fahrzeug die Fahrzeugfelder (Beispiel: „Kilometer“, optional)
 
 **Eingesetztes Personal** – Auswahl aus Stammdaten oder live aus Divera247, je Person
-die Personenfelder (UG-Drohne: „Flugminuten“, optional)
+die Personenfelder (z. B. „Atemschutz-Minuten“, optional)
 
 **Einheitsführer** – automatisch vorbelegt, änderbar aus dem eingesetzten Personal
 (Abschnitt 2)
@@ -246,9 +248,9 @@ die Personenfelder (UG-Drohne: „Flugminuten“, optional)
 ## 6. Auswertungen
 
 **Nicht Teil dieses Projekts.** Das Tool erfasst und legt ab; Auswertungen (z. B.
-Flugzeit pro Person und Jahr) erfolgen extern. Dafür sind die JSON-Dateien so
+Atemschutzzeit pro Person und Jahr) erfolgen extern. Dafür sind die JSON-Dateien so
 aufgebaut, dass sie ohne das Tool vollständig lesbar sind (IDs + Bezeichnungen,
-Flugminuten pro Person, Berichtsart, Zeitraum). Alle Berichte lassen sich als ZIP
+Atemschutz-Minuten pro Person, Berichtsart, Zeitraum). Alle Berichte lassen sich als ZIP
 herunterladen.
 
 ## 7. Abläufe
@@ -344,7 +346,7 @@ Popup mit Alarmen der letzten 24 h (7c).
     Hinweis per Mail an die Leitung; Schlüssel erneuern hebt die Sperre sofort auf
   - PIN wird nur als Hash gespeichert; Ändern der PIN macht gemerkte Geräte ungültig
   - Sinnvoll z. B., wenn der Aufkleber an einer Stelle hängt, an die auch Fremde kommen
-- **Mehrere QR-Zugänge** möglich, jeweils mit Bezeichnung (z. B. „MTW UG-Drohne“,
+- **Mehrere QR-Zugänge** möglich, jeweils mit Bezeichnung (z. B. „MTW“,
   „Gerätehaus“); jeder einzeln **sperrbar und erneuerbar** (neuer Schlüssel → neuer
   Aufkleber, alter Link sofort ungültig).
 - Link und Druckvorlage sind nur **30 Minuten** nach dem Anlegen bzw. Erneuern sichtbar
@@ -354,7 +356,7 @@ Popup mit Alarmen der letzten 24 h (7c).
   über ein Geräte-Cookie fortsetzbar; angemeldete Nutzer sehen den Entwurf in der
   Übersicht (Kennzeichen „QR“) und können ihn fertigstellen.
 - Kennzeichnung: In der JSON-`history` `"source": "qr:mtw"`, im PDF-Vermerk
-  „Abgeschlossen durch Max Muster (Schnellerfassung · MTW UG-Drohne) am …“,
+  „Abgeschlossen durch Max Muster (Schnellerfassung · MTW) am …“,
   in der Übersicht ein „QR“-Kennzeichen.
 
 **Schutz gegen Missbrauch**
@@ -371,7 +373,7 @@ Popup mit Alarmen der letzten 24 h (7c).
 
 ## 7c. Anbindung Divera247 (optional)
 
-Die UG-Drohne alarmiert über **Divera247**. Divera bietet eine Web-API, die mit einem
+Viele Einheiten alarmieren über **Divera247**. Divera bietet eine Web-API, die mit einem
 API-Schlüssel (Accesskey) der Einheit abgefragt wird. EÜDOK nutzt sie **nur lesend** und
 nur, wenn sie in den Einstellungen eingeschaltet ist. Andere Einheiten ohne Divera
 merken davon nichts.
@@ -399,8 +401,8 @@ merken davon nichts.
 | Ende | Abschlusszeit, falls der Alarm in Divera bereits beendet ist |
 | Thema / Stichwort | Alarmstichwort / Titel |
 | Ort | Einsatzadresse |
-| Alarmierung durch | einstellbare Standard-Quelle für Divera-Alarme (z. B. „ILS Landshut“) |
-| Personal | Personen, deren Rückmeldung einem der als „eingesetzt“ markierten Status entspricht (Mehrfachauswahl, UG-Drohne: „JA zur Drohne“, „JA zur ES“) |
+| Alarmierung durch | einstellbare Standard-Quelle für Divera-Alarme (z. B. „ILS Musterkreis“) |
+| Personal | Personen, deren Rückmeldung einem der als „eingesetzt“ markierten Status entspricht (Mehrfachauswahl, Beispiel: „5 Minuten“, „10 Minuten“) |
 | Fahrzeuge | dem Alarm zugeordnete Divera-Fahrzeuge (wenn das Fahrzeug-Modul aktiv ist) |
 | Divera-Bezug | Alarm-Nummer und Alarmtext (im JSON; im PDF optional) |
 
@@ -431,7 +433,7 @@ Die genauen API-Felder für Termine und Zusagen werden bei der Umsetzung geprüf
   Die Personalseite in den Einstellungen zeigt dann nur „wird in Divera247 verwaltet“.
 - **Ausfallsicherheit:** Ist Divera nicht erreichbar, wird die zuletzt erfolgreich
   abgerufene Liste verwendet und als „Stand: …“ gekennzeichnet – reiner Puffer, kein Sync
-  (bestätigt). Ein Gruppenfilter ist für die UG-Drohne nicht nötig.
+  (bestätigt). Ein Gruppenfilter ist für kleine Einheiten nicht nötig.
 - **Zuordnung Zugang ↔ Person:** Jeder EÜDOK-Zugang wird einmalig einer Person
   (Divera-Benutzer) zugeordnet, damit „angemeldete Person ist eingetragen“ weiter klappt.
 - Berichte speichern Name **und** Divera-Benutzer-ID → alte Berichte bleiben vollständig,
@@ -475,7 +477,7 @@ Personalquelle · Fahrzeugquelle · Divera-Abfrage über QR an/aus · Testabruf-
   angezeigt; **beliebig viele** Status können als „eingesetzt“ markiert werden.
 - Wer im Alarm einen dieser Status gemeldet hat, ist im Bericht vorausgewählt; alle
   anderen Rückmeldungen (z. B. „Nein“, „Später“) werden ignoriert.
-- **UG-Drohne:** „JA zur Drohne“ und „JA zur ES“.
+- **Beispiel:** „5 Minuten“ und „10 Minuten“.
 - Gespeichert werden Divera-Status-ID **und** Bezeichnung; wird ein Status in Divera
   umbenannt oder gelöscht, erscheint in den Einstellungen ein Hinweis.
 - Bei Übungen gelten stattdessen die **Zusagen** zum Divera-Termin (eigene Einstellung
@@ -497,7 +499,7 @@ Personalquelle · Fahrzeugquelle · Divera-Abfrage über QR an/aus · Testabruf-
 - **Fahrzeugfelder** werden in der Verwaltung konfiguriert (gleiches Prinzip wie die
   Personenfelder, Abschnitt 4) und gelten für alle Fahrzeuge – auch für Divera-Fahrzeuge,
   da Divera diese Felder nicht kennt.
-- **UG-Drohne:** nur **„Kilometer“** (gefahrene km, ganze Zahl, **optional**) – kein
+- **Beispiel:** nur **„Kilometer“** (gefahrene km, ganze Zahl, **optional**) – kein
   Kilometerstand, keine Betriebsstunden, kein Fahrer.
 - **Im Bericht:** Fahrzeuge als Kacheln antippen, darunter je Fahrzeug die Felder
   (Zahlentastatur, dürfen leer bleiben).
@@ -543,7 +545,7 @@ Personalquelle · Fahrzeugquelle · Divera-Abfrage über QR an/aus · Testabruf-
   Unbekannte Platzhalter bleiben stehen. Standard-Mailtext: „Hallo {vorname} {nachname},
   anbei deine Bestätigung für {berichtsart} {berichtsnummer} am {datum}. im Auftrag EÜDOK
   von {einheit}“ (mit Leerzeilen).
-- **Vorlage UG-Drohne (eingerichtet 04.11.2026):** Word-Vorlage als PDF (PDF 1.7 ohne
+- **Vorlage (Beispiel, eingerichtet 04.11.2026):** Word-Vorlage als PDF (PDF 1.7 ohne
   Objekt-Streams, von FPDI lesbar). Felder: Vor- und Nachname, `{datum}`, `{von} – {bis}`,
   `{dauer}` (Stundenzahl), `{heute}` bei „Datum:“ unter „Für die Richtigkeit“. Die Vorlage
   enthält Namen, Telefonnummern und Logos und liegt nur in `data/templates/`, nie im Repo
@@ -735,7 +737,7 @@ Repository), das Passwort wird bei jedem Lauf abgefragt.
 {
   "report":  [],
   "person":  [
-    { "id": "flight_minutes", "label": "Flugminuten", "type": "number", "unit": "min",
+    { "id": "breathing_minutes", "label": "Atemschutz-Minuten", "type": "number", "unit": "min",
       "required": false, "show_total": true, "active": true }
   ],
   "vehicle": [
@@ -754,14 +756,14 @@ Repository), das Passwort wird bei jedem Lauf abgefragt.
     { "id": "beispiel-e", "name": "Beispiel, Erika", "lastname": "Beispiel", "firstname": "Erika", "email": "erika@example.org", "active": true }
   ],
   "equipment": [
-    { "id": "m30t-1", "label": "Drohne M30T - 1", "active": true }
+    { "id": "pump-1", "label": "Tauchpumpe 1", "active": true }
   ],
   "vehicles": [
-    { "id": "trailer-1", "label": "Anhänger UG-Drohne", "radio_call_sign": "",
+    { "id": "trailer-1", "label": "Anhänger", "radio_call_sign": "",
       "license_plate": "LA-XX 456", "active": true }
   ],
   "alert_sources": [
-    { "id": "ils", "label": "ILS Landshut" },
+    { "id": "ils", "label": "ILS Musterkreis" },
     { "id": "police", "label": "Polizei" }
   ]
 }
@@ -777,33 +779,33 @@ Repository), das Passwort wird bei jedem Lauf abgefragt.
   "start": "2026-10-12T21:40",
   "end": "2026-10-13T01:15",
   "duration_min": 215,
-  "location": "Ergolding, Isarauen",
+  "location": "Musterstadt, Mühlbachauen",
   "subject": "Vermisste Person",
-  "alert_source": { "id": "ils", "label": "ILS Landshut" },
+  "alert_source": { "id": "ils", "label": "ILS Musterkreis" },
   "narrative": "…",
   "defects": "",
   "equipment": [
-    { "id": "m30t-1", "label": "Drohne M30T - 1" },
-    { "id": "powerstation", "label": "Powerstation" }
+    { "id": "pump-1", "label": "Tauchpumpe 1" },
+    { "id": "generator", "label": "Stromerzeuger" }
   ],
   "personnel": [
-    { "id": "muster-m", "name": "Muster, Max", "fields": { "flight_minutes": null } },
-    { "id": "beispiel-e", "name": "Beispiel, Erika", "fields": { "flight_minutes": 85 },
+    { "id": "muster-m", "name": "Muster, Max", "fields": { "breathing_minutes": null } },
+    { "id": "beispiel-e", "name": "Beispiel, Erika", "fields": { "breathing_minutes": 85 },
       "from": "2026-10-12T23:30" },
     { "id": "div-48211", "name": "Probe, Paul", "divera_id": 48211,
-      "fields": { "flight_minutes": 42 } }
+      "fields": { "breathing_minutes": 42 } }
   ],
   "lead": "muster-m",
   "vehicles": [
-    { "id": "div-veh-311", "label": "MTW UG-Drohne", "source": "divera",
+    { "id": "div-veh-311", "label": "MTW", "source": "divera",
       "fields": { "distance_km": 37 } },
-    { "id": "trailer-1", "label": "Anhänger UG-Drohne", "source": "local",
+    { "id": "trailer-1", "label": "Anhänger", "source": "local",
       "fields": { "distance_km": null } }
   ],
   "divera": { "type": "alarm", "id": 9912345, "title": "Vermisste Person",
               "text": "…", "imported_at": "2026-10-12T21:44:10" },
   "field_definitions": {
-    "flight_minutes": { "label": "Flugminuten", "unit": "min" },
+    "breathing_minutes": { "label": "Atemschutz-Minuten", "unit": "min" },
     "distance_km":    { "label": "Kilometer", "unit": "km" }
   },
   "custom_fields": {},
@@ -830,7 +832,7 @@ UI: Auswahl-Chips bleiben reine An/Aus-Schalter (nur ein Uhr-Punkt als Overlay b
 
 - IDs **und** Bezeichnungen (`label`) werden gespeichert, damit Berichte auch nach
   Änderungen an den Stammdaten korrekt lesbar und auswertbar bleiben.
-- Frei eingegebene Alarmierung: `{ "id": null, "label": "Bergwacht Landshut" }`
+- Frei eingegebene Alarmierung: `{ "id": null, "label": "Bergwacht Musterstadt" }`
 - Personal aus Divera247: ID `div-<Divera-Benutzer-ID>` plus `divera_id`; Fahrzeuge aus
   Divera entsprechend `div-veh-<ID>` mit `"source": "divera"`, eigene mit `"source": "local"`
 - Feldwerte stehen je Person/Fahrzeug unter `fields`; `field_definitions` hält Bezeichnung
@@ -879,15 +881,15 @@ UI: Auswahl-Chips bleiben reine An/Aus-Schalter (nur ein Uhr-Punkt als Overlay b
 
 ## 11. Ausbaustufen
 
-**Stufe 1 – nutzbar für die UG-Drohne** (umgesetzt, produktiv seit 17.10.2026)
+**Stufe 1 – erste nutzbare Version** (umgesetzt, produktiv seit 17.10.2026)
 Login · Startseite · Formular (mobil optimiert) · JSON + PDF · automatischer
 Mailversand · **QR-Schnellerfassung** inkl. Verwaltung und Druckvorlage ·
 **Fahrzeug-Modul** · **Divera247: Einsatz- und Übungsdaten, Personal und Fahrzeuge live** ·
 Übersicht · ZIP-Export · Zusatzfelder (Berichts-, Personen-, Fahrzeugfelder) ·
 **Einstellungsseite im Browser für alle Einstellungen** (Einheit, Berichtsarten,
 Pflichtfelder, Module, Zusatzfelder, Personal, Geräte, Fahrzeuge, Alarmierung,
-Mailversand, Divera247, Zugänge, QR-Zugänge) · **Einrichtungsassistent** ·
-Startwerte UG-Drohne (5 Dummy-Personen, Flugminuten, Kilometer)
+Mailversand, Divera247, Zugänge, QR-Zugänge) · **Einrichtungsassistent**
+(startet komplett leer, ohne Preset und ohne Demodaten)
 
 **Nachgezogen nach Stufe 1 (Versionen 1.1 – 1.4)**
 PDF-Formular-Layout mit Einheitsführer · Fußzeilen-Editor · Entwürfe löschen ·

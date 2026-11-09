@@ -261,7 +261,7 @@
     var attrs = ' data-scope="' + scope + '" data-owner="' + esc(owner) + '" data-field="' + esc(def.id) + '"';
     var label = esc(def.label) + (def.required ? ' <span style="color:var(--fault)">*</span>' : '');
     if (def.type === 'number') {
-      var icn = def.unit === 'min' ? 'drone' : (def.unit === 'km' ? 'truck' : 'sliders');
+      var icn = def.unit === 'min' ? 'clock' : (def.unit === 'km' ? 'truck' : 'sliders');
       return '<div class="stp"><span class="lb">' + ic(icn) + label + '</span>' +
         '<button type="button" class="b" data-step="-1"' + attrs + ' aria-label="weniger">' + ic('minus') + '</button>' +
         '<input class="v" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" value="' + (value == null ? '' : esc(value)) + '" placeholder="–"' + attrs + ' aria-label="' + esc(def.label) + '">' +
@@ -563,7 +563,7 @@
       var total = 0, any = false;
       list.forEach(function (x) { var v = x.fields[d.id]; if (v != null && v !== '') { total += Number(v); any = true; } });
       if (!any) return '';
-      var icn = d.unit === 'min' ? 'drone' : (d.unit === 'km' ? 'truck' : 'sliders');
+      var icn = d.unit === 'min' ? 'clock' : (d.unit === 'km' ? 'truck' : 'sliders');
       var shown = Math.round(total * 10) / 10;
       var extra = d.unit === 'min' && total >= 60 ? ' <span style="opacity:.7;font-size:13px">(' + Math.floor(total / 60) + ':' + pad(total % 60) + ' h)</span>' : '';
       return '<div class="sum">' + ic(icn) + '<span>' + esc(d.label) + ' gesamt' + extra + '</span><b>' + String(shown).replace('.', ',') + ' ' + esc(d.unit || '') + '</b></div>';

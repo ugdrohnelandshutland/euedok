@@ -299,7 +299,7 @@ final class Pdf
             . '<sethtmlpageheader name="h" value="on" show-this-page="1" /><sethtmlpagefooter name="f" value="on" />' . $css . $html;
     }
 
-    /** „Flugminuten gesamt: 390 min (6:30 h)“ für Personenfelder mit „Summe anzeigen“ */
+    /** „Atemschutz-Minuten gesamt: 390 min (6:30 h)“ für Personenfelder mit „Summe anzeigen“ */
     private static function personTotals(array $pf, array $people): string
     {
         $fields = [];
