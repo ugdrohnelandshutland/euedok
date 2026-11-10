@@ -284,8 +284,10 @@ final class Pdf
             . '<td width="33%">' . $L('Divera247-Bezug') . $two($div[0], $div[1]) . '</td></tr></table>';
 
         /* Kopf und Fuß */
-        $header = '<table width="100%" style="border-bottom:1.5pt solid #000"><tr>'
-            . '<td style="padding-bottom:4pt"><b style="font-size:13pt">' . $h($unit['name'] ?: 'EÜDOK') . '</b><br>'
+        $accent = (string) ($unit['accent_color'] ?? '');
+        $accent = preg_match('/^#[0-9a-fA-F]{6}$/', $accent) ? $accent : '#0f6f68';
+        $header = '<table width="100%" style="border-bottom:1.5pt solid ' . $accent . '"><tr>'
+            . '<td style="padding-bottom:4pt"><b style="font-size:13pt;color:' . $accent . '">' . $h($unit['name'] ?: 'EÜDOK') . '</b><br>'
             . '<span style="font-size:7pt;letter-spacing:1.4pt;text-transform:uppercase">' . $h(Reports::documentTitle($r['type']) . ($unit['subtitle'] ? ' · ' . $unit['subtitle'] : '')) . '</span></td>'
             . '<td style="text-align:right;padding-bottom:4pt"><span style="font-size:7pt">Berichts-Nr.</span><br><b style="font-size:15pt">' . $h($r['report_number']) . '</b></td>'
             . '</tr></table>';

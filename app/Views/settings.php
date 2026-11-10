@@ -70,7 +70,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         </div>
         <label class="f">App-Name auf dem Startbildschirm <input class="in" name="app_name" maxlength="30" value="<?= e($unit['app_name'] ?? '') ?>" placeholder="EÜDOK"><span class="hint">Steht unter dem Symbol, wenn EÜDOK am Handy 
         <div class="row">
-          <label class="f">Akzentfarbe im PDF <input class="in" type="color" name="accent_color" value="<?= e($unit['accent_color']) ?>" style="padding:4px;max-width:120px"></label>
+          <label class="f">Akzentfarbe im PDF <input class="in" type="color" name="accent_color" value="<?= e($unit['accent_color']) ?>" style="padding:4px;max-width:120px"><span class="hint">Kopfzeile des Berichts-PDF</span></label>
           <label class="f">Öffentliche Adresse (für QR-Links, optional) <input class="in" name="public_url" value="<?= e($unit['public_url']) ?>" placeholder="https://berichte.example.de"></label>
         </div>
         <h3 style="margin-top:8px"><?= icon('file') ?>Fußzeile im PDF</h3>
