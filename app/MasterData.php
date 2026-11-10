@@ -45,17 +45,11 @@ final class MasterData
             $r = ['items' => self::active(Settings::masterData()['personnel']), 'source' => 'local', 'stale' => false, 'fetched_at' => null, 'error' => null];
         }
         $r['items'] = array_map([self::class, 'normalizePerson'], $r['items']); // auch alte Puffer ohne Felder
-        // häufig Eingesetzte zuerst (letzte 12 Monate), sonst alphabetisch
-        $freq = Reports::personnelFrequency();
-        usort($r['items'], static function ($a, $b) use ($freq) {
-            $fa = $freq[$a['id']] ?? 0;
-            $fb = $freq[$b['id']] ?? 0;
-            return $fb <=> $fa ?: strcasecmp($a['name'], $b['name']);
-        });
-        foreach ($r['items'] as &$p) {
-            $p['frequency'] = $freq[$p['id']] ?? 0;
-        }
-        unset($p);
+        // alphabetisch nach Nachname, dann Vorname; Umlaute wie ihre Grundbuchstaben (Collator, sonst gefaltet)
+        $coll = class_exists('\Collator') ? new \Collator('de_DE') : null;
+        $fold = static fn (string $s): string => strtr(mb_strtolower($s), ['ä' => 'a', 'ö' => 'o', 'ü' => 'u', 'ß' => 'ss']);
+        $cmp = $coll ? static fn ($a, $b) => $coll->compare($a, $b) : static fn ($a, $b) => strcmp($fold($a), $fold($b));
+        usort($r['items'], static fn ($a, $b) => $cmp($a['lastname'], $b['lastname']) ?: $cmp($a['firstname'], $b['firstname']));
         return self::$personnelCache = $r;
     }
 

@@ -62,7 +62,7 @@
     if ((nameCount[p.name] || 0) < 2) return esc(p.name);
     return esc(p.name) + ' <small class="pid">' + esc(p.divera_id ? '#' + p.divera_id : p.id) + '</small>';
   }
-  data.personnel.forEach(function (p) { if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name, divera_id: p.divera_id, frequency: 0, gone: true }; });
+  data.personnel.forEach(function (p) { if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name, divera_id: p.divera_id, gone: true }; });
   var vehById = {};
   cfg.lists.vehicles.items.forEach(function (v) { vehById[v.id] = v; });
   data.vehicles.forEach(function (v) { if (!vehById[v.id]) { vehById[v.id] = { id: v.id, label: v.label, source: v.source, radio_call_sign: '' }; cfg.lists.vehicles.items.push(vehById[v.id]); } });
@@ -337,7 +337,7 @@
   renderReportFields();
 
   /* ---------- Personal ---------- */
-  var search = '';
+  var search = '', showAll = false;
   function togglePerson(id, on) {
     var idx = -1;
     data.personnel.forEach(function (p, i) { if (p.id === id) idx = i; });
@@ -354,21 +354,39 @@
     renderPeople();
   }
 
+  // Suche: Wortanfänge von Vor-/Nachname, alle Suchwörter müssen passen; 2–3 Buchstaben auch als Initialen (beide Reihenfolgen).
+  // Umlaute zweifach gefaltet (ü→ue und ü→u), damit „mueller“ und „muller“ beide „Müller“ finden.
+  function foldName(s, mode) {
+    s = String(s).toLowerCase();
+    if (mode === 0) s = s.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue');
+    return s.replace(/ß/g, 'ss').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+  function matchesPerson(name, q) {
+    q = String(q).trim();
+    if (!q) return true;
+    for (var m = 0; m < 2; m++) {
+      var words = foldName(name, m).split(/[\s,\-]+/).filter(Boolean);
+      var qw = foldName(q, m).split(/\s+/);
+      if (qw.every(function (w) { return words.some(function (x) { return x.indexOf(w) === 0; }); })) return true;
+    }
+    var ini = foldName(initials(name), 1), qi = foldName(q, 1);
+    return /^[a-z]{2,3}$/.test(qi) && (qi === ini || qi === ini.split('').reverse().join(''));
+  }
+
   function renderPeople() {
     if (!$('people-chips')) return;
     var src = cfg.lists.personnel;
     $('people-src').innerHTML = src.source === 'divera' ? '<span class="src">Divera · ' + (src.stale ? 'Stand ' + esc(fmtDt(src.fetched_at)) : 'live') + '</span>' : '';
     var selected = {};
     data.personnel.forEach(function (p) { selected[p.id] = p; });
-    var q = search.toLowerCase();
-    var items = src.items.filter(function (p) { return !q || p.name.toLowerCase().indexOf(q) > -1; });
-    var limit = q ? 60 : 24;
+    var items = src.items.filter(function (p) { return matchesPerson(p.name, search); });
+    var limit = showAll ? items.length : 20;
     var html = items.slice(0, limit).map(function (p) {
       var sp = selected[p.id];
       var chip = '<button type="button" class="chip' + (sp ? ' on' : '') + '" data-person="' + esc(p.id) + '" aria-pressed="' + (sp ? 'true' : 'false') + '"><span class="av">' + esc(initials(p.name)) + '</span>' + personLabel(p) + (sp && hasTime(sp) ? '<span class="pb' + (timeIssue(sp) ? ' bad' : '') + '" aria-label="abweichende Zeit">' + ic('clock') + '</span>' : '') + '</button>';
       return chip;
     }).join('');
-    if (items.length > limit) html += '<span class="hint" style="align-self:center">… ' + (items.length - limit) + ' weitere – Suche nutzen</span>';
+    if (items.length > limit) html += '<button type="button" class="btn sm" data-people-all>Alle anzeigen (' + (items.length - limit) + ' weitere)</button>';
     if (!items.length) html = '<span class="hint">Keine Person gefunden.</span>';
     $('people-chips').innerHTML = html;
 
@@ -385,6 +403,7 @@
     $('people-chips').addEventListener('click', function (ev) {
       var t = ev.target.closest('[data-ptime]');
       if (t) { timeDialog(t.getAttribute('data-ptime')); return; }
+      if (ev.target.closest('[data-people-all]')) { showAll = true; renderPeople(); return; }
       var b = ev.target.closest('[data-person]');
       if (!b) return;
       togglePerson(b.getAttribute('data-person'));
@@ -399,6 +418,16 @@
       changed();
     });
     $('people-search').addEventListener('input', function () { search = this.value; renderPeople(); });
+    $('people-search').addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      var hits = cfg.lists.personnel.items.filter(function (p) { return matchesPerson(p.name, search); });
+      if (hits.length !== 1) return;
+      togglePerson(hits[0].id);
+      changed();
+      search = this.value = '';
+      renderPeople();
+    });
     if (cfg.lists.personnel.stale) {
       banner('stale', 'warn', 'Divera nicht erreichbar – Personal-Stand vom ' + esc(fmtDt(cfg.lists.personnel.fetched_at) || 'unbekannt') + '.');
     }
@@ -810,7 +839,7 @@
     ['start', 'end', 'location', 'subject'].forEach(function (k) { data[k] = rep[k] || ''; var el = $('f-' + k); if (el) el.value = data[k]; });
     data.alert_source = rep.alert_source;
     data.personnel = rep.personnel.map(function (p) {
-      if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name, divera_id: p.divera_id, frequency: 0 };
+      if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name, divera_id: p.divera_id };
       return pEntry(p);
     });
     data.vehicles = (rep.vehicles || []).map(function (v) {
@@ -987,7 +1016,7 @@
         { text: 'Übernehmen', fn: function () { Object.keys(bk.data).forEach(function (k) { if (k !== 'attachments') data[k] = bk.data[k]; });
           ['start', 'end', 'location', 'subject', 'narrative', 'defects'].forEach(function (k) { var el = $('f-' + k); if (el) el.value = data[k] || ''; });
           if (cb) cb.value = data.created_by || '';
-          data.personnel.forEach(function (p) { if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name, frequency: 0 }; });
+          data.personnel.forEach(function (p) { if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name }; });
           duration(); renderAlert(); renderReportFields(); renderPeople(); renderEquipment(); renderVehicles(); openDefects(); banner('restore'); changed(); } },
         { text: 'Verwerfen', fn: function () { clearBackup(); banner('restore'); } }
       ]);

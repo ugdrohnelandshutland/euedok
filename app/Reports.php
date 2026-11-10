@@ -895,21 +895,6 @@ final class Reports
         return $out;
     }
 
-    public static function personnelFrequency(): array
-    {
-        $since = date('Y-m-d', strtotime('-365 days'));
-        $freq = [];
-        foreach (self::index() as $r) {
-            if (($r['start'] ?? '') < $since) {
-                continue;
-            }
-            foreach ($r['personnel_ids'] ?? [] as $id) {
-                $freq[$id] = ($freq[$id] ?? 0) + 1;
-            }
-        }
-        return $freq;
-    }
-
     public static function subjectSuggestions(): array
     {
         $s = [];

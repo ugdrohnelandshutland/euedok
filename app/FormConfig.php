@@ -37,7 +37,7 @@ final class FormConfig
             ],
             'lists' => [
                 'personnel' => [
-                    'items' => $strip($personnel['items'], ['id', 'name', 'divera_id', 'frequency']),
+                    'items' => $strip($personnel['items'], ['id', 'name', 'divera_id']),
                     'source' => $personnel['source'] ?? 'local',
                     'stale' => $personnel['stale'] ?? false,
                     'fetched_at' => $personnel['fetched_at'] ?? null,
