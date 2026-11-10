@@ -123,6 +123,19 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
       <?php if ($cfg['defects_hint'] !== ''): ?><span class="hint warn"><?= e($cfg['defects_hint']) ?></span><?php endif; ?>
     </details>
     <?php endif; ?>
+    <?php if (!empty($cfg['modules']['attachments'])): ?>
+    <div class="card fieldset" id="attach-card">
+      <h3><?= icon('file') ?>Anhänge <span class="r cnt" id="attach-count"></span></h3>
+      <div class="stack" id="attach-list"></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn" id="attach-camera"><?= icon('plus') ?>Foto hinzufügen</button>
+        <button type="button" class="btn" id="attach-gallery"><?= icon('file') ?>Aus Galerie wählen</button>
+      </div>
+      <input type="file" id="attach-in-camera" accept="image/jpeg,image/png" capture="environment" hidden>
+      <input type="file" id="attach-in-gallery" accept="image/jpeg,image/png" multiple hidden>
+      <span class="hint">Bis zu <?= \Euedok\Reports::MAX_ATTACHMENTS ?> Bilder. Im PDF folgt jedes Bild auf einer eigenen Seite.</span>
+    </div>
+    <?php endif; ?>
     <?php if (!$quick && !$cfg['correction'] && $cfg['status'] === 'draft'): ?>
     <div class="card fieldset">
       <h3><?= icon('trash') ?>Entwurf löschen</h3>

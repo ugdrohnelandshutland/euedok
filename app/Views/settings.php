@@ -142,6 +142,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
           <?= $toggle('mod_defects', $unit['modules']['defects'], 'Defekte / Vorfälle', 'Freitext mit Hinweis') ?>
           <?= $toggle('mod_alert_source', $unit['modules']['alert_source'], 'Alarmierung', 'Schnellauswahl plus freie Eingabe') ?>
           <?= $toggle('mod_person_times', $unit['modules']['person_times'], 'Abweichende Zeiten pro Person', 'Später gekommen / früher gegangen, per Zeit-Knopf an der eingesetzten Person') ?>
+          <?= $toggle('mod_attachments', $unit['modules']['attachments'] ?? false, 'Bildanhänge', 'Fotos mit Beschriftung im Bericht, im PDF je ein Bild pro Seite (bis zu 10)') ?>
         </section>
         <section class="card">
           <h3><?= icon('check') ?>Pflichtangaben zum Abschließen</h3>

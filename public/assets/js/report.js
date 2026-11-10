@@ -46,9 +46,11 @@
     lead: R.lead,
     vehicles: (R.vehicles || []).map(function (v) { return { id: v.id, label: v.label, source: v.source, fields: v.fields || {} }; }),
     custom_fields: R.custom_fields && !Array.isArray(R.custom_fields) ? R.custom_fields : {},
-    created_by: R.created_by ? R.created_by.id : null
+    created_by: R.created_by ? R.created_by.id : null,
+    attachments: (R.attachments || []).map(function (a) { return { file: a.file, caption: a.caption || '' }; })
   };
   var rev = cfg.rev;
+  var MAX_ATT = 10, attachBusy = 0;
   var closed = false;
 
   var peopleById = {};
@@ -112,6 +114,8 @@
 
   function save() {
     if (cfg.correction || closed) return Promise.resolve(true);
+    // laufender Upload: die Liste wäre veraltet und würde das neue Bild beim Speichern entfernen
+    if (attachBusy > 0) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 500); return Promise.resolve(false); }
     if (saving) { pending = true; return Promise.resolve(false); }
     saving = true;
     pending = false;
@@ -819,6 +823,84 @@
   }
   if ($('divera-btn')) $('divera-btn').addEventListener('click', function () { diveraLookup(false); });
 
+  /* ---------- Bildanhänge ---------- */
+  function renderAttachments() {
+    var box = $('attach-list');
+    if (!box) return;
+    box.innerHTML = data.attachments.map(function (a, i) {
+      return '<div class="att"><img src="' + esc(cfg.urls.attachments + encodeURIComponent(a.file)) + '" alt="Anlage ' + (i + 1) + '">' +
+        '<input class="in" data-att="' + i + '" maxlength="120" aria-label="Beschriftung Anlage ' + (i + 1) + '" placeholder="Beschriftung, z. B. Checkliste Atemschutz" value="' + esc(a.caption) + '">' +
+        '<button type="button" class="btn sm" data-att-del="' + i + '" aria-label="Anlage ' + (i + 1) + ' entfernen">' + ic('trash') + '</button></div>';
+    }).join('');
+    $('attach-count').textContent = data.attachments.length + ' / ' + MAX_ATT;
+    $('attach-camera').disabled = $('attach-gallery').disabled = data.attachments.length + attachBusy >= MAX_ATT;
+  }
+  // längste Kante höchstens 2000 px, JPEG 85 %; createImageBitmap dreht nach EXIF-Ausrichtung
+  function downscale(file) {
+    return createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bm) {
+      var s = Math.min(1, 2000 / Math.max(bm.width, bm.height));
+      var c = document.createElement('canvas');
+      c.width = Math.round(bm.width * s);
+      c.height = Math.round(bm.height * s);
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(bm, 0, 0, c.width, c.height);
+      if (bm.close) bm.close();
+      return new Promise(function (ok) { c.toBlob(ok, 'image/jpeg', 0.85); });
+    });
+  }
+  function addImage(file) {
+    if (data.attachments.length + attachBusy >= MAX_ATT) { toast('Höchstens ' + MAX_ATT + ' Bilder pro Bericht.', 'warn'); return Promise.resolve(); }
+    attachBusy++;
+    renderAttachments();
+    return downscale(file).then(function (blob) {
+      if (!blob) throw new Error('leer');
+      var fd = new FormData();
+      fd.append('n', cfg.number);
+      fd.append('rev', rev);
+      fd.append('image', blob, 'foto.jpg');
+      return fetch(cfg.urls.api + '?action=attachment_add', { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-Token': window.EUEDOK.csrf }, body: fd })
+        .then(function (r) { return r.json(); });
+    }).then(function (res) {
+      if (res.conflict) { banner('conflict', 'warn', esc(res.error) + ' Deine Eingaben sind auf diesem Gerät gesichert.', [{ text: 'Neu laden', fn: function () { location.reload(); } }]); return; }
+      if (!res.ok) { toast(res.error || 'Bild konnte nicht hochgeladen werden.', 'err'); return; }
+      rev = res.rev;
+      data.attachments.push({ file: res.attachment.file, caption: '' });
+    }).catch(function () {
+      toast('Bild konnte nicht gelesen oder hochgeladen werden.', 'err');
+    }).then(function () {
+      attachBusy--;
+      renderAttachments();
+      backup();
+    });
+  }
+  if ($('attach-list')) {
+    [['attach-camera', 'attach-in-camera'], ['attach-gallery', 'attach-in-gallery']].forEach(function (p) {
+      $(p[0]).addEventListener('click', function () { $(p[1]).click(); });
+      $(p[1]).addEventListener('change', function (ev) {
+        var files = Array.prototype.slice.call(ev.target.files);
+        ev.target.value = '';
+        // nacheinander hochladen, damit die Obergrenze sicher greift
+        files.reduce(function (chain, f) { return chain.then(function () { return addImage(f); }); }, Promise.resolve());
+      });
+    });
+    $('attach-list').addEventListener('input', function (ev) {
+      var i = ev.target.getAttribute('data-att');
+      if (i === null) return;
+      data.attachments[+i].caption = ev.target.value;
+      changed();
+    });
+    $('attach-list').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-att-del]');
+      if (!b) return;
+      data.attachments.splice(+b.getAttribute('data-att-del'), 1);
+      renderAttachments();
+      changed();
+    });
+    renderAttachments();
+  }
+
   /* ---------- Abschließen ---------- */
   function markMissing(miss, srv) {
     miss.forEach(function (k) {
@@ -839,6 +921,7 @@
   }
 
   $('btn-close').addEventListener('click', function () {
+    if (attachBusy > 0) { toast('Bitte kurz warten, Bilder werden noch hochgeladen.', 'warn'); return; }
     var miss = missingList();
     if (data.personnel.some(timeIssue)) miss.push('ptime');
     if (miss.length) { markMissing(miss); return; }
@@ -901,7 +984,7 @@
     var bk = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
     if (bk && bk.data && JSON.stringify(bk.data) !== JSON.stringify(data)) {
       banner('restore', 'info', 'Auf diesem Gerät gibt es noch nicht gespeicherte Eingaben vom ' + esc(fmtDt(bk.at)) + '.', [
-        { text: 'Übernehmen', fn: function () { Object.keys(bk.data).forEach(function (k) { data[k] = bk.data[k]; });
+        { text: 'Übernehmen', fn: function () { Object.keys(bk.data).forEach(function (k) { if (k !== 'attachments') data[k] = bk.data[k]; });
           ['start', 'end', 'location', 'subject', 'narrative', 'defects'].forEach(function (k) { var el = $('f-' + k); if (el) el.value = data[k] || ''; });
           if (cb) cb.value = data.created_by || '';
           data.personnel.forEach(function (p) { if (!peopleById[p.id]) peopleById[p.id] = { id: p.id, name: p.name, frequency: 0 }; });

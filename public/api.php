@@ -28,8 +28,8 @@ if (!$user && !$qr) {
     json_out(['ok' => false, 'error' => 'Sitzung abgelaufen. Bitte neu anmelden bzw. QR-Code erneut scannen.'], 401);
 }
 
-$in = request_json();
 $action = (string) ($_GET['action'] ?? '');
+$in = $action === 'attachment_add' ? $_POST : request_json(); // Bild-Upload kommt als multipart
 $number = is_string($in['n'] ?? null) ? $in['n'] : '';
 $meta = Reports::meta($number);
 if (!$meta) {
@@ -53,6 +53,13 @@ $data = is_array($in['data'] ?? null) ? $in['data'] : [];
 switch ($action) {
     case 'save':
         json_out(Reports::saveDraft($number, $data, (int) ($in['rev'] ?? 0), $actor));
+
+    case 'attachment_add':
+        if (!isset($in['rev']) || $in['rev'] === '') {
+            json_out(['ok' => false, 'error' => 'Revision fehlt – bitte Seite neu laden.'], 400);
+        }
+        $res = Reports::addAttachment($number, $_FILES['image'] ?? null, (string) ($in['caption'] ?? ''), $actor, (bool) $qr, (int) $in['rev']);
+        json_out($res, $res['ok'] || !empty($res['conflict']) ? 200 : 400); // Konflikt wie bei save/close: HTTP 200
 
     case 'close':
         if ($qr) {

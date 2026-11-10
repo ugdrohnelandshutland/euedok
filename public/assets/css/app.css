@@ -314,6 +314,13 @@ body.report{background:var(--ground)}
   .pane{display:flex}
   textarea.in.narrative{min-height:260px}
 }
+.att{display:flex;gap:10px;align-items:center}
+.att img{width:72px;height:72px;object-fit:cover;border-radius:8px;flex:none;background:var(--line,#ddd)}
+.att .in{flex:1;min-width:0}
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.att-view{margin:0}
+.att-view img{width:100%;height:140px;object-fit:cover;border-radius:8px;display:block}
+.att-view figcaption{font-size:13px;margin-top:4px;overflow-wrap:anywhere}
 .defects-box summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;font-size:13px;letter-spacing:0;color:var(--quiet);font-weight:600;min-height:28px}
 .defects-box summary::-webkit-details-marker{display:none}
 .defects-box summary .hint{font-weight:500}

@@ -82,6 +82,16 @@ $actions = [
   <section class="card"><h3><?= icon('file') ?>Bericht / getroffene Maßnahmen</h3><div class="prose"><?= e($r['narrative'] ?: '–') ?></div></section>
   <?php if (trim($r['defects']) !== ''): ?><section class="card"><h3><?= icon('alert') ?>Defekte / Vorfälle</h3><div class="prose"><?= e($r['defects']) ?></div></section><?php endif; ?>
 
+  <?php if (!empty($r['attachments'])): ?>
+  <section class="card"><h3><?= icon('file') ?>Anhänge (<?= count($r['attachments']) ?>)</h3>
+    <div class="att-grid">
+      <?php foreach ($r['attachments'] as $i => $a): $url = base_url('reports/' . rawurlencode($r['report_number']) . '/attachments/' . rawurlencode($a['file'])); ?>
+      <figure class="att-view"><a href="<?= e($url) ?>" target="_blank" rel="noopener"><img src="<?= e($url) ?>" alt="<?= e('Anlage ' . ($i + 1) . ': ' . $a['caption']) ?>" loading="lazy"></a><figcaption><b>Anlage <?= $i + 1 ?></b><?= $a['caption'] !== '' ? ': ' . e($a['caption']) : '' ?></figcaption></figure>
+      <?php endforeach; ?>
+    </div>
+  </section>
+  <?php endif; ?>
+
   <div class="grid2">
     <?php if (!empty($r['equipment'])): ?>
     <section class="card"><h3><?= icon('box') ?>Geräte</h3><div class="chips"><?php foreach ($r['equipment'] as $q): ?><span class="chip" style="cursor:default"><?= e($q['label']) ?></span><?php endforeach; ?></div></section>

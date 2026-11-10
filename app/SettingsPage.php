@@ -163,7 +163,13 @@ final class SettingsPage
             }
         }
         $u['required_fields'] = $req;
-        Settings::save('unit', $u, 'Module/Pflichtfelder: ' . self::diff($old['modules'], $u['modules']) . ' · Pflicht: ' . implode(', ', $req));
+        $mods = [];
+        foreach ($u['modules'] as $m => $on) {
+            if (($old['modules'][$m] ?? null) !== $on) {
+                $mods[] = $m . ': ' . ($on ? 'ein' : 'aus');
+            }
+        }
+        Settings::save('unit', $u, 'Module/Pflichtfelder: ' . ($mods ? implode(', ', $mods) : 'keine Änderung') . ' · Pflicht: ' . implode(', ', $req));
         return 'Module und Pflichtfelder gespeichert.';
     }
 

@@ -355,6 +355,7 @@ final class Pdf
         $mpdf->SetTitle(Reports::documentTitle($r['type']) . ' ' . $r['report_number']);
         $mpdf->SetAuthor((string) (Settings::unit()['name'] ?: 'EÜDOK'));
         $mpdf->WriteHTML(self::reportHtml($r));
+        self::writeAttachments($mpdf, $r);
         Storage::ensureDir(dirname($file));
         $mpdf->Output($file, \Mpdf\Output\Destination::FILE);
         Log::info('pdf', 'generated', 'PDF erzeugt: ' . basename($file), [
@@ -363,6 +364,27 @@ final class Pdf
             'kb' => (int) round(filesize($file) / 1024),
             'ms' => (int) round((microtime(true) - $t0) * 1000),
         ]);
+    }
+
+    /** Je Bildanhang eine Seite: Überschrift „Anlage n: Beschriftung“, Bild im Seitenverhältnis in den Satzspiegel eingepasst. */
+    private static function writeAttachments(Mpdf $mpdf, array $r): void
+    {
+        $meta = Reports::meta($r['report_number']);
+        $availW = $mpdf->w - $mpdf->lMargin - $mpdf->rMargin;
+        $availH = $mpdf->h - $mpdf->tMargin - $mpdf->bMargin - 22; // Platz für die Überschrift
+        foreach (array_values($r['attachments'] ?? []) as $i => $a) {
+            $path = $meta ? Reports::attachmentPath($meta, $r, $a['file']) : null;
+            $size = $path ? @getimagesize($path) : false;
+            if (!$size) {
+                Log::warning('pdf', 'attachment_missing', 'Bildanhang fehlt: ' . $a['file'], ['report' => $r['report_number']]);
+                continue;
+            }
+            $scale = min($availW / $size[0], $availH / $size[1]);
+            $caption = trim((string) ($a['caption'] ?? ''));
+            $mpdf->WriteHTML('<pagebreak />'
+                . '<div style="font-size:12pt;font-weight:bold;margin-bottom:4mm">Anlage ' . ($i + 1) . ($caption !== '' ? ': ' . self::h($caption) : '') . '</div>'
+                . '<div style="text-align:center"><img src="' . self::h($path) . '" style="width:' . round($size[0] * $scale, 1) . 'mm;height:' . round($size[1] * $scale, 1) . 'mm"></div>');
+        }
     }
 
     /** Druckvorlage für den QR-Aufkleber (A6). */

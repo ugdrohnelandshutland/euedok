@@ -10,6 +10,9 @@ namespace Euedok;
  */
 final class Reports
 {
+    public const MAX_ATTACHMENTS = 10;
+    public const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+    public const ATTACHMENT_CAPTION_MAX = 120;
     public const SCHEMA_VERSION = 1;
     private const INDEX = 'reports/index.json';
 
@@ -398,6 +401,23 @@ final class Reports
 
         $report['custom_fields'] = self::cleanFields(Settings::fields('report'), (array) ($in['custom_fields'] ?? [])) ?: new \stdClass();
 
+        // Bildanhänge: Hochladen läuft über addAttachment(); hier nur Beschriftungen und Entfernen (fehlt in der Liste = entfernt)
+        if (Settings::moduleOn('attachments') && is_array($in['attachments'] ?? null)) {
+            $captions = [];
+            foreach ($in['attachments'] as $a) {
+                if (is_array($a) && is_string($a['file'] ?? null)) {
+                    $captions[$a['file']] = $str($a['caption'] ?? '', self::ATTACHMENT_CAPTION_MAX);
+                }
+            }
+            $kept = [];
+            foreach ($report['attachments'] ?? [] as $a) {
+                if (isset($captions[$a['file']])) {
+                    $kept[] = ['caption' => $captions[$a['file']]] + $a;
+                }
+            }
+            $report['attachments'] = $kept;
+        }
+
         if (array_key_exists('created_by', $report) || isset($in['created_by'])) {
             $cb = is_string($in['created_by'] ?? null) ? MasterData::findPerson($in['created_by']) : null;
             $report['created_by'] = $cb ? ['id' => $cb['id'], 'name' => $cb['name']] : null;
@@ -495,8 +515,10 @@ final class Reports
                 Log::warning('report', 'save_conflict', $number . ': Revision veraltet', ['client_rev' => $rev, 'server_rev' => (int) $meta['rev'], 'last_editor' => $meta['last_editor'] ?? null]);
                 return ['ok' => false, 'conflict' => true, 'error' => 'Der Bericht wurde inzwischen auf einem anderen Gerät geändert.'];
             }
+            $before = $report;
             $report = self::applyInput($report, $input);
             self::persist(self::jsonPath($meta), $report);
+            self::deleteRemovedAttachments($meta, $before, $report);
             $newRev = (int) $meta['rev'] + 1;
             self::updateIndex($number, ['rev' => $newRev, 'last_editor' => $actor['by']] + self::summary($report));
             return ['ok' => true, 'rev' => $newRev, 'saved_at' => now_iso()];
@@ -647,6 +669,7 @@ final class Reports
                     : 'Der Bericht wurde inzwischen auf einem anderen Gerät geändert.'];
             }
             $wasClosed = $report['status'] === 'closed';
+            $before = $report;
             $report = self::applyInput($report, $input);
             $missing = self::validate($report, $quickEntry);
             if ($missing) {
@@ -662,6 +685,7 @@ final class Reports
             }
             $report['status'] = 'closed';
             self::persist(self::jsonPath($meta), $report);
+            self::deleteRemovedAttachments($meta, $before, $report);
             $newRev = (int) $meta['rev'] + 1;
             self::updateIndex($number, [
                 'rev' => $newRev,
@@ -719,12 +743,103 @@ final class Reports
         return ['status' => $status, 'to' => $res['to'], 'error' => $res['error'] ?? null];
     }
 
+    /* ---------- Bildanhänge ---------- */
+
+    /** Pfad einer Anlage im Berichtsordner; der Dateiname kommt aus dem Bericht, wird aber trotzdem geprüft. */
+    private static function attachmentFile(array $meta, string $file): string
+    {
+        return Storage::path('reports/' . dirname($meta['file']) . '/' . (preg_match('/^[A-Za-z0-9._-]+_attachment_[0-9a-f]{12}\.(jpg|png)$/', $file) ? $file : 'invalid'));
+    }
+
+    /** Datei einer Anlage, wenn sie zum Bericht gehört und existiert (Auslieferung, PDF). */
+    public static function attachmentPath(array $meta, array $report, string $file): ?string
+    {
+        if (!in_array($file, array_column($report['attachments'] ?? [], 'file'), true)) {
+            return null;
+        }
+        $path = self::attachmentFile($meta, $file);
+        return is_file($path) ? $path : null;
+    }
+
+    private static function deleteRemovedAttachments(array $meta, array $before, array $after): void
+    {
+        $keep = array_column($after['attachments'] ?? [], 'file');
+        foreach ($before['attachments'] ?? [] as $a) {
+            if (!in_array($a['file'], $keep, true)) {
+                @unlink(self::attachmentFile($meta, $a['file']));
+                Log::info('report', 'attachment_removed', $after['report_number'] . ': Bildanhang entfernt', ['file' => $a['file']]);
+            }
+        }
+    }
+
+    /**
+     * Bild zu einem Entwurf (oder einer Korrektur) hinzufügen. $upload ist der $_FILES-Eintrag.
+     * @return array{ok: bool, attachment?: array, error?: string}
+     */
+    public static function addAttachment(string $number, ?array $upload, string $caption, array $actor, bool $quickEntry, int $rev): array
+    {
+        return Storage::locked('report-' . $number, static function () use ($number, $upload, $caption, $actor, $quickEntry, $rev) {
+            $meta = self::meta($number);
+            $report = self::load($number);
+            if (!$meta || !$report) {
+                return ['ok' => false, 'error' => 'Bericht nicht gefunden.'];
+            }
+            if (!Settings::moduleOn('attachments')) {
+                return ['ok' => false, 'error' => 'Bildanhänge sind nicht eingeschaltet.'];
+            }
+            if ($quickEntry && $report['status'] !== 'draft') {
+                return ['ok' => false, 'error' => 'Korrekturen sind nur nach Anmeldung möglich.'];
+            }
+            // wie bei save/close: veralteter Stand darf nicht neben einer anderen Änderung weiterarbeiten
+            if ($rev !== (int) $meta['rev']) {
+                return ['ok' => false, 'conflict' => true, 'error' => 'Der Bericht wurde inzwischen auf einem anderen Gerät geändert.'];
+            }
+            if (count($report['attachments'] ?? []) >= self::MAX_ATTACHMENTS) {
+                return ['ok' => false, 'error' => 'Höchstens ' . self::MAX_ATTACHMENTS . ' Bilder pro Bericht.'];
+            }
+            $err = is_array($upload) ? (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) : UPLOAD_ERR_NO_FILE;
+            if (in_array($err, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || ($err === UPLOAD_ERR_OK && (int) $upload['size'] > self::MAX_ATTACHMENT_BYTES)) {
+                return ['ok' => false, 'error' => 'Bild zu groß (max. ' . (self::MAX_ATTACHMENT_BYTES >> 20) . ' MB).'];
+            }
+            $tmp = $err === UPLOAD_ERR_OK ? (string) $upload['tmp_name'] : '';
+            if ($err !== UPLOAD_ERR_OK || !is_uploaded_file($tmp)) {
+                return ['ok' => false, 'error' => 'Keine Datei empfangen.'];
+            }
+            $mime = class_exists(\finfo::class) ? (string) (new \finfo(FILEINFO_MIME_TYPE))->file($tmp) : '';
+            $size = $mime === 'image/jpeg' || $mime === 'image/png' ? @getimagesize($tmp) : false;
+            // Obergrenze der Kantenlänge schützt den Speicher beim PDF-Erzeugen (der Browser verkleinert auf 2000 px)
+            if (!$size || $size[0] < 1 || $size[1] < 1 || max($size[0], $size[1]) > 6000) {
+                return ['ok' => false, 'error' => 'Nur Bilder (JPEG oder PNG) bis 6000 Pixel Kantenlänge sind erlaubt.'];
+            }
+            $file = basename($meta['file']) . '_attachment_' . bin2hex(random_bytes(6)) . ($mime === 'image/png' ? '.png' : '.jpg');
+            $target = self::attachmentFile($meta, $file);
+            if (!move_uploaded_file($tmp, $target)) {
+                return ['ok' => false, 'error' => 'Bild konnte nicht gespeichert werden.'];
+            }
+            $entry = [
+                'file' => $file,
+                'caption' => mb_substr(trim($caption), 0, self::ATTACHMENT_CAPTION_MAX),
+                'uploaded_at' => now_iso(),
+                'uploaded_by' => $actor['by'],
+            ];
+            $report['attachments'][] = $entry;
+            self::persist(self::jsonPath($meta), $report);
+            Log::info('report', 'attachment_added', $number . ': Bildanhang hinzugefügt', ['file' => $file, 'kb' => (int) round(filesize($target) / 1024), 'by' => $actor['by'], 'source' => $actor['source'] ?? null]);
+            $newRev = (int) $meta['rev'] + 1;
+            self::updateIndex($number, ['rev' => $newRev, 'last_editor' => $actor['by']] + self::summary($report));
+            return ['ok' => true, 'attachment' => $entry, 'rev' => $newRev];
+        });
+    }
+
     public static function discardDraft(string $number): bool
     {
         return Storage::locked('report-' . $number, static function () use ($number) {
             $meta = self::meta($number);
             if (!$meta || $meta['status'] !== 'draft') {
                 return false;
+            }
+            foreach (self::load($number)['attachments'] ?? [] as $a) {
+                @unlink(self::attachmentFile($meta, $a['file']));
             }
             @unlink(Storage::path(self::jsonPath($meta)));
             Log::info('report', 'discarded', $number . ': Entwurf verworfen');
