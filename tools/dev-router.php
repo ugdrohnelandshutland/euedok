@@ -25,7 +25,6 @@ $routes = [
     '#^/reports/([A-Za-z0-9._-]+)/confirmations/?$#' => ['confirmations.php', ['n' => 1]],
     '#^/reports/([A-Za-z0-9._-]+)/edit$#' => ['report.php', ['n' => 1, 'edit' => '=1']],
     '#^/reports/([A-Za-z0-9._-]+)/?$#' => ['report.php', ['n' => 1]],
-    '#^/pdf-view/?$#' => ['pdf-view.php', []],
     '#^/settings/?$#' => ['settings.php', []],
     '#^/settings/([a-z]+)/?$#' => ['settings.php', ['s' => 1]],
 ];

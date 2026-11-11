@@ -423,7 +423,7 @@
       ev.preventDefault();
       var hits = cfg.lists.personnel.items.filter(function (p) { return matchesPerson(p.name, search); });
       if (hits.length !== 1) return;
-      togglePerson(hits[0].id);
+      togglePerson(hits[0].id, true);
       changed();
       search = this.value = '';
       renderPeople();
@@ -862,7 +862,7 @@
         '<button type="button" class="btn sm" data-att-del="' + i + '" aria-label="Anlage ' + (i + 1) + ' entfernen">' + ic('trash') + '</button></div>';
     }).join('');
     $('attach-count').textContent = data.attachments.length + ' / ' + MAX_ATT;
-    $('attach-camera').disabled = $('attach-gallery').disabled = data.attachments.length + attachBusy >= MAX_ATT;
+    if ($('attach-camera')) $('attach-camera').disabled = $('attach-gallery').disabled = data.attachments.length + attachBusy >= MAX_ATT;
   }
   // längste Kante höchstens 2000 px, JPEG 85 %; createImageBitmap dreht nach EXIF-Ausrichtung
   function downscale(file) {
@@ -906,6 +906,7 @@
   }
   if ($('attach-list')) {
     [['attach-camera', 'attach-in-camera'], ['attach-gallery', 'attach-in-gallery']].forEach(function (p) {
+      if (!$(p[0])) return;
       $(p[0]).addEventListener('click', function () { $(p[1]).click(); });
       $(p[1]).addEventListener('change', function (ev) {
         var files = Array.prototype.slice.call(ev.target.files);

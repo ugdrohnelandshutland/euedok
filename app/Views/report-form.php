@@ -127,6 +127,7 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
     <div class="card fieldset" id="attach-card">
       <h3><?= icon('file') ?>Anhänge <span class="r cnt" id="attach-count"></span></h3>
       <div class="stack" id="attach-list"></div>
+      <?php if ($r['status'] === 'draft'): ?>
       <div class="row" style="gap:8px;flex-wrap:wrap">
         <button type="button" class="btn" id="attach-camera"><?= icon('plus') ?>Foto hinzufügen</button>
         <button type="button" class="btn" id="attach-gallery"><?= icon('file') ?>Aus Galerie wählen</button>
@@ -134,6 +135,9 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
       <input type="file" id="attach-in-camera" accept="image/jpeg,image/png" capture="environment" hidden>
       <input type="file" id="attach-in-gallery" accept="image/jpeg,image/png" multiple hidden>
       <span class="hint">Bis zu <?= \Euedok\Reports::MAX_ATTACHMENTS ?> Bilder. Im PDF folgt jedes Bild auf einer eigenen Seite.</span>
+      <?php else: ?>
+      <span class="hint">Neue Bilder können nur zu Entwürfen hinzugefügt werden.</span>
+      <?php endif; ?>
     </div>
     <?php endif; ?>
     <?php if (!$quick && !$cfg['correction'] && $cfg['status'] === 'draft'): ?>

@@ -1,5 +1,5 @@
 /* EÜDOK – PDF-Anzeige: alle Seiten als Canvas (pdf.js, lokal), Seiten erst beim Scrollen gerendert.
-   window.EUEDOK.pdf.render(container, url) -> { zoomBy(faktor), destroy() }; genutzt vom Popup (app.js) und von pdf-view.php. */
+   window.EUEDOK.pdf.render(container, url) -> { zoomBy(faktor), destroy() }; genutzt vom Popup (app.js). */
 (function () {
   'use strict';
 
@@ -48,7 +48,10 @@
       if (dead || !p || el._done === gen) return;
       el._done = gen;
       var dpr = window.devicePixelRatio || 1;
-      var vp = p.getViewport({ scale: el._scale * dpr });
+      var base = p.getViewport({ scale: 1 });
+      // Canvas höchstens 16 Mio. Pixel: iOS-Safari zeichnet größere Canvas nicht
+      var s = Math.min(el._scale * dpr, Math.sqrt(16e6 / (base.width * base.height)));
+      var vp = p.getViewport({ scale: s });
       var c = document.createElement('canvas');
       c.width = Math.floor(vp.width);
       c.height = Math.floor(vp.height);
@@ -123,20 +126,4 @@
   }
 
   (window.EUEDOK = window.EUEDOK || {}).pdf = { render: render };
-
-  // Direktaufruf pdf-view?src=…
-  var box = document.getElementById('pv');
-  if (!box) return;
-  var ctl = render(box, box.getAttribute('data-src'));
-  document.getElementById('pv-in').addEventListener('click', function () { ctl.zoomBy(1.25); });
-  document.getElementById('pv-out').addEventListener('click', function () { ctl.zoomBy(1 / 1.25); });
-  // Zurück: Verlauf der App, sonst (Direktaufruf, Verlauf fremd) der Link im href
-  document.getElementById('pv-back').addEventListener('click', function (ev) {
-    var sameOrigin = false;
-    try { sameOrigin = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) { /* egal */ }
-    if (history.length > 1 && sameOrigin) {
-      ev.preventDefault();
-      history.back();
-    }
-  });
 })();

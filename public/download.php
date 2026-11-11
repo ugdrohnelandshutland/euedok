@@ -34,7 +34,7 @@ if (isset($_GET['a'])) {
     $meta = Reports::meta($number);
     $report = Reports::load($number);
     $file = is_string($_GET['a']) ? $_GET['a'] : '';
-    $allowed = $meta && $report && (Auth::user() || ($report['status'] === 'draft' && QrAccess::ownsReport($number)));
+    $allowed = $meta && $report && (Auth::user() ? Auth::pendingAccountAction() === null : ($report['status'] === 'draft' && QrAccess::ownsReport($number)));
     $path = $allowed ? Reports::attachmentPath($meta, $report, $file) : null;
     if ($path === null) {
         http_response_code(404);

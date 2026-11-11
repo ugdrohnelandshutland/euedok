@@ -174,6 +174,7 @@ final class Auth
         // gemerkte Geräte abmelden; andere Sitzungen enden über password_changed_at, die eigene bleibt
         self::revokeRememberTokens($u['id']);
         $_SESSION['login_at'] = time();
+        session_regenerate_id(true); // Sitzungsdaten (CSRF, login_at) bleiben erhalten
         self::$user = array_merge($u, ['must_change_password' => false]);
         Log::audit('auth', 'Eigenes Passwort geändert: ' . $u['username']);
         return null;

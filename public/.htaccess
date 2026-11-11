@@ -31,7 +31,6 @@ DirectoryIndex index.php
   RewriteRule ^reports/([A-Za-z0-9._-]+)/confirmations/?$ confirmations.php?n=$1 [L,QSA]
   RewriteRule ^reports/([A-Za-z0-9._-]+)/edit$ report.php?n=$1&edit=1 [L,QSA]
   RewriteRule ^reports/([A-Za-z0-9._-]+)/?$ report.php?n=$1 [L,QSA]
-  RewriteRule ^pdf-view/?$ pdf-view.php [L,QSA]
   RewriteRule ^settings/?$ settings.php [L,QSA]
   RewriteRule ^settings/([a-z]+)/?$ settings.php?s=$1 [L,QSA]
 </IfModule>

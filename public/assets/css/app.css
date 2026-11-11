@@ -538,7 +538,6 @@ textarea.in.foot-ta{min-height:96px;font-size:14px}
 @media (max-width:640px){.cf-nums{grid-template-columns:repeat(3,minmax(0,1fr))}.cf-bot .cseg{max-width:none}}
 
 /* ---------- PDF-Viewer (pdf.js) ---------- */
-body.pdfv{background:var(--raised)}
 .pv{position:relative;flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:12px 0 calc(24px + env(safe-area-inset-bottom));overflow-x:auto}
 .pv-state{position:absolute;inset:0 0 auto;z-index:1;padding:24px 16px;text-align:center;background:var(--raised)}
 .pv-name{overflow:hidden;text-overflow:ellipsis;display:block}

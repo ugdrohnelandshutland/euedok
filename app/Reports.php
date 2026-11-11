@@ -787,8 +787,8 @@ final class Reports
             if (!Settings::moduleOn('attachments')) {
                 return ['ok' => false, 'error' => 'Bildanhänge sind nicht eingeschaltet.'];
             }
-            if ($quickEntry && $report['status'] !== 'draft') {
-                return ['ok' => false, 'error' => 'Korrekturen sind nur nach Anmeldung möglich.'];
+            if ($report['status'] !== 'draft') {
+                return ['ok' => false, 'error' => 'Bilder können nur zu Entwürfen hinzugefügt werden.'];
             }
             // wie bei save/close: veralteter Stand darf nicht neben einer anderen Änderung weiterarbeiten
             if ($rev !== (int) $meta['rev']) {
@@ -808,8 +808,8 @@ final class Reports
             $mime = class_exists(\finfo::class) ? (string) (new \finfo(FILEINFO_MIME_TYPE))->file($tmp) : '';
             $size = $mime === 'image/jpeg' || $mime === 'image/png' ? @getimagesize($tmp) : false;
             // Obergrenze der Kantenlänge schützt den Speicher beim PDF-Erzeugen (der Browser verkleinert auf 2000 px)
-            if (!$size || $size[0] < 1 || $size[1] < 1 || max($size[0], $size[1]) > 6000) {
-                return ['ok' => false, 'error' => 'Nur Bilder (JPEG oder PNG) bis 6000 Pixel Kantenlänge sind erlaubt.'];
+            if (!$size || $size[0] < 1 || $size[1] < 1 || max($size[0], $size[1]) > 6000 || $size[0] * $size[1] > 12_000_000) {
+                return ['ok' => false, 'error' => 'Nur Bilder (JPEG oder PNG) bis 6000 Pixel Kantenlänge und 12 Megapixel sind erlaubt.'];
             }
             $file = basename($meta['file']) . '_attachment_' . bin2hex(random_bytes(6)) . ($mime === 'image/png' ? '.png' : '.jpg');
             $target = self::attachmentFile($meta, $file);
