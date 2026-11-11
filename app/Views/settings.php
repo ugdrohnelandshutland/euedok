@@ -331,8 +331,8 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
           <span class="muted small tpl-meta"><?= e($t['name']) ?> · <?= (int) $t['pages'] ?> <?= (int) $t['pages'] === 1 ? 'Seite' : 'Seiten' ?> · <?= e(fmt_datetime($t['uploaded_at'])) ?></span>
           <div class="tpl-act">
             <label class="tpl-def" title="Standardvorlage (mit „Speichern“ übernehmen)"><input type="radio" name="default_template" value="<?= e($t['id']) ?>"<?= $t['id'] === $cf['default_template'] ? ' checked' : '' ?>><span><b class="off">Als Standard</b><b class="on"><?= icon('check') ?>Standard</b></span></label>
-            <a class="btn sm" href="<?= e($pv . '&t=' . rawurlencode($t['id'])) ?>" target="_blank"><?= icon('eye') ?>Vorschau</a>
-            <a class="btn sm" href="<?= e($pv . '&grid=1&t=' . rawurlencode($t['id'])) ?>" target="_blank"><?= icon('sliders') ?>Mit Raster</a>
+            <a class="btn sm" href="<?= e($pv . '&t=' . rawurlencode($t['id'])) ?>" target="_blank" data-pdf="Vorschau Einsatzbestätigung.pdf"><?= icon('eye') ?>Vorschau</a>
+            <a class="btn sm" href="<?= e($pv . '&grid=1&t=' . rawurlencode($t['id'])) ?>" target="_blank" data-pdf="Vorschau mit Raster.pdf"><?= icon('sliders') ?>Mit Raster</a>
             <button type="submit" form="tpl-del-<?= e($t['id']) ?>" class="btn sm danger" data-confirm="Vorlage „<?= e($t['label']) ?>“ entfernen?"><?= icon('trash') ?>Entfernen</button>
           </div>
         </div>
@@ -340,7 +340,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <div class="cfield tpl-card">
           <b>+ Vorlage hinzufügen</b>
           <?php if (!$tpls): ?>
-          <div class="tpl-act"><a class="btn sm" href="<?= e($pv) ?>" target="_blank"><?= icon('eye') ?>Vorschau</a></div>
+          <div class="tpl-act"><a class="btn sm" href="<?= e($pv) ?>" target="_blank" data-pdf="Vorschau Einsatzbestätigung.pdf"><?= icon('eye') ?>Vorschau</a></div>
           <?php endif; ?>
           <label class="f">Bezeichnung (optional, sonst Dateiname) <input class="in" form="tpl-up" name="label" maxlength="80" placeholder="z. B. Einsatz Landkreis"></label>
           <label class="f">PDF-Datei, max. 5 MB <input class="in" form="tpl-up" type="file" name="template" accept="application/pdf,.pdf" required></label>
@@ -542,7 +542,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <h3><?= icon('qr') ?>Neuer Link für „<?= e($ne['label']) ?>“</h3>
         <div class="keybox"><?= e(absolute_url('q/' . $heldKey)) ?></div>
         <p class="hint warn">Der Link ist nur 30 Minuten sichtbar – gespeichert wird nur ein Hash. Jetzt die Druckvorlage öffnen und ausdrucken.</p>
-        <a class="btn pri" href="<?= e(base_url('settings/qr?sticker=' . rawurlencode($newId))) ?>" target="_blank"><?= icon('printer') ?>Druckvorlage (PDF) öffnen</a>
+        <a class="btn pri" href="<?= e(base_url('settings/qr?sticker=' . rawurlencode($newId))) ?>" target="_blank" data-pdf="QR-Aufkleber.pdf"><?= icon('printer') ?>Druckvorlage (PDF) öffnen</a>
       </section>
       <?php endif; ?>
 

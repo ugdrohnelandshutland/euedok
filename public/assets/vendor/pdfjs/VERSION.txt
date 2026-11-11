@@ -1,0 +1,4 @@
+pdf.js (pdfjs-dist) 5.6.205, legacy-Build, Apache-2.0.
+Quelle: npm pack pdfjs-dist@5.6.205, Dateien aus legacy/build/ (pdf.min.mjs, pdf.worker.min.mjs). Unveraendert.
+Nicht enthalten: cmaps, standard_fonts, wasm (Berichts-PDFs betten ihre Schriften ein).
+Aktualisieren: gleiche Dateien aus neuer Version ersetzen, Version hier und in public/assets/js/pdf-view.js pruefen.

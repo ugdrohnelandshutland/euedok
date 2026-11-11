@@ -983,7 +983,7 @@
     var mailHtml = mail.status === 'sent' ? '<div class="msg ok">' + ic('send') + '<span>Per Mail versendet an ' + esc((mail.to || []).join(', ')) + '</span></div>'
       : mail.status === 'failed' ? '<div class="msg warn">' + ic('alert') + '<span>Bericht ist gespeichert, aber der Mailversand ist fehlgeschlagen' + (cfg.mode === 'qr' ? ' – die Leitung sieht das in der Übersicht.' : '. In der Übersicht „Erneut senden“.') + '</span></div>'
       : '<div class="msg info">' + ic('mail') + '<span>Mailversand ist ausgeschaltet – Bericht ist gespeichert.</span></div>';
-    var acts = '<a class="btn pri block" href="' + esc(res.pdf_url || cfg.urls.pdf) + '" target="_blank" rel="noopener">' + ic('file') + 'PDF ansehen / herunterladen</a>';
+    var acts = '<a class="btn pri block" href="' + esc(res.pdf_url || cfg.urls.pdf) + '" target="_blank" rel="noopener"' + (cfg.mode === 'qr' ? '' : ' data-pdf="' + esc(cfg.number) + '.pdf"') + '>' + ic('file') + 'PDF ansehen / herunterladen</a>';
     if (cfg.mode === 'qr') {
       acts += '<a class="btn block" href="' + esc(cfg.urls.restart) + '">' + ic('plus') + 'Weiteren Bericht erstellen</a>' +
         '<p class="muted small">Das PDF ist hier 24 Stunden auf diesem Gerät abrufbar.</p>';

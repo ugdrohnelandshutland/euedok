@@ -196,5 +196,87 @@
     updateSel();
   }
 
+  // PDF-Links (data-pdf): Popup über der Seite, pdf.js rendert direkt im <dialog>. pdf-view.js und pdf.js
+  // werden erst beim ersten Klick nachgeladen. Strg/Meta/Shift/Mittelklick bleiben nativ.
+  var pdfDlg = null;
+  var pdfScript = null;
+
+  function loadPdfJs() {
+    return pdfScript || (pdfScript = new Promise(function (ok, fail) {
+      if (window.EUEDOK.pdf) return ok();
+      var s = document.createElement('script');
+      s.src = document.body.dataset.pdfJs;
+      s.onload = ok;
+      s.onerror = function () { pdfScript = null; fail(); };
+      document.head.appendChild(s);
+    }));
+  }
+
+  function openPdf(a) {
+    var sprite = document.body.dataset.sprite;
+    var url = a.pathname + a.search;
+    var name = a.getAttribute('data-pdf');
+    if (!name) { try { name = decodeURIComponent(a.pathname.split('/').pop()); } catch (e) { name = 'PDF'; } }
+    var dlg = document.createElement('dialog');
+    var closing = false;
+    var ctl = null;
+    function ic(n) { return '<svg class="i" aria-hidden="true"><use href="' + sprite + '#i-' + n + '"/></svg>'; }
+    function btn(attrs, label, icon) { return '<' + (attrs.indexOf('href') < 0 ? 'button type="button"' : 'a') + ' class="ib" ' + attrs + ' title="' + label + '" aria-label="' + label + '">' + ic(icon) + (attrs.indexOf('href') < 0 ? '</button>' : '</a>'); }
+    dlg.className = 'pvd';
+    dlg.setAttribute('aria-label', 'PDF');
+    dlg.innerHTML = '<div class="tb"><div class="ttl"><b class="pv-name"></b></div>'
+      + btn('data-z="0.8"', 'Verkleinern', 'minus') + btn('data-z="1.25"', 'Vergrößern', 'plus')
+      + btn('data-dl href="#"', 'Herunterladen', 'download') + btn('data-nt href="#" target="_blank" rel="noopener"', 'In neuem Tab öffnen', 'external')
+      + btn('data-x autofocus', 'Schließen', 'x') + '</div><div class="pv pvd-body"></div>';
+    var body = dlg.querySelector('.pvd-body');
+    dlg.querySelector('.pv-name').textContent = name;
+    var dl = dlg.querySelector('[data-dl]');
+    dl.href = url;
+    dl.setAttribute('download', name);
+    dlg.querySelector('[data-nt]').href = url;
+
+    // Schließen läuft immer über den Verlauf: pushState beim Öffnen, history.back() beim Schließen
+    function finish() {
+      window.removeEventListener('popstate', finish);
+      pdfDlg = null;
+      if (ctl) ctl.destroy();
+      dlg.close();
+      dlg.remove();
+      document.documentElement.style.overflow = '';
+      a.focus({ preventScroll: true });
+    }
+    function requestClose() {
+      if (closing || pdfDlg !== dlg) return;
+      closing = true;
+      if (history.state && history.state.pdf) history.back(); else finish();
+    }
+    dlg.addEventListener('click', function (ev) {
+      var z = ev.target.closest('[data-z]');
+      if (z) { if (ctl) ctl.zoomBy(parseFloat(z.getAttribute('data-z'))); }
+      else if (ev.target.closest('[data-x]') || ev.target === dlg) requestClose();
+    });
+    dlg.addEventListener('cancel', function (ev) { ev.preventDefault(); requestClose(); });
+    dlg.addEventListener('close', requestClose);
+
+    pdfDlg = dlg;
+    document.body.appendChild(dlg);
+    document.documentElement.style.overflow = 'hidden';
+    history.pushState({ pdf: 1 }, '');
+    window.addEventListener('popstate', finish);
+    dlg.showModal();
+    loadPdfJs().then(function () {
+      if (pdfDlg === dlg) ctl = window.EUEDOK.pdf.render(body, url);
+    }, function () {
+      body.textContent = 'Die PDF-Anzeige konnte nicht geladen werden. Nutze „Herunterladen“ oder „In neuem Tab öffnen“.';
+    });
+  }
+
+  document.addEventListener('click', function (ev) {
+    var a = ev.target.closest && ev.target.closest('a[data-pdf]');
+    if (!a || pdfDlg || ev.defaultPrevented || ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || a.origin !== location.origin) return;
+    ev.preventDefault();
+    openPdf(a);
+  });
+
   window.EUEDOK = { api: api, toast: toast, csrf: csrf };
 })();

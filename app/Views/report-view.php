@@ -40,7 +40,7 @@ $actions = [
       <p class="muted"><?= e($r['subject']) ?> · <?= e(fmt_datetime($r['start'])) ?></p>
     </div>
     <div style="flex:0 1 auto;display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/pdf')) ?>" target="_blank"><?= icon('file') ?>PDF</a>
+      <a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/pdf')) ?>" target="_blank" data-pdf="<?= e($r['report_number']) ?>.pdf"><?= icon('file') ?>PDF</a>
       <a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/json')) ?>"><?= icon('json') ?>JSON</a>
       <?php if ($cenabled): ?><a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations')) ?>"><?= icon('send') ?><?= e($ctitle) ?>en</a><?php endif; ?>
       <a class="btn pri" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/edit')) ?>"><?= icon('edit') ?>Korrigieren</a>
@@ -113,7 +113,7 @@ $actions = [
           <span class="muted small"><?= e(fmt_datetime($c['sent_at'])) ?> · <?= e($c['email']) ?><?= !empty($c['error']) ? ' – ' . e($c['error']) : '' ?></span></span>
         <?php // zwei gleich breite Spalten, auch ohne PDF, damit „Erneut senden“ in jeder Zeile an derselben Stelle steht ?>
         <span class="cf-acts">
-          <?php if (!empty($c['file'])): ?><a class="btn sm" target="_blank" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations/' . rawurlencode($c['file']))) ?>"><?= icon('file') ?>PDF</a><?php endif; ?>
+          <?php if (!empty($c['file'])): ?><a class="btn sm" target="_blank" data-pdf="<?= e($c['file']) ?>" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations/' . rawurlencode($c['file']))) ?>"><?= icon('file') ?>PDF</a><?php endif; ?>
           <a class="btn sm" style="grid-column:2" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations?e=' . $i)) ?>"><?= icon('refresh') ?>Erneut senden</a>
         </span>
       </div>

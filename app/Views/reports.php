@@ -52,7 +52,7 @@ $mailLabels = ['sent' => ['ok', 'versendet'], 'failed' => ['wa', 'Fehler'], 'off
             <?php render('partials/discard-button', ['number' => $r['number'], 'back' => 'reports' . (array_filter($filter) ? '?' . http_build_query(array_filter($filter)) : '')]); ?>
           <?php endif; ?>
           <?php if ($r['status'] === 'closed'): ?>
-            <a class="btn sm" href="<?= e(base_url('reports/' . rawurlencode($r['number']) . '/pdf')) ?>"><?= icon('file') ?>PDF</a>
+            <a class="btn sm" href="<?= e(base_url('reports/' . rawurlencode($r['number']) . '/pdf')) ?>" data-pdf="<?= e($r['number'] . '.pdf') ?>"><?= icon('file') ?>PDF</a>
             <a class="btn sm" href="<?= e(base_url('reports/' . rawurlencode($r['number']) . '/json')) ?>"><?= icon('json') ?>JSON</a>
             <?php if (($r['mail']['status'] ?? '') === 'failed'): ?>
             <form method="post" action="<?= e(base_url('actions/resend')) ?>" style="display:inline"><?= csrf_field() ?><input type="hidden" name="n" value="<?= e($r['number']) ?>"><button class="btn sm"><?= icon('send') ?>Erneut senden</button></form>

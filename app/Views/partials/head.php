@@ -28,7 +28,7 @@ $apiBase = $apiBase ?? base_url('api.php');
 <script src="<?= e(asset($s)) ?>" defer></script>
 <?php endforeach; ?>
 </head>
-<body class="<?= e($bodyClass) ?>" data-api="<?= e($apiBase) ?>">
+<body class="<?= e($bodyClass) ?>" data-api="<?= e($apiBase) ?>" data-pdf-js="<?= e(asset('js/pdf-view.js')) ?>" data-pdf-lib="<?= e(asset('vendor/pdfjs/pdf.min.mjs')) ?>" data-pdf-worker="<?= e(asset('vendor/pdfjs/pdf.worker.min.mjs')) ?>" data-sprite="<?= e(asset('icons/sprite.svg')) ?>">
 <?php if (!$plain): ?>
 <header class="top">
   <a class="brand" href="<?= e(base_url('')) ?>">
