@@ -3,7 +3,7 @@
   <form class="card" method="post" action="<?= e(base_url('actions/code')) ?>">
     <?= csrf_field() ?>
     <div class="brand">
-      <svg aria-hidden="true"><use href="<?= e(base_url('assets/icons/sprite.svg')) ?>#logo"/></svg>
+      <svg aria-hidden="true"><use href="<?= e(asset('icons/sprite.svg')) ?>#logo"/></svg>
       <span class="wm">EÜ<em>DOK</em></span>
       <span class="kick" style="text-align:center"><?= e($unit['name']) ?></span>
     </div>

@@ -196,7 +196,7 @@ function initials(string $name): string
 
 function icon(string $name, string $class = ''): string
 {
-    return '<svg class="i ' . e($class) . '" aria-hidden="true"><use href="' . e(base_url('assets/icons/sprite.svg')) . '#i-' . e($name) . '"/></svg>';
+    return '<svg class="i ' . e($class) . '" aria-hidden="true"><use href="' . e(asset('icons/sprite.svg')) . '#i-' . e($name) . '"/></svg>';
 }
 
 function asset(string $path): string

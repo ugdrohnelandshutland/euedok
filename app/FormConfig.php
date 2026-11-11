@@ -65,7 +65,7 @@ final class FormConfig
                 'pdf' => base_url('reports/' . rawurlencode($report['report_number']) . '/pdf'),
                 'attachments' => base_url('reports/' . rawurlencode($report['report_number']) . '/attachments/'),
                 'restart' => $opts['restart'] ?? null,
-                'sprite' => base_url('assets/icons/sprite.svg'),
+                'sprite' => asset('icons/sprite.svg'),
             ],
         ];
     }

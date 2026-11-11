@@ -2,7 +2,7 @@
   <form class="card" method="post" id="pinform">
     <?= csrf_field() ?>
     <div class="brand">
-      <svg aria-hidden="true"><use href="<?= e(base_url('assets/icons/sprite.svg')) ?>#logo"/></svg>
+      <svg aria-hidden="true"><use href="<?= e(asset('icons/sprite.svg')) ?>#logo"/></svg>
       <span class="wm">EÜ<em>DOK</em></span>
       <span class="kick">Schnellerfassung · <?= e($entry['label']) ?></span>
     </div>

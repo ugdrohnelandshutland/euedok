@@ -19,8 +19,8 @@ $apiBase = $apiBase ?? base_url('api.php');
 <meta name="apple-mobile-web-app-title" content="<?= e(trim((string) ($unit['app_name'] ?? '')) ?: 'EÜDOK') ?>">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="icon" href="<?= e(base_url('assets/icons/icon.svg')) ?>" type="image/svg+xml">
-<link rel="apple-touch-icon" href="<?= e(base_url('assets/icons/icon-192.png')) ?>">
+<link rel="icon" href="<?= e(asset('icons/icon.svg')) ?>" type="image/svg+xml">
+<link rel="apple-touch-icon" href="<?= e(asset('icons/icon-192.png')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
 <script src="<?= e(asset('js/theme.js')) ?>"></script>
 <script src="<?= e(asset('js/app.js')) ?>" defer></script>
@@ -32,7 +32,7 @@ $apiBase = $apiBase ?? base_url('api.php');
 <?php if (!$plain): ?>
 <header class="top">
   <a class="brand" href="<?= e(base_url('')) ?>">
-    <svg aria-hidden="true"><use href="<?= e(base_url('assets/icons/sprite.svg')) ?>#logo"/></svg>
+    <svg aria-hidden="true"><use href="<?= e(asset('icons/sprite.svg')) ?>#logo"/></svg>
     <span class="wm">EÜ<em>DOK</em></span>
     <?php if ($unit['name'] !== ''): ?><span class="unit-label"><?= e($unit['name']) ?></span><?php endif; ?>
   </a>

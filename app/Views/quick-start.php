@@ -5,7 +5,7 @@ use Euedok\Settings;
 $types = Settings::activeReportTypes();
 ?>
 <header class="top">
-  <span class="brand"><svg aria-hidden="true"><use href="<?= e(base_url('assets/icons/sprite.svg')) ?>#logo"/></svg><span class="wm">EÜ<em>DOK</em></span><span class="unit-label"><?= e(Settings::unit()['name']) ?></span></span>
+  <span class="brand"><svg aria-hidden="true"><use href="<?= e(asset('icons/sprite.svg')) ?>#logo"/></svg><span class="wm">EÜ<em>DOK</em></span><span class="unit-label"><?= e(Settings::unit()['name']) ?></span></span>
   <div class="right"><button type="button" class="ib lbl" data-theme-toggle aria-label="Tag / Nacht umschalten"><?= icon('moon', 'theme-light') ?><?= icon('sun', 'theme-dark') ?><span class="ib-l">Tag/Nacht</span></button></div>
 </header>
 <main class="wrap narrow">
