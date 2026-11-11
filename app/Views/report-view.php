@@ -109,11 +109,13 @@ $actions = [
     <div class="stack" style="gap:10px">
       <?php foreach (array_reverse($centries, true) as $i => $c): ?>
       <div class="row" style="align-items:center;gap:8px">
-        <span style="flex:1;min-width:200px"><b><?= e($c['name']) ?></b> <span class="muted small"><?= e(\Euedok\Reports::personTimeText($c, $c['from'], $c['to'])) ?></span><br>
+        <span style="flex:1;min-width:200px"><b><?= e($c['name']) ?></b> <span class="bd <?= $c['success'] ? 'ok' : 'er' ?>"><?= $c['success'] ? 'versendet' : 'fehlgeschlagen' ?></span> <span class="muted small"><?= e(\Euedok\Reports::personTimeText($c, $c['from'], $c['to'])) ?></span><br>
           <span class="muted small"><?= e(fmt_datetime($c['sent_at'])) ?> · <?= e($c['email']) ?><?= !empty($c['error']) ? ' – ' . e($c['error']) : '' ?></span></span>
-        <span class="bd <?= $c['success'] ? 'ok' : 'er' ?>" style="flex:none"><?= $c['success'] ? 'versendet' : 'fehlgeschlagen' ?></span>
-        <?php if (!empty($c['file'])): ?><a class="btn sm" style="flex:none" target="_blank" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations/' . rawurlencode($c['file']))) ?>"><?= icon('file') ?>PDF</a><?php endif; ?>
-        <a class="btn sm" style="flex:none" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations?e=' . $i)) ?>"><?= icon('refresh') ?>Erneut senden</a>
+        <?php // zwei gleich breite Spalten, auch ohne PDF, damit „Erneut senden“ in jeder Zeile an derselben Stelle steht ?>
+        <span class="cf-acts">
+          <?php if (!empty($c['file'])): ?><a class="btn sm" target="_blank" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations/' . rawurlencode($c['file']))) ?>"><?= icon('file') ?>PDF</a><?php endif; ?>
+          <a class="btn sm" style="grid-column:2" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/confirmations?e=' . $i)) ?>"><?= icon('refresh') ?>Erneut senden</a>
+        </span>
       </div>
       <?php endforeach; ?>
     </div>
