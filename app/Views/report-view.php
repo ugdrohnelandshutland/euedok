@@ -86,7 +86,7 @@ $actions = [
   <section class="card"><h3><?= icon('file') ?>Anhänge (<?= count($r['attachments']) ?>)</h3>
     <div class="att-grid">
       <?php foreach ($r['attachments'] as $i => $a): $url = base_url('reports/' . rawurlencode($r['report_number']) . '/attachments/' . rawurlencode($a['file'])); ?>
-      <figure class="att-view"><a href="<?= e($url) ?>" target="_blank" rel="noopener"><img src="<?= e($url) ?>" alt="<?= e('Anlage ' . ($i + 1) . ': ' . $a['caption']) ?>" loading="lazy"></a><figcaption><b>Anlage <?= $i + 1 ?></b><?= $a['caption'] !== '' ? ': ' . e($a['caption']) : '' ?></figcaption></figure>
+      <figure class="att-view"><a href="<?= e($url) ?>" target="_blank" rel="noopener" data-img="<?= e('Anlage ' . ($i + 1) . ($a['caption'] !== '' ? ': ' . $a['caption'] : '')) ?>"><img src="<?= e($url) ?>" alt="<?= e('Anlage ' . ($i + 1) . ': ' . $a['caption']) ?>" loading="lazy"></a><figcaption><b>Anlage <?= $i + 1 ?></b><?= $a['caption'] !== '' ? ': ' . e($a['caption']) : '' ?></figcaption></figure>
       <?php endforeach; ?>
     </div>
   </section>

@@ -212,27 +212,29 @@
     }));
   }
 
-  function openPdf(a) {
+  // Bild-Links (data-img = Titel) nutzen denselben Dialog, nur mit <img> statt pdf.js und ohne Zoom
+  function openPdf(a, isImg) {
     var sprite = document.body.dataset.sprite;
     var url = a.pathname + a.search;
-    var name = a.getAttribute('data-pdf');
-    if (!name) { try { name = decodeURIComponent(a.pathname.split('/').pop()); } catch (e) { name = 'PDF'; } }
+    var file = 'PDF';
+    try { file = decodeURIComponent(a.pathname.split('/').pop()); } catch (e) { /* Standardname */ }
+    var name = a.getAttribute(isImg ? 'data-img' : 'data-pdf') || file;
     var dlg = document.createElement('dialog');
     var closing = false;
     var ctl = null;
     function ic(n) { return '<svg class="i" aria-hidden="true"><use href="' + sprite + '#i-' + n + '"/></svg>'; }
     function btn(attrs, label, icon) { return '<' + (attrs.indexOf('href') < 0 ? 'button type="button"' : 'a') + ' class="ib" ' + attrs + ' title="' + label + '" aria-label="' + label + '">' + ic(icon) + (attrs.indexOf('href') < 0 ? '</button>' : '</a>'); }
     dlg.className = 'pvd';
-    dlg.setAttribute('aria-label', 'PDF');
+    dlg.setAttribute('aria-label', isImg ? 'Bild' : 'PDF');
     dlg.innerHTML = '<div class="tb"><div class="ttl"><b class="pv-name"></b></div>'
-      + btn('data-z="0.8"', 'Verkleinern', 'minus') + btn('data-z="1.25"', 'Vergrößern', 'plus')
+      + (isImg ? '' : btn('data-z="0.8"', 'Verkleinern', 'minus') + btn('data-z="1.25"', 'Vergrößern', 'plus'))
       + btn('data-dl href="#"', 'Herunterladen', 'download') + btn('data-nt href="#" target="_blank" rel="noopener"', 'In neuem Tab öffnen', 'external')
-      + btn('data-x autofocus', 'Schließen', 'x') + '</div><div class="pv pvd-body"></div>';
+      + btn('data-x autofocus', 'Schließen', 'x') + '</div><div class="' + (isImg ? 'pvd-img' : 'pv') + ' pvd-body"></div>';
     var body = dlg.querySelector('.pvd-body');
     dlg.querySelector('.pv-name').textContent = name;
     var dl = dlg.querySelector('[data-dl]');
     dl.href = url;
-    dl.setAttribute('download', name);
+    dl.setAttribute('download', isImg ? file : name);
     dlg.querySelector('[data-nt]').href = url;
 
     // Schließen läuft immer über den Verlauf: pushState beim Öffnen, history.back() beim Schließen
@@ -264,6 +266,14 @@
     history.pushState({ pdf: 1 }, '');
     window.addEventListener('popstate', finish);
     dlg.showModal();
+    if (isImg) {
+      var img = new Image();
+      img.alt = name;
+      img.onerror = function () { body.textContent = 'Das Bild konnte nicht geladen werden.'; };
+      img.src = url;
+      body.appendChild(img);
+      return;
+    }
     loadPdfJs().then(function () {
       if (pdfDlg === dlg) ctl = window.EUEDOK.pdf.render(body, url);
     }, function () {
@@ -272,10 +282,10 @@
   }
 
   document.addEventListener('click', function (ev) {
-    var a = ev.target.closest && ev.target.closest('a[data-pdf]');
+    var a = ev.target.closest && ev.target.closest('a[data-pdf], a[data-img]');
     if (!a || pdfDlg || ev.defaultPrevented || ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || a.origin !== location.origin) return;
     ev.preventDefault();
-    openPdf(a);
+    openPdf(a, a.hasAttribute('data-img'));
   });
 
   window.EUEDOK = { api: api, toast: toast, csrf: csrf };
