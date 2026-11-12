@@ -37,7 +37,7 @@ $actions = [
       <div class="kick"><?= e(\Euedok\Reports::documentTitle($r['type'])) ?></div>
       <h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="bd <?= $alert ? 'e' : 'u' ?>"><?= e($r['type']['label']) ?></span><?= e($r['report_number']) ?>
         <?php if (!empty($meta['qr_access_id'])): ?><span class="bd qr">QR</span><?php endif; ?></h1>
-      <p class="muted"><?= e($r['subject']) ?> · <?= e(fmt_datetime($r['start'])) ?></p>
+      <p class="muted"><?= e($r['subject']) ?> · <span style="white-space:nowrap"><?= e(fmt_datetime($r['start'])) ?></span></p>
     </div>
     <div style="flex:0 1 auto;display:flex;gap:8px;flex-wrap:wrap">
       <a class="btn" href="<?= e(base_url('reports/' . rawurlencode($r['report_number']) . '/pdf')) ?>" target="_blank" data-pdf="<?= e($r['report_number']) ?>.pdf"><?= icon('file') ?>PDF</a>
