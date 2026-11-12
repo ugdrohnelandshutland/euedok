@@ -172,6 +172,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             redirect($self);
 
+        case 'update-skip-selftest':
+            if (!Auth::confirmPassword((string) ($_POST['password'] ?? ''))) {
+                flash('Passwort falsch – nichts geändert.', 'err');
+                redirect($self);
+            }
+            $on = post_bool('skip_selftest');
+            Updater::setSkipSelfTest($on);
+            Log::audit('update', $on ? 'Nächstes Update ohne Selbstprüfung aktiviert' : 'Update ohne Selbstprüfung deaktiviert');
+            flash($on ? 'Das nächste Update wird ohne Selbstprüfung installiert.' : 'Selbstprüfung ist wieder aktiv.');
+            redirect($self);
+
         case 'update-install':
         case 'update-rollback':
             if (!Auth::confirmPassword((string) ($_POST['password'] ?? ''))) {

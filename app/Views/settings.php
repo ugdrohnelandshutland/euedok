@@ -692,6 +692,17 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <?php endif; ?>
       </section>
 
+      <?php $skipOn = Updater::skipSelfTest(); ?>
+      <form method="post" action="<?= $action('update-skip-selftest') ?>" class="card stack">
+        <?= csrf_field() ?>
+        <h3><?= icon('alert') ?>Selbstprüfung</h3>
+        <?php if ($skipOn): ?><div class="msg warn"><?= icon('alert') ?><span>Aktiv: Das nächste Update wird ohne Selbstprüfung installiert (gilt nur einmal).</span></div><?php endif; ?>
+        <label class="check"><input type="checkbox" name="skip_selftest" value="1"<?= $skipOn ? ' checked' : '' ?>> Nächstes Update ohne Selbstprüfung installieren</label>
+        <p class="hint"><b>Achtung:</b> Startet die neue Version nicht, wird nicht automatisch zurückgesetzt – die Seite ist dann evtl. nur noch per FTP zu reparieren. Nur verwenden, wenn die Selbstprüfung auf diesem Server fälschlich fehlschlägt. Die Option gilt für genau ein Update.</p>
+        <?= $pwField ?>
+        <button class="btn"><?= icon('check') ?>Speichern</button>
+      </form>
+
       <section class="card stack">
         <h3><?= icon('archive') ?>Vorherige Version</h3>
         <?php if ($prev): ?>

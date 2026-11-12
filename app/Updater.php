@@ -156,8 +156,15 @@ final class Updater
             }
             self::removeTree($staging);
 
-            // 4) Selbsttest – bei Fehler automatisch zurück
-            $test = self::selfTest();
+            // 4) Selbsttest – bei Fehler automatisch zurück. Einmal-Option: überspringen (gilt nur für dieses Update)
+            $skip = self::skipSelfTest();
+            self::setSkipSelfTest(false);
+            if ($skip) {
+                Log::warning('update', 'selftest_skipped', 'Selbsttest auf Wunsch übersprungen', ['from' => $from, 'to' => $version]);
+                $test = true;
+            } else {
+                $test = self::selfTestWithRetry();
+            }
             if ($test === false) {
                 self::swapPrevious($version);
                 self::removeTree(self::workDir() . '/previous'); // fehlerhafte Version nicht als „vorherige“ anbieten
@@ -257,7 +264,6 @@ final class Updater
         $body = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err = curl_error($ch);
-        curl_close($ch);
         if ($fp) {
             fclose($fp);
         }
@@ -340,24 +346,32 @@ final class Updater
     private static function swapIn(string $staging, string $from): void
     {
         $prev = self::workDir() . '/previous';
-        self::removeTree($prev);
-        Storage::ensureDir($prev);
+        // erst nach previous.new: scheitert der Tausch, bleibt die bisherige Sicherung erhalten
+        $new = $prev . '.new';
+        self::removeTree($new);
+        Storage::ensureDir($new);
         $done = [];
         try {
             foreach (self::DIRS as $d) {
                 // oberster Ordner bekommt exakt die Rechte des bisherigen (z. B. public/ als Dokumentstamm)
                 @chmod($staging . '/' . $d, fileperms(EUEDOK_ROOT . '/' . $d) & 0777);
-                self::move(EUEDOK_ROOT . '/' . $d, $prev . '/' . $d);
+                self::move(EUEDOK_ROOT . '/' . $d, $new . '/' . $d);
                 $done[] = [$d, 'out'];
                 self::move($staging . '/' . $d, EUEDOK_ROOT . '/' . $d);
                 $done[] = [$d, 'in'];
             }
         } catch (\Throwable $e) {
             foreach (array_reverse($done) as [$d, $step]) {
-                $step === 'in' ? @rename(EUEDOK_ROOT . '/' . $d, $staging . '/' . $d) : @rename($prev . '/' . $d, EUEDOK_ROOT . '/' . $d);
+                $step === 'in' ? @rename(EUEDOK_ROOT . '/' . $d, $staging . '/' . $d) : @rename($new . '/' . $d, EUEDOK_ROOT . '/' . $d);
             }
+            @rmdir($new); // nur wenn leer – klemmt ein Zurück-Umbenennen, liegt dort noch der alte Stand
             Log::error('update', 'swap_failed', $e->getMessage());
             throw new \RuntimeException('Austausch der Programmdateien fehlgeschlagen – alter Stand bleibt aktiv. ' . $e->getMessage());
+        }
+        self::removeTree($prev);
+        if (!@rename($new, $prev)) { // neuer Stand läuft schon – ohne Sicherung weiter statt Abbruch
+            Log::warning('update', 'previous_not_saved', 'Vorherige Version konnte nicht gesichert werden');
+            return;
         }
         file_put_contents($prev . '/version.json', json_encode(['version' => $from, 'replaced_at' => now_iso()]));
     }
@@ -418,6 +432,43 @@ final class Updater
         }
     }
 
+    /** Einmal-Option „nächstes Update ohne Selbstprüfung“ (eigene Datei, nicht in den Secrets) */
+    public static function skipSelfTest(): bool
+    {
+        $o = Storage::read('update-options.json', []);
+        return is_array($o) && !empty($o['skip_selftest']);
+    }
+
+    public static function setSkipSelfTest(bool $on): void
+    {
+        Storage::write('update-options.json', $on ? ['skip_selftest' => true] : []);
+    }
+
+    /**
+     * Manche Webserver (LiteSpeed) erkennen den getauschten public/-Ordner erst verzögert (404 ohne PHP):
+     * bei Fehler nach 2, 4 und 8 s erneut prüfen. null (nicht erreichbar) bricht sofort ab wie bisher.
+     *
+     * @param ?callable $test Prüfung (für Tests austauschbar), $sleep Wartefunktion
+     */
+    public static function selfTestWithRetry(?callable $test = null, ?callable $sleep = null): ?bool
+    {
+        $test ??= [self::class, 'selfTest'];
+        $sleep ??= 'sleep';
+        $r = false;
+        foreach ([0, 2, 4, 8] as $i => $wait) {
+            if ($wait) {
+                $sleep($wait);
+                clearstatcache(true);
+                self::resetOpcache();
+            }
+            $r = $test();
+            if ($r !== false) {
+                return $r;
+            }
+        }
+        return false;
+    }
+
     /** @return bool|null true = ok, false = Fehler (zurückrollen), null = nicht prüfbar (Server erreicht sich selbst nicht) */
     private static function selfTest(): ?bool
     {
@@ -427,7 +478,6 @@ final class Updater
         $body = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err = curl_error($ch);
-        curl_close($ch);
         if ($body === false || $status === 0) {
             Log::warning('update', 'selftest_unreachable', 'Selbsttest konnte die Seite nicht abrufen', ['url' => $url, 'error' => $err]);
             return null;
