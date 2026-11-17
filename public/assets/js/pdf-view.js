@@ -1,5 +1,5 @@
 /* EÜDOK – PDF-Anzeige: alle Seiten als Canvas (pdf.js, lokal), Seiten erst beim Scrollen gerendert.
-   window.EUEDOK.pdf.render(container, url) -> { zoomBy(faktor), destroy() }; genutzt vom Popup (app.js). */
+   window.EUEDOK.pdf.render(container, url) -> { zoomBy(faktor), zoom(), min, max, destroy() }; genutzt vom Popup (app.js). */
 (function () {
   'use strict';
 
@@ -107,11 +107,18 @@
       if (!dead) fail('Das PDF konnte nicht geladen werden.');
     });
 
+    function zoomBy(f) {
+      var old = zoom;
+      zoom = Math.min(4, Math.max(0.5, zoom * f));
+      if (doc) layout();
+      return zoom / old;
+    }
+
     return {
-      zoomBy: function (f) {
-        zoom = Math.min(4, Math.max(0.5, zoom * f));
-        if (doc) layout();
-      },
+      zoomBy: zoomBy,
+      zoom: function () { return zoom; },
+      min: 0.5,
+      max: 4,
       destroy: function () {
         dead = true;
         clearTimeout(resizeTimer);

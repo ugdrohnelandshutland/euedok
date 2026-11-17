@@ -212,7 +212,69 @@
     }));
   }
 
-  // Bild-Links (data-img = Titel) nutzen denselben Dialog, nur mit <img> statt pdf.js und ohne Zoom
+  // Zwei-Finger-Zoom im Popup (PDF und Bild): Vorschau per transform, beim Loslassen zoomBy des Inhalts.
+  // preventDefault verhindert den Browser-Zoom der ganzen Seite, bei dem die Leiste aus dem Bild wandert.
+  // getCtl() -> null (noch nicht geladen) oder { zoom(), min, max, zoomBy(f) -> tatsächlich angewendeter Faktor }
+  function pinchZoom(box, getCtl) {
+    var pinch = null;
+    function fingers(t) {
+      var r = box.getBoundingClientRect();
+      return {
+        d: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY),
+        x: (t[0].clientX + t[1].clientX) / 2 - r.left,
+        y: (t[0].clientY + t[1].clientY) / 2 - r.top
+      };
+    }
+    function end(e) {
+      if (!pinch || e.touches.length >= 2) return;
+      var p = pinch;
+      pinch = null;
+      box.style.transform = box.style.transformOrigin = '';
+      var cx = box.scrollLeft + p.x, cy = box.scrollTop + p.y;
+      var f = p.ctl.zoomBy(p.s);
+      // Punkt unter den Fingern bleibt an seiner Stelle
+      box.scrollLeft = cx * f - p.x;
+      box.scrollTop = cy * f - p.y;
+    }
+    box.addEventListener('touchstart', function (e) {
+      var ctl = getCtl();
+      if (e.touches.length !== 2 || !ctl) return;
+      pinch = fingers(e.touches);
+      pinch.s = 1;
+      pinch.ctl = ctl;
+      box.style.transformOrigin = pinch.x + 'px ' + pinch.y + 'px';
+    }, { passive: true });
+    box.addEventListener('touchmove', function (e) {
+      if (!pinch || e.touches.length !== 2) return;
+      e.preventDefault();
+      var z = pinch.ctl.zoom();
+      pinch.s = Math.min(pinch.ctl.max / z, Math.max(pinch.ctl.min / z, fingers(e.touches).d / pinch.d));
+      box.style.transform = 'scale(' + pinch.s + ')';
+    }, { passive: false });
+    box.addEventListener('touchend', end);
+    box.addEventListener('touchcancel', end);
+  }
+
+  // Bild in Bildschirmbreite bzw. -höhe (Zoom 1), größer per Zwei-Finger-Zoom bis 4-fach
+  function imgZoom(img) {
+    var zoom = 1, base = 0;
+    return {
+      zoom: function () { return zoom; },
+      min: 1,
+      max: 4,
+      zoomBy: function (f) {
+        var old = zoom;
+        if (old === 1) base = img.clientWidth;
+        zoom = Math.min(4, Math.max(1, zoom * f));
+        img.style.width = zoom === 1 ? '' : Math.round(base * zoom) + 'px';
+        img.style.maxWidth = img.style.maxHeight = zoom === 1 ? '' : 'none';
+        return zoom / old;
+      },
+      destroy: function () {}
+    };
+  }
+
+  // Bild-Links (data-img = Titel) nutzen denselben Dialog, nur mit <img> statt pdf.js
   function openPdf(a, isImg) {
     var sprite = document.body.dataset.sprite;
     var url = a.pathname + a.search;
@@ -227,11 +289,12 @@
     dlg.className = 'pvd';
     dlg.setAttribute('aria-label', isImg ? 'Bild' : 'PDF');
     dlg.innerHTML = '<div class="tb"><div class="ttl"><b class="pv-name"></b></div>'
-      + (isImg ? '' : btn('data-z="0.8"', 'Verkleinern', 'minus') + btn('data-z="1.25"', 'Vergrößern', 'plus'))
+      + btn('data-z="0.8"', 'Verkleinern', 'minus') + btn('data-z="1.25"', 'Vergrößern', 'plus')
       + btn('data-dl href="#"', 'Herunterladen', 'download') + btn('data-nt href="#" target="_blank" rel="noopener"', 'In neuem Tab öffnen', 'external')
       + btn('data-x autofocus', 'Schließen', 'x') + '</div><div class="' + (isImg ? 'pvd-img' : 'pv') + ' pvd-body"></div>';
     var body = dlg.querySelector('.pvd-body');
-    dlg.querySelector('.pv-name').textContent = name;
+    dlg.querySelector('.pv-name').textContent = name.replace(/\.pdf$/i, ''); // Download behält die Endung
+    dlg.querySelector('.pv-name').title = name;
     var dl = dlg.querySelector('[data-dl]');
     dl.href = url;
     dl.setAttribute('download', isImg ? file : name);
@@ -266,9 +329,11 @@
     history.pushState({ pdf: 1 }, '');
     window.addEventListener('popstate', finish);
     dlg.showModal();
+    pinchZoom(body, function () { return ctl; });
     if (isImg) {
       var img = new Image();
       img.alt = name;
+      img.onload = function () { if (pdfDlg === dlg) ctl = imgZoom(img); };
       img.onerror = function () { body.textContent = 'Das Bild konnte nicht geladen werden.'; };
       img.src = url;
       body.appendChild(img);

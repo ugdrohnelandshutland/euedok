@@ -545,15 +545,22 @@ textarea.in.foot-ta{min-height:96px;font-size:14px}
 /* ---------- PDF-Viewer (pdf.js) ---------- */
 .pv{position:relative;flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:12px 0 calc(24px + env(safe-area-inset-bottom));overflow-x:auto}
 .pv-state{position:absolute;inset:0 0 auto;z-index:1;padding:24px 16px;text-align:center;background:var(--raised)}
-.pv-name{overflow:hidden;text-overflow:ellipsis;display:block}
+/* .pvd .tb davor: muss .tb .ttl b{display:flex} schlagen, sonst greift die Ellipse nicht */
+.pvd .tb .pv-name{overflow:hidden;text-overflow:ellipsis;display:block}
 .pv-page{margin:0 auto;background:#fff;box-shadow:var(--shadow);flex:none}
 .pv-page canvas{display:block}
 .pv .msg{margin:16px;max-width:520px}
 .pvd{padding:0;border:1px solid var(--line);border-radius:var(--r-m);background:var(--raised);color:var(--text);width:calc(100vw - 32px);height:calc(100dvh - 32px);max-width:none;max-height:none;margin:auto;overflow:hidden;box-shadow:var(--shadow)}
 .pvd[open]{display:flex;flex-direction:column}
 .pvd::backdrop{background:rgba(11,26,40,.6)}
-.pvd .tb{position:static}
+.pvd .tb{position:relative}
+/* Zwei-Finger-Zoom übernimmt pdf-view.js: der Browser darf nur scrollen, nicht die ganze Seite vergrößern */
+.pvd .tb,.pvd-body{touch-action:pan-x pan-y}
 .pvd-body{min-height:0;overflow:auto;padding-top:12px}
-.pvd-img{flex:1;display:flex;align-items:center;justify-content:center;padding:12px}
-.pvd-img img{max-width:100%;max-height:100%;object-fit:contain;display:block}
-@media (max-width:640px){.pvd{width:100vw;height:100dvh;border:0;border-radius:0}.pvd .tb{gap:6px;padding:8px}}
+.pvd-img{flex:1;display:flex;padding:12px}
+/* margin:auto statt justify/align center: vergrößertes Bild bleibt bis zum linken/oberen Rand scrollbar */
+.pvd-img img{max-width:100%;max-height:100%;object-fit:contain;display:block;margin:auto;flex:none}
+@media (max-width:640px){.pvd{width:100vw;height:100dvh;border:0;border-radius:0}.pvd .tb{gap:6px;padding:8px}
+  /* Handy: Name kleiner und bis zu 2 Zeilen; „In neuem Tab“ entfällt, Herunterladen deckt das ab */
+  .pvd .tb .pv-name{font-size:14px;line-height:1.2;white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+  .pvd [data-nt]{display:none}}
