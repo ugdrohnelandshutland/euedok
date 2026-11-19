@@ -14,7 +14,7 @@
   }
 
   function render(box, src) {
-    var zoom = 1, doc = null, task = null, dead = false, gen = 0, resizeTimer;
+    var zoom = 1, doc = null, task = null, dead = false, gen = 0, resizeTimer, lastW = 0;
     var pages = [];
     var state = document.createElement('p');
     state.className = 'muted pv-state';
@@ -64,22 +64,31 @@
       }).catch(function () { if (!dead) { el._done = 0; if (!state.hidden) fail('Die Seite konnte nicht dargestellt werden.'); } });
     }
 
-    // Seitenrahmen in Zielgröße anlegen; gerendert wird erst, wenn sie in die Nähe des Bildschirms kommen
+    // Seitenrahmen in Zielgröße anlegen; gerendert wird erst, wenn sie in die Nähe des Bildschirms kommen.
+    // Das alte Canvas bleibt gestreckt stehen, bis das neue fertig ist (kein weißes Aufblitzen).
     function layout() {
       gen++;
+      lastW = fitWidth();
       pages.forEach(function (el) {
         var base = el._pg.getViewport({ scale: 1 });
-        el._scale = fitWidth() / base.width * zoom;
+        el._scale = lastW / base.width * zoom;
         el.style.width = Math.floor(base.width * el._scale) + 'px';
         el.style.height = Math.floor(base.height * el._scale) + 'px';
-        el.replaceChildren();
+        var old = el.firstChild;
+        if (old) { old.style.width = el.style.width; old.style.height = el.style.height; }
         if (io) { io.unobserve(el); io.observe(el); } else { renderPage(el); }
       });
     }
 
+    // nur bei geänderter Breite neu aufbauen: Höhe allein (Adressleiste am Handy) ändert nichts am Seitenmaßstab
     function onResize() {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(function () { if (doc && !dead) layout(); }, 200);
+      resizeTimer = setTimeout(function () {
+        if (!doc || dead || fitWidth() === lastW) return;
+        var r = box.scrollHeight ? box.scrollTop / box.scrollHeight : 0;
+        layout();
+        box.scrollTop = r * box.scrollHeight;
+      }, 200);
     }
     window.addEventListener('resize', onResize);
 

@@ -215,6 +215,53 @@
   // Zwei-Finger-Zoom im Popup (PDF und Bild): Vorschau per transform, beim Loslassen zoomBy des Inhalts.
   // preventDefault verhindert den Browser-Zoom der ganzen Seite, bei dem die Leiste aus dem Bild wandert.
   // getCtl() -> null (noch nicht geladen) oder { zoom(), min, max, zoomBy(f) -> tatsächlich angewendeter Faktor }
+  // Zoom um Faktor f, der Punkt (x, y) im sichtbaren Bereich bleibt an seiner Stelle
+  function zoomAt(box, ctl, f, x, y) {
+    var cx = box.scrollLeft + x, cy = box.scrollTop + y;
+    var g = ctl.zoomBy(f);
+    box.scrollLeft = cx * g - x;
+    box.scrollTop = cy * g - y;
+  }
+
+  // Strg+Mausrad (auch Touchpad-Pinch am Desktop) und Strg + / − / 0 zoomen den Inhalt statt die ganze Seite.
+  // Mausrad: Vorschau per transform, umgerechnet erst nach kurzer Pause (sonst Neuaufbau bei jedem Rad-Schritt).
+  function keyWheelZoom(dlg, box, getCtl) {
+    var wz = null, timer;
+    function commit() {
+      var p = wz;
+      wz = null;
+      box.style.transform = box.style.transformOrigin = '';
+      if (p && p.s !== 1) zoomAt(box, p.ctl, p.s, p.x, p.y);
+    }
+    dlg.addEventListener('wheel', function (e) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      var ctl = getCtl();
+      if (!ctl) return;
+      var r = box.getBoundingClientRect();
+      if (!wz) {
+        wz = { s: 1, ctl: ctl, x: Math.min(r.width, Math.max(0, e.clientX - r.left)), y: Math.min(r.height, Math.max(0, e.clientY - r.top)) };
+        box.style.transformOrigin = wz.x + 'px ' + wz.y + 'px';
+      }
+      var dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
+      var z = ctl.zoom();
+      wz.s = Math.min(ctl.max / z, Math.max(ctl.min / z, wz.s * Math.exp(-dy * 0.002)));
+      box.style.transform = 'scale(' + wz.s + ')';
+      clearTimeout(timer);
+      timer = setTimeout(commit, 150);
+    }, { passive: false });
+    dlg.addEventListener('keydown', function (e) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      var k = e.key, ctl = getCtl();
+      var f = k === '+' || k === '=' ? 1.25 : k === '-' ? 0.8 : k === '0' ? 0 : null;
+      if (f === null) return;
+      e.preventDefault();
+      if (!ctl) return;
+      if (wz) { clearTimeout(timer); commit(); }
+      zoomAt(box, ctl, f || 1 / ctl.zoom(), box.clientWidth / 2, box.clientHeight / 2);
+    });
+  }
+
   function pinchZoom(box, getCtl) {
     var pinch = null;
     function fingers(t) {
@@ -230,11 +277,7 @@
       var p = pinch;
       pinch = null;
       box.style.transform = box.style.transformOrigin = '';
-      var cx = box.scrollLeft + p.x, cy = box.scrollTop + p.y;
-      var f = p.ctl.zoomBy(p.s);
-      // Punkt unter den Fingern bleibt an seiner Stelle
-      box.scrollLeft = cx * f - p.x;
-      box.scrollTop = cy * f - p.y;
+      zoomAt(box, p.ctl, p.s, p.x, p.y); // Punkt unter den Fingern bleibt an seiner Stelle
     }
     box.addEventListener('touchstart', function (e) {
       var ctl = getCtl();
@@ -317,7 +360,7 @@
     }
     dlg.addEventListener('click', function (ev) {
       var z = ev.target.closest('[data-z]');
-      if (z) { if (ctl) ctl.zoomBy(parseFloat(z.getAttribute('data-z'))); }
+      if (z) { if (ctl) zoomAt(body, ctl, parseFloat(z.getAttribute('data-z')), body.clientWidth / 2, body.clientHeight / 2); }
       else if (ev.target.closest('[data-x]') || ev.target === dlg) requestClose();
     });
     dlg.addEventListener('cancel', function (ev) { ev.preventDefault(); requestClose(); });
@@ -330,6 +373,7 @@
     window.addEventListener('popstate', finish);
     dlg.showModal();
     pinchZoom(body, function () { return ctl; });
+    keyWheelZoom(dlg, body, function () { return ctl; });
     if (isImg) {
       var img = new Image();
       img.alt = name;
