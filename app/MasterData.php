@@ -58,6 +58,11 @@ final class MasterData
         return self::active(Settings::masterData()['equipment']);
     }
 
+    public static function textBlocks(): array
+    {
+        return self::active(Settings::masterData()['text_blocks']);
+    }
+
     public static function alertSources(): array
     {
         return self::active(Settings::masterData()['alert_sources']);

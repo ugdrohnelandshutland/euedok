@@ -71,7 +71,7 @@
     var rm = ev.target.closest('[data-remove-field]');
     if (rm) {
       var card = rm.closest('.ed-row');
-      var t = card.querySelector('input[name$="[text]"]');
+      var t = card.querySelector('[name$="[text]"]');
       if (t) t.value = ''; // leerer Text = Feld wird beim Speichern entfernt
       card.hidden = true;
       return;

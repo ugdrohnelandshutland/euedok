@@ -42,7 +42,27 @@ final class Defaults
 
     public static function masterData(): array
     {
-        return ['personnel' => [], 'equipment' => [], 'vehicles' => [], 'alert_sources' => []];
+        // text_blocks nur bei fehlendem Schlüssel gesät (Settings::merge): eine bewusst geleerte Liste bleibt leer
+        return ['personnel' => [], 'equipment' => [], 'vehicles' => [], 'alert_sources' => [], 'text_blocks' => self::textBlocks()];
+    }
+
+    /** Standard-Textbausteine für „Bericht / getroffene Maßnahmen“. */
+    public static function textBlocks(): array
+    {
+        return [
+            ['id' => 'tb-vu-2-pkw-nur-betriebsmittel', 'name' => 'VU 2 PKW, nur Betriebsmittel', 'group' => 'Technische Hilfe', 'text' => 'Verkehrsunfall mit 2 beteiligten PKW. Keine eingeklemmten Personen. Einsatzstelle abgesichert, ausgelaufene Betriebsmittel mit Bindemittel aufgenommen. Batterien abgeklemmt. Fahrbahn gereinigt und an die Polizei übergeben.', 'active' => true],
+            ['id' => 'tb-vu-mit-eingeklemmter-person', 'name' => 'VU mit eingeklemmter Person', 'group' => 'Technische Hilfe', 'text' => 'Verkehrsunfall, eine Person im Fahrzeug eingeklemmt. Einsatzstelle abgesichert, Brandschutz sichergestellt, Fahrzeug stabilisiert. Person mit hydraulischem Rettungsgerät befreit und an den Rettungsdienst übergeben.', 'active' => true],
+            ['id' => 'tb-oelspur', 'name' => 'Ölspur', 'group' => 'Technische Hilfe', 'text' => 'Ölspur auf einer Länge von ca. ___ m. Einsatzstelle abgesichert, Betriebsmittel mit Bindemittel abgestreut und aufgenommen. Straßenmeisterei bzw. Polizei informiert.', 'active' => true],
+            ['id' => 'tb-baum-auf-fahrbahn', 'name' => 'Baum auf Fahrbahn', 'group' => 'Technische Hilfe', 'text' => 'Umgestürzter Baum auf der Fahrbahn. Einsatzstelle abgesichert, Baum mit der Motorsäge zerkleinert und von der Fahrbahn entfernt. Fahrbahn gereinigt und freigegeben.', 'active' => true],
+            ['id' => 'tb-tueroeffnung', 'name' => 'Türöffnung', 'group' => 'Technische Hilfe', 'text' => 'Türöffnung für den Rettungsdienst. Wohnungstür ohne/mit Beschädigung geöffnet, Zugang an Rettungsdienst und Polizei übergeben.', 'active' => true],
+            ['id' => 'tb-wasserschaden', 'name' => 'Wasserschaden', 'group' => 'Technische Hilfe', 'text' => 'Wasserschaden. Wasserzufuhr abgestellt, Wasser mit Wassersauger bzw. Tauchpumpe entfernt. Einsatzstelle an den Eigentümer übergeben.', 'active' => true],
+            ['id' => 'tb-tragehilfe', 'name' => 'Tragehilfe', 'group' => 'Technische Hilfe', 'text' => 'Tragehilfe für den Rettungsdienst. Patient mit dem Rettungsdienst schonend zum Rettungswagen getragen.', 'active' => true],
+            ['id' => 'tb-angebranntes-essen', 'name' => 'Angebranntes Essen', 'group' => 'Brand', 'text' => 'Angebranntes Essen in einer Wohnung. Topf vom Herd genommen und ins Freie gebracht, Herd abgeschaltet. Wohnung belüftet und mit Wärmebildkamera kontrolliert. Keine verletzten Personen.', 'active' => true],
+            ['id' => 'tb-brandmeldeanlage-fehlalarm', 'name' => 'Brandmeldeanlage, Fehlalarm', 'group' => 'Brand', 'text' => 'Auslösung der Brandmeldeanlage. Objekt erkundet, kein Brand festgestellt. Auslösegrund: ___. Anlage zurückgestellt und an den Betreiber übergeben.', 'active' => true],
+            ['id' => 'tb-kleinbrand-im-freien', 'name' => 'Kleinbrand im Freien', 'group' => 'Brand', 'text' => 'Kleinbrand (Mülltonne/Böschung). Brand mit einem C-Rohr bzw. Kübelspritze abgelöscht, Brandstelle mit Wärmebildkamera kontrolliert.', 'active' => true],
+            ['id' => 'tb-pkw-brand', 'name' => 'PKW-Brand', 'group' => 'Brand', 'text' => 'PKW-Brand. Brand unter Atemschutz mit Schaum abgelöscht, Batterie abgeklemmt, Nachkontrolle mit Wärmebildkamera. Einsatzstelle an die Polizei übergeben.', 'active' => true],
+            ['id' => 'tb-rauchwarnmelder', 'name' => 'Rauchwarnmelder', 'group' => 'Brand', 'text' => 'Auslösender Heimrauchmelder. Wohnung erkundet, kein Brand. Ursache: ___. Rauchmelder deaktiviert, Wohnung an den Bewohner übergeben.', 'active' => true],
+        ];
     }
 
     public static function customFields(): array

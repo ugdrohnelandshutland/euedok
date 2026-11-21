@@ -113,7 +113,7 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
 
   <section class="pane" id="pane-text" data-pane="text">
     <div class="card fieldset">
-      <h3><?= icon('file') ?><span class="<?= $req('narrative') ?>">Bericht / getroffene Maßnahmen</span></h3>
+      <h3><?= icon('file') ?><span class="<?= $req('narrative') ?>">Bericht / getroffene Maßnahmen</span><?php if (!empty($cfg['lists']['text_blocks'])): ?><button type="button" class="btn sm" id="tb-open" style="margin-left:auto;width:44px;min-height:44px;padding:0" aria-label="Textbausteine einfügen" title="Textbausteine einfügen"><?= icon('text-plus') ?></button><?php endif; ?></h3>
       <textarea class="in narrative" id="f-narrative" rows="12" data-req="narrative" placeholder="Was ist passiert, was wurde gemacht?"></textarea>
     </div>
     <?php if (!empty($cfg['modules']['defects'])): ?>

@@ -220,6 +220,36 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
         <div style="margin-top:14px"><button class="btn pri"><?= icon('check') ?>Speichern</button></div>
       </form>
 
+<?php elseif ($section === 'textblocks'): ?>
+      <?php
+      $tbGrid = 'grid-template-columns:minmax(0,1fr) minmax(0,1fr) 64px 124px';
+      $tbMv = '<div class="cell mv-cell"><span class="cl">Reihenfolge</span><span class="tb-ed">' . $mv . '<button type="button" class="tb-del" data-remove-field aria-label="Baustein entfernen" title="Baustein entfernen">' . icon('x') . '</button></span></div>';
+      $tbRow = static function ($i, array $b) use ($cell, $swCell, $tbMv, $tbGrid): string {
+          $n = 'text_blocks[' . $i . ']';
+          return '<div class="ed-row' . (isset($b['id']) && empty($b['active']) ? ' inactive' : '') . '" style="' . $tbGrid . '">'
+              . '<input type="hidden" name="' . $n . '[id]" value="' . e($b['id'] ?? '') . '">'
+              . $cell('Name', '<input class="in" name="' . $n . '[name]" maxlength="80" value="' . e($b['name'] ?? '') . '" placeholder="z. B. Ölspur">', 'wide')
+              . $cell('Gruppe', '<input class="in" name="' . $n . '[group]" maxlength="60" list="tb-groups" value="' . e($b['group'] ?? '') . '" placeholder="Allgemein">', 'wide')
+              . $swCell('aktiv', $n . '[active]', !isset($b['id']) || !empty($b['active'])) . $tbMv
+              . $cell('Text', '<textarea class="in" name="' . $n . '[text]" rows="4" maxlength="2000" placeholder="Text des Bausteins" style="min-height:90px;font-size:15px">' . e($b['text'] ?? '') . '</textarea>', 'wide full')
+              . '</div>';
+      };
+      ?>
+      <form method="post" action="<?= $action('save') ?>" class="card">
+        <?= csrf_field() ?>
+        <h3><?= icon('file') ?>Textbausteine</h3>
+        <p class="hint" style="margin-bottom:10px">Fertige Absätze für „Bericht / getroffene Maßnahmen“. Gruppen entstehen durch Eintippen eines neuen Gruppennamens und erscheinen in der Reihenfolge, in der sie hier zuerst vorkommen. Texte werden unverändert eingefügt. Mit × entfernte Bausteine werden erst beim Speichern gelöscht.</p>
+        <datalist id="tb-groups"><?php foreach (array_unique(array_column($md['text_blocks'], 'group')) as $g): ?><option value="<?= e($g) ?>"><?php endforeach; ?></datalist>
+        <div class="ed-head" style="<?= $tbGrid ?>"><span>Name</span><span>Gruppe</span><span>aktiv</span><span></span></div>
+        <div id="list-text_blocks"><?php foreach (array_values($md['text_blocks']) as $i => $b) { echo $tbRow($i, $b); } ?></div>
+        <template id="list-text_blocks-tpl"><?= $tbRow('__i__', []) ?></template>
+        <button type="button" class="btn sm" data-add-row="list-text_blocks" style="margin-top:10px"><?= icon('plus') ?>Hinzufügen</button>
+        <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">
+          <button class="btn pri"><?= icon('check') ?>Speichern</button>
+          <button class="btn" name="defaults" value="1" data-confirm="Fehlende Standardtexte ergänzen? Eigene Bausteine bleiben unverändert; ungespeicherte Änderungen werden mitgespeichert."><?= icon('plus') ?>Standardtexte ergänzen</button>
+        </div>
+      </form>
+
 <?php elseif ($section === 'vehicles'): ?>
       <?php if (!Settings::moduleOn('vehicles')): ?><div class="msg warn"><?= icon('alert') ?><span>Das Modul „Fahrzeuge“ ist aus (Pflichtfelder &amp; Module).</span></div><?php endif; ?>
       <?php if (Divera::vehiclesFromDivera()): $v = Divera::vehicles(); ?>

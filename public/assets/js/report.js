@@ -383,7 +383,7 @@
     var limit = showAll ? items.length : 20;
     var html = items.slice(0, limit).map(function (p) {
       var sp = selected[p.id];
-      var chip = '<button type="button" class="chip' + (sp ? ' on' : '') + '" data-person="' + esc(p.id) + '" aria-pressed="' + (sp ? 'true' : 'false') + '"><span class="av">' + esc(initials(p.name)) + '</span>' + personLabel(p) + (sp && hasTime(sp) ? '<span class="pb' + (timeIssue(sp) ? ' bad' : '') + '" aria-label="abweichende Zeit">' + ic('clock') + '</span>' : '') + '</button>';
+      var chip = '<button type="button" class="chip' + (sp ? ' on' : '') + '" data-person="' + esc(p.id) + '" aria-pressed="' + (sp ? 'true' : 'false') + '"><span class="av">' + (sp ? ic('check') : esc(initials(p.name))) + '</span><span class="nm">' + personLabel(p) + '</span>' + (sp && hasTime(sp) ? '<span class="pb' + (timeIssue(sp) ? ' bad' : '') + '" aria-label="abweichende Zeit">' + ic('clock') + '</span>' : '') + '</button>';
       return chip;
     }).join('');
     if (items.length > limit) html += '<button type="button" class="btn sm" data-people-all>Alle anzeigen (' + (items.length - limit) + ' weitere)</button>';
@@ -775,6 +775,55 @@
   });
   wide.addEventListener ? wide.addEventListener('change', function () { showPane(tabs[0].getAttribute('data-pane'), false); }) : null;
 
+  /* ---------- Textbausteine ---------- */
+  function tbDialog() {
+    var blocks = cfg.lists.text_blocks || [], groups = [], sel = null;
+    blocks.forEach(function (b) { if (groups.indexOf(b.group) < 0) groups.push(b.group); });
+    var d = dialog('<h2>' + ic('text-plus') + 'Textbausteine<button type="button" class="tb-x" data-act="cancel" aria-label="Schließen">' + ic('x') + '</button></h2>' +
+      '<input class="in" type="search" id="tb-q" placeholder="Baustein suchen" aria-label="Baustein suchen" autocomplete="off">' +
+      '<div class="tb-list" id="tb-list"></div><button type="button" class="btn pri tb-ins" data-act="ins"></button>');
+    d.el.firstChild.classList.add('tb-dlg');
+    var list = d.el.querySelector('#tb-list'), q = d.el.querySelector('#tb-q'), ins = d.el.querySelector('[data-act="ins"]');
+    var open = {}; // alle Gruppen zu: die erste ist nicht zwingend die passende
+    function render() {
+      var term = q.value.trim().toLowerCase(), html = '', hits = 0;
+      groups.forEach(function (g) {
+        var all = blocks.filter(function (b) { return b.group === g; });
+        var vis = all.filter(function (b) { return !term || (b.name + ' ' + b.text).toLowerCase().indexOf(term) > -1; });
+        if (!vis.length) return;
+        hits++;
+        var on = term ? true : !!open[g];
+        html += '<div class="tb-grp' + (on ? ' on' : '') + '"><button type="button" class="tb-gh" data-g="' + esc(g) + '" aria-expanded="' + on + '"><b>' + esc(g) + '</b><span class="muted">' + all.length + '</span>' + ic('cd', 'tb-chev') + '</button>';
+        if (on) vis.forEach(function (b) {
+          html += '<button type="button" class="tb-row' + (sel === b.id ? ' on' : '') + '" data-b="' + esc(b.id) + '" aria-pressed="' + (sel === b.id) + '"><span class="tb-tx"><b>' + esc(b.name) + '</b><span>' + esc(b.text.split('\n')[0]) + '</span></span></button>';
+        });
+        html += '</div>';
+      });
+      list.innerHTML = html || '<p class="muted">Kein Baustein gefunden.</p>';
+      ins.textContent = sel !== null ? 'Einfügen' : 'Baustein antippen';
+      ins.classList.toggle('off', sel === null);
+    }
+    d.el.addEventListener('click', function (ev) {
+      var g = ev.target.closest('[data-g]'), b = ev.target.closest('[data-b]'), a = ev.target.closest('[data-act]');
+      if (g) { var k = g.getAttribute('data-g'); open[k] = !open[k]; render(); return; }
+      if (b) { var id = b.getAttribute('data-b'); var hit = blocks.filter(function (x) { return String(x.id) === id; })[0]; sel = !hit || sel === hit.id ? null : hit.id; render(); return; }
+      if (!a) { if (ev.target === d.el) d.close(); return; }
+      if (a.getAttribute('data-act') === 'cancel') { d.close(); return; }
+      var pick = blocks.filter(function (x) { return x.id === sel; })[0];
+      if (!pick) return;
+      var add = pick.text;
+      var ta = $('f-narrative'), cur = ta.value;
+      ta.value = (cur && !/\n$/.test(cur) ? cur + '\n' : cur) + add;
+      ta.dispatchEvent(new Event('input', { bubbles: true })); // gleicher Weg wie Tippen: data + changed()
+      d.close();
+      ta.focus();
+      ta.scrollTop = ta.scrollHeight;
+    });
+    q.addEventListener('input', render);
+    render();
+  }
+  if ($('tb-open')) $('tb-open').addEventListener('click', tbDialog);
+
   /* ---------- Dialog ---------- */
   function dialog(html) {
     var bg = document.createElement('div');
@@ -806,11 +855,12 @@
           '<span>' + (isAlarm ? 'Rückmeldungen „eingesetzt“: ' : 'Zusagen: ') + c.attending + '</span>' +
           (c.imported_in ? '<span class="warn">' + ic('alert') + ' bereits in ' + esc(c.imported_in) + '</span>' : '') + '</button>';
       }).join('');
-      var d = dialog('<h2>' + ic('radio') + (isAlarm ? 'Einsatz in Divera gefunden' : 'Übung in Divera gefunden') + '</h2>' +
-        (res.items.length > 1 ? '<p class="muted small">Mehrere ' + (isAlarm ? 'Alarme' : 'Termine') + ' im Zeitfenster – bitte auswählen.</p>' : '') +
-        '<div class="stack" style="gap:8px">' + list + '</div>' +
-        '<p class="muted small">Übernommen werden Zeit, Stichwort, Ort' + (cfg.modules.personnel ? ', Personal' : '') + (isAlarm && cfg.modules.vehicles ? ', Fahrzeuge' : '') + '. Alles bleibt änderbar.</p>' +
-        '<div class="acts"><button type="button" class="btn pri" data-act="take">' + ic('check') + 'Übernehmen</button><button type="button" class="btn" data-act="skip">Ohne Divera-Daten weiter</button></div>');
+      var d = dialog('<h2>' + ic('radio') + (isAlarm ? 'Einsatz in Divera gefunden' : 'Übung in Divera gefunden') + '<button type="button" class="tb-x" data-act="skip" aria-label="Schließen">' + ic('x') + '</button></h2>' +
+        (res.items.length > 1 ? '<p class="muted small dv-hint">' + res.items.length + (isAlarm ? ' Alarme' : ' Termine') + ' im Zeitfenster – bitte auswählen.</p>' : '') +
+        '<div class="tb-list">' + list + '</div>' +
+        '<div class="dv-foot"><div class="acts"><button type="button" class="btn pri" data-act="take">' + ic('check') + 'Übernehmen</button><button type="button" class="btn" data-act="skip">Ohne Divera-Daten weiter</button></div>' +
+        '<p class="muted small">Übernommen werden Zeit, Stichwort, Ort' + (cfg.modules.personnel ? ', Personal' : '') + (isAlarm && cfg.modules.vehicles ? ', Fahrzeuge' : '') + '. Alles bleibt änderbar.</p></div>');
+      d.el.firstChild.classList.add('dv-dlg');
       d.el.addEventListener('click', function (ev) {
         var c = ev.target.closest('[data-cand]');
         if (c) {

@@ -49,6 +49,7 @@ final class FormConfig
                     'fetched_at' => $vehicles['fetched_at'] ?? null,
                 ],
                 'alert_sources' => $strip(MasterData::alertSources(), ['id', 'label']),
+                'text_blocks' => $strip(MasterData::textBlocks(), ['id', 'name', 'group', 'text']),
             ],
             // Thema-Vorschläge nur für Angemeldete (würden über QR alte Inhalte verraten)
             'subjects' => $quick ? [] : Reports::subjectSuggestions(),
