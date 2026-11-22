@@ -68,6 +68,20 @@
       }
       return;
     }
+    var srt = ev.target.closest('[data-sort-rows]');
+    if (srt) {
+      var box = document.getElementById(srt.getAttribute('data-sort-rows'));
+      if (box) {
+        var key = function (r) { var i = r.querySelector('input.in'); return i ? i.value.trim() : ''; };
+        // DOM-Reihenfolge = gespeicherte Reihenfolge (rows() liest POST in Reihenfolge); leere ans Ende
+        Array.prototype.slice.call(box.querySelectorAll('.ed-row')).sort(function (a, b) {
+          var x = key(a), y = key(b);
+          if (!x || !y) return (x ? 0 : 1) - (y ? 0 : 1);
+          return x.localeCompare(y, 'de', { sensitivity: 'base', numeric: true });
+        }).forEach(function (r) { box.appendChild(r); });
+      }
+      return;
+    }
     var rm = ev.target.closest('[data-remove-field]');
     if (rm) {
       var card = rm.closest('.ed-row');

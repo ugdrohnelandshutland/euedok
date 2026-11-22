@@ -24,7 +24,7 @@ $mvCell = '<div class="cell mv-cell"><span class="cl">Reihenfolge</span>' . $mv 
  * Einfache Liste: Bezeichnung (+ Zusatzspalten) + aktiv + Reihenfolge.
  * @param array<string,string> $cols Schlüssel → Überschrift (erste Spalte = Bezeichnung)
  */
-$listEditor = static function (string $name, array $items, array $cols) use ($cell, $swCell, $mvCell): string {
+$listEditor = static function (string $name, array $items, array $cols, bool $sortable = false) use ($cell, $swCell, $mvCell): string {
     $grid = 'grid-template-columns:' . implode(' ', array_fill(0, count($cols), 'minmax(0,1fr)')) . ' 64px 80px';
     $row = static function ($idx, array $it) use ($cols, $name, $cell, $swCell, $mvCell, $grid): string {
         $h = '<div class="ed-row' . (empty($it['active']) && isset($it['id']) ? ' inactive' : '') . '" style="' . $grid . '">';
@@ -47,6 +47,9 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
     }
     $out .= '</div><template id="list-' . $name . '-tpl">' . $row('__i__', []) . '</template>';
     $out .= '<button type="button" class="btn sm" data-add-row="list-' . $name . '" style="margin-top:10px">' . icon('plus') . 'Hinzufügen</button>';
+    if ($sortable) {
+        $out .= ' <button type="button" class="btn sm" data-sort-rows="list-' . $name . '" style="margin-top:10px;margin-left:6px">' . icon('sort') . 'Alphabetisch sortieren</button>';
+    }
     return $out;
 };
 ?>
@@ -216,7 +219,7 @@ $listEditor = static function (string $name, array $items, array $cols) use ($ce
       <form method="post" action="<?= $action('save') ?>" class="card">
         <?= csrf_field() ?>
         <h3><?= icon('box') ?>Geräte</h3>
-        <?= $listEditor('equipment', $md['equipment'], ['label' => 'Bezeichnung']) ?>
+        <?= $listEditor('equipment', $md['equipment'], ['label' => 'Bezeichnung'], true) ?>
         <div style="margin-top:14px"><button class="btn pri"><?= icon('check') ?>Speichern</button></div>
       </form>
 

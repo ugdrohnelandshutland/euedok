@@ -184,10 +184,10 @@ textarea.in{min-height:140px;resize:vertical;line-height:1.5;font-weight:500}
 .pc .ptm .i{width:16px;height:16px;flex:none}
 .pc .ptm.bad{color:var(--fault)}
 @media (hover:hover){.chip:not(.on):hover{border-color:var(--accent)}}
-#people-chips{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
-@media (min-width:700px){#people-chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
-#people-chips .chip{width:100%;min-width:0;justify-content:flex-start;text-align:left}
-#people-chips .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#people-chips,#equip-chips{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+@media (min-width:700px){#people-chips,#equip-chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#people-chips .chip,#equip-chips .chip{width:100%;min-width:0;justify-content:flex-start;text-align:left}
+#people-chips .nm,#equip-chips .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #people-chips .chip .av .i{width:16px;height:16px}
 #people-chips [data-people-all],#people-chips .hint{grid-column:1/-1}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}

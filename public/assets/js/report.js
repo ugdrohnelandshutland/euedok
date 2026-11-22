@@ -642,7 +642,7 @@
     if (!box) return;
     box.innerHTML = cfg.lists.equipment.map(function (q) {
       var on = data.equipment.indexOf(q.id) > -1;
-      return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-equip="' + esc(q.id) + '" aria-pressed="' + on + '">' + ic(on ? 'check' : 'plus', 'tick') + esc(q.label) + '</button>'; // Symbol immer da → Breite bleibt beim Anhaken gleich
+      return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-equip="' + esc(q.id) + '" aria-pressed="' + on + '">' + ic(on ? 'check' : 'plus', 'tick') + '<span class="nm">' + esc(q.label) + '</span></button>'; // Symbol immer da → Breite bleibt beim Anhaken gleich
     }).join('') || '<span class="hint">Keine Geräte hinterlegt.</span>';
     // immer anzeigen (auch „0 gewählt“): sonst erscheint die Zeile beim ersten Antippen und schiebt alle Geräte nach unten
     $('equip-count').textContent = data.equipment.length + ' gewählt';
