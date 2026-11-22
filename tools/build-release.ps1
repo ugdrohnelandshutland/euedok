@@ -58,6 +58,14 @@ Get-ChildItem $target -Recurse -Filter *.php | Where-Object { $_.FullName -notli
     $out = & $Php -l $_.FullName 2>&1
     if ($LASTEXITCODE -ne 0) { throw "Syntaxfehler: $out" }
 }
+# Kaputtes SVG lässt der Browser ab der Fehlerstelle weg (z. B. Icons im Sprite)
+$xmlOpt = New-Object System.Xml.XmlReaderSettings
+$xmlOpt.DtdProcessing = 'Ignore'
+Get-ChildItem $target -Recurse -Filter *.svg | Where-Object { $_.FullName -notlike '*\vendor\*' } | ForEach-Object {
+    $svg = $_.FullName
+    $r = [System.Xml.XmlReader]::Create($svg, $xmlOpt)
+    try { while ($r.Read()) {} } catch { throw "Ungültiges SVG ${svg}: $($_.Exception.Message)" } finally { $r.Close() }
+}
 $check = Join-Path $build "check-$Version.php"
 @'
 <?php
