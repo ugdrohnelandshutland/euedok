@@ -59,4 +59,5 @@
 <symbol id="i-truck" viewBox="0 0 24 24"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></symbol>
 <symbol id="logo" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#102337"/><path d="M128 34L201 60V121C201 167 170 197 128 222C86 197 55 167 55 121V60Z" fill="none" stroke="#58d5cc" stroke-width="13" stroke-linejoin="round"/><rect x="96" y="70" width="64" height="96" rx="10" fill="#e3edf7"/><path d="M110 90h36M110 104h36" fill="none" stroke="#a4bacb" stroke-width="6" stroke-linecap="round"/><path d="m112 134 10 10 22-24" fill="none" stroke="#1d6f68" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></symbol>
+<symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></symbol>
 </svg>

@@ -122,6 +122,15 @@ h2{font-size:18px;font-weight:600;letter-spacing:-.01em}
 .card{background:var(--strip);border:1px solid var(--line);border-radius:var(--r-m);padding:16px}
 .card h3{font-size:13px;letter-spacing:0;color:var(--quiet);font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:7px}
 .card h3 .r{margin-left:auto}
+/* Icon-Knöpfe in Kopfzeilen: 44px Tippfläche, Zeile bleibt so hoch wie der Text */
+.hbs{display:flex;gap:6px;margin-left:auto;flex:none}
+/* Kopfzeile mit Icon-Knopf: 10px Kartenrand–Knopf und Knopf–Inhalt (Karte 16px Innenabstand, 12px Lücke) */
+.card h3:has(.hb:not([hidden])){margin-top:-6px;margin-bottom:-2px}
+.hbs[hidden],.hbs [hidden]{display:none}
+.hb{width:44px;height:44px;min-height:44px;padding:0;flex:none}
+.card h3 .r+.hbs{margin-left:6px}
+.defects-box:not([open]) summary .hbs{display:none}
+.defects-box[open] summary:has(.hb:not([hidden])){margin-top:-6px;margin-bottom:-2px}
 .stack{display:flex;flex-direction:column;gap:12px}
 .row{display:flex;gap:12px;flex-wrap:wrap}
 .row>*{flex:1;min-width:150px}
@@ -336,6 +345,9 @@ body.report{background:var(--ground)}
 .att-view figcaption{font-size:13px;margin-top:4px;overflow-wrap:anywhere}
 .defects-box summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;font-size:13px;letter-spacing:0;color:var(--quiet);font-weight:600;min-height:28px}
 .defects-box summary::-webkit-details-marker{display:none}
+[data-speech].on{color:var(--fault);border-color:var(--fault);background:var(--fault-soft);animation:mic-pulse 1.4s ease-in-out infinite}
+@keyframes mic-pulse{50%{box-shadow:0 0 0 4px var(--fault-soft)}}
+@media (prefers-reduced-motion:reduce){[data-speech].on{animation:none}}
 .defects-box summary .hint{font-weight:500}
 .defects-box:not([open]) summary{color:var(--accent)}
 .defects-box .when-open{display:none}
@@ -495,7 +507,7 @@ dl.facts dd{font-weight:600;overflow-wrap:anywhere}
   .ed-row select.in{padding-left:8px;padding-right:4px}
   .card h3{flex-wrap:wrap}
   .card h3 .r{flex-basis:100%;margin-left:0}
-  .card h3>span:not(.r){flex:1 1 0;min-width:0}
+  .card h3>span:not(.r):not(.hbs){flex:1 1 0;min-width:0}
   /* kurze Zähler bleiben wie am PC rechts in der Titelzeile (sonst springt der Inhalt beim ersten Antippen) */
   .card h3 .r.cnt{flex-basis:auto;margin-left:auto;white-space:nowrap}
 }

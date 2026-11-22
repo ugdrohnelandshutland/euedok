@@ -252,7 +252,7 @@ final class Reports
             'start' => $r['start'],
             'end' => $r['end'],
             'status' => $r['status'],
-            'personnel_ids' => array_column($r['personnel'], 'id'),
+            'personnel_ids' => array_column(array_filter($r['personnel'], static fn ($p) => empty($p['guest'])), 'id'),
             'divera_key' => isset($r['divera']) ? $r['divera']['type'] . ':' . $r['divera']['id'] : null,
             'updated_at' => now_iso(),
         ];
@@ -297,6 +297,12 @@ final class Reports
     }
 
     /* ---------- Speichern ---------- */
+
+    /** Gäste (nicht in den Stammdaten) haben Kennungen der Form g-… */
+    public static function isGuestId(string $id): bool
+    {
+        return (bool) preg_match('/^g-[A-Za-z0-9]{4,40}$/', $id);
+    }
 
     /** Übernimmt die Formulardaten in den gespeicherten Bericht (nur erlaubte Felder, IDs aufgelöst). */
     public static function applyInput(array $report, array $in): array
@@ -354,14 +360,21 @@ final class Reports
                 if (!is_array($p) || empty($p['id']) || !is_string($p['id']) || isset($seen[$p['id']])) {
                     continue;
                 }
+                $guest = self::isGuestId($p['id']);
+                if ($guest !== !empty($p['guest'])) {
+                    continue; // g-Kennung nur mit Gast-Flag und umgekehrt
+                }
                 $seen[$p['id']] = true;
-                $found = MasterData::findPerson($p['id']) ?? $known[$p['id']] ?? null;
-                $name = $found['name'] ?? $str($p['name'] ?? '', 120);
+                $found = $guest ? null : (MasterData::findPerson($p['id']) ?? $known[$p['id']] ?? null);
+                $name = $found['name'] ?? $str($p['name'] ?? '', $guest ? 80 : 120);
                 if ($name === '') {
                     continue;
                 }
                 $entry = ['id' => $p['id'], 'name' => $name];
-                $diveraId = $found['divera_id'] ?? ($known[$p['id']]['divera_id'] ?? ($p['divera_id'] ?? null));
+                if ($guest) {
+                    $entry['guest'] = true;
+                }
+                $diveraId = $guest ? null : $found['divera_id'] ?? ($known[$p['id']]['divera_id'] ?? ($p['divera_id'] ?? null));
                 if ($diveraId !== null && is_numeric($diveraId)) {
                     $entry['divera_id'] = (int) $diveraId;
                 }
@@ -371,7 +384,7 @@ final class Reports
             }
         }
         $lead = is_string($in['lead'] ?? null) ? $in['lead'] : null;
-        $report['lead'] = ($lead !== null && isset($seen[$lead])) ? $lead : null;
+        $report['lead'] = ($lead !== null && isset($seen[$lead]) && !self::isGuestId($lead)) ? $lead : null;
 
         if (Settings::moduleOn('vehicles')) {
             $vehicleFields = Settings::fields('vehicle');

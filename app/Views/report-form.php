@@ -100,7 +100,7 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
       <button type="button" class="btn sm" id="lead-change">Ändern</button>
     </div>
     <div class="card fieldset" data-req="personnel">
-      <h3><?= icon('users') ?><span class="<?= $req('personnel') ?>">Eingesetztes Personal</span><span class="r" id="people-src"></span></h3>
+      <h3><?= icon('users') ?><span class="<?= $req('personnel') ?>">Eingesetztes Personal</span><span class="r cnt" id="people-src"></span><span class="hbs"><button type="button" class="btn sm hb" id="guest-add" aria-label="Gast hinzufügen" title="Gast hinzufügen"><?= icon('user-plus') ?></button></span></h3>
       <input class="in" type="search" id="people-search" placeholder="Person suchen …" autocomplete="off">
       <div class="chips" id="people-chips"></div>
     </div>
@@ -113,12 +113,12 @@ $gearLabel = !empty($cfg['modules']['equipment']) ? 'Geräte' : 'Fahrzeuge';
 
   <section class="pane" id="pane-text" data-pane="text">
     <div class="card fieldset">
-      <h3><?= icon('file') ?><span class="<?= $req('narrative') ?>">Bericht / getroffene Maßnahmen</span><?php if (!empty($cfg['lists']['text_blocks'])): ?><button type="button" class="btn sm" id="tb-open" style="margin-left:auto;width:44px;min-height:44px;padding:0" aria-label="Textbausteine einfügen" title="Textbausteine einfügen"><?= icon('text-plus') ?></button><?php endif; ?></h3>
+      <h3><?= icon('file') ?><span class="<?= $req('narrative') ?>">Bericht / getroffene Maßnahmen</span><span class="hbs"><button type="button" class="btn sm hb" data-speech="f-narrative" hidden aria-pressed="false" aria-label="Spracheingabe starten" title="Spracheingabe starten"><?= icon('mic') ?></button><?php if (!empty($cfg['lists']['text_blocks'])): ?><button type="button" class="btn sm hb" id="tb-open" aria-label="Textbausteine einfügen" title="Textbausteine einfügen"><?= icon('text-plus') ?></button><?php endif; ?></span></h3>
       <textarea class="in narrative" id="f-narrative" rows="12" data-req="narrative" placeholder="Was ist passiert, was wurde gemacht?"></textarea>
     </div>
     <?php if (!empty($cfg['modules']['defects'])): ?>
     <details class="card fieldset defects-box" id="defects-box"<?= trim((string) ($r['defects'] ?? '')) !== '' ? ' open' : '' ?>>
-      <summary><?= icon('plus', 'when-closed') ?><?= icon('alert', 'when-open') ?>Defekte / Vorfälle <span class="hint">(optional)</span></summary>
+      <summary><?= icon('plus', 'when-closed') ?><?= icon('alert', 'when-open') ?>Defekte / Vorfälle <span class="hint">(optional)</span><span class="hbs"><button type="button" class="btn sm hb" data-speech="f-defects" hidden aria-pressed="false" aria-label="Spracheingabe starten" title="Spracheingabe starten"><?= icon('mic') ?></button></span></summary>
       <textarea class="in" id="f-defects" rows="4" placeholder="keine"></textarea>
       <?php if ($cfg['defects_hint'] !== ''): ?><span class="hint warn"><?= e($cfg['defects_hint']) ?></span><?php endif; ?>
     </details>

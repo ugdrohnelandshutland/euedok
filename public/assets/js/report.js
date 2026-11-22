@@ -373,6 +373,35 @@
     return /^[a-z]{2,3}$/.test(qi) && (qi === ini || qi === ini.split('').reverse().join(''));
   }
 
+  function addGuest(first, last) {
+    var fields = {};
+    cfg.fields.person.forEach(function (d) { fields[d.id] = null; });
+    data.personnel.push({ id: 'g-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name: last + ', ' + first, guest: true, fields: fields });
+    renderPeople();
+    changed();
+  }
+  function guestDialog() {
+    var d = dialog('<h2>' + ic('user-plus') + 'Gast hinzufügen<button type="button" class="tb-x" data-act="cancel" aria-label="Schließen">' + ic('x') + '</button></h2>' +
+      '<div class="stack" style="gap:8px"><input class="in" id="g-first" placeholder="Vorname" aria-label="Vorname" maxlength="40" autocomplete="off"><input class="in" id="g-last" placeholder="Nachname" aria-label="Nachname" maxlength="40" autocomplete="off">' +
+      '<p class="muted small" id="g-err" role="alert" hidden style="color:var(--fault)">Bitte Vor- und Nachname eingeben.</p></div>' +
+      '<div class="acts"><button type="button" class="btn" data-act="cancel">Abbrechen</button><button type="button" class="btn pri" data-act="add">Hinzufügen</button></div>');
+    var f = d.el.querySelector('#g-first'), l = d.el.querySelector('#g-last');
+    f.focus();
+    function add() {
+      var a = f.value.trim().replace(/[,\s]+$/, ''), b = l.value.trim().replace(/[,\s]+$/, '');
+      if (!a || !b) { d.el.querySelector('#g-err').hidden = false; (a ? l : f).focus(); return; }
+      d.close();
+      addGuest(a, b);
+    }
+    d.el.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); add(); } });
+    d.el.addEventListener('click', function (ev) {
+      var a = ev.target.closest('[data-act]');
+      if (a && a.getAttribute('data-act') === 'add') add();
+      else if (ev.target === d.el || (a && a.getAttribute('data-act') === 'cancel')) d.close();
+    });
+  }
+  if ($('guest-add')) $('guest-add').addEventListener('click', guestDialog);
+
   function renderPeople() {
     if (!$('people-chips')) return;
     var src = cfg.lists.personnel;
@@ -393,7 +422,7 @@
     $('people-count').textContent = data.personnel.length;
     $('people-list').innerHTML = data.personnel.map(function (p) {
       var f = cfg.fields.person.map(function (d) { return fieldControl(d, p.fields[d.id], 'person', p.id); }).join('');
-      return '<div class="card pc"' + (timeIssue(p) ? ' data-req="ptime"' : '') + '><div class="hd"><div class="av2">' + esc(initials(p.name)) + '</div><b>' + personLabel(p) + '</b>' +
+      return '<div class="card pc"' + (timeIssue(p) ? ' data-req="ptime"' : '') + '><div class="hd"><div class="av2">' + esc(initials(p.name)) + '</div><b>' + personLabel(p) + (p.guest ? ' <span class="src">Gast</span>' : '') + '</b>' +
         (timeBtnOn(p) ? timeBtn(p) : '') + '<button type="button" class="x" data-person-remove="' + esc(p.id) + '" aria-label="' + esc(p.name) + ' entfernen">' + ic('x') + '</button></div>' + timeMark(p) + f + '</div>';
     }).join('');
     renderLead();
@@ -548,12 +577,12 @@
      „Ändern“ öffnet eine Auswahl aus den eingesetzten Personen. */
   function isDeployed(id) { return data.personnel.some(function (p) { return p.id === id; }); }
   function autoLead() {
-    if (data.lead && isDeployed(data.lead)) return false;
+    if (data.lead && isDeployed(data.lead) && data.lead.indexOf('g-') !== 0) return false;
     var before = data.lead;
     var pref = [cfg.me_person, data.created_by].filter(Boolean);
-    var pick = null;
+    var pick = null, staff = data.personnel.filter(function (p) { return !p.guest; });
     pref.forEach(function (id) { if (!pick && isDeployed(id)) pick = id; });
-    if (!pick && data.personnel.length) pick = data.personnel[0].id;
+    if (!pick && staff.length) pick = staff[0].id;
     data.lead = pick;
     return data.lead !== before;
   }
@@ -565,13 +594,13 @@
     data.personnel.forEach(function (x) { if (x.id === data.lead) p = x; });
     $('lead-name').innerHTML = p ? personLabel(p) : 'noch offen – zuerst Personal auswählen';
     line.classList.toggle('empty', !p);
-    $('lead-change').disabled = data.personnel.length < 2;
+    $('lead-change').disabled = data.personnel.filter(function (x) { return !x.guest; }).length < 2;
     return autoChanged;
   }
   if ($('lead-change')) {
     $('lead-change').addEventListener('click', function () {
       var mine = [cfg.me_person, data.created_by].filter(Boolean);
-      var list = data.personnel.map(function (p) {
+      var list = data.personnel.filter(function (p) { return !p.guest; }).map(function (p) {
         var note = mine.indexOf(p.id) > -1 ? '<small>' + (cfg.mode === 'qr' ? 'Ersteller' : 'angemeldet') + '</small>' : '';
         return '<button type="button" class="cand' + (p.id === data.lead ? ' on' : '') + '" data-pick="' + esc(p.id) + '"><b>' + personLabel(p) + '</b>' + note + '</button>';
       }).join('');
@@ -823,6 +852,46 @@
     render();
   }
   if ($('tb-open')) $('tb-open').addEventListener('click', tbDialog);
+
+  /* ---------- Spracheingabe ---------- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null, recBtn = null;
+  function speechReset() {
+    if (recBtn) { recBtn.classList.remove('on'); recBtn.setAttribute('aria-pressed', 'false'); recBtn.title = recBtn.dataset.t || 'Spracheingabe starten'; recBtn.setAttribute('aria-label', 'Spracheingabe starten'); }
+    rec = recBtn = null;
+  }
+  function speechStop() { if (rec) { var r = rec; speechReset(); r.stop(); } }
+  function speechStart(btn) {
+    var ta = $(btn.dataset.speech);
+    if (!ta || ta.disabled || ta.readOnly) return;
+    var r = rec = new SR();
+    r.lang = 'de-DE'; r.continuous = true; r.interimResults = true;
+    r.onresult = function (e) {
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        if (!e.results[i].isFinal) continue;
+        var t = e.results[i][0].transcript.trim(), v = ta.value;
+        if (!t) continue;
+        if (!v || /[.!?\n]\s*$/.test(v)) t = t.charAt(0).toUpperCase() + t.slice(1);
+        ta.value = v + (v && !/\s$/.test(v) ? ' ' : '') + t;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    };
+    r.onerror = function (e) {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('Mikrofon nicht erlaubt.', 'warn');
+    };
+    r.onend = function () { if (rec === r) speechReset(); };
+    recBtn = btn;
+    btn.classList.add('on'); btn.setAttribute('aria-pressed', 'true');
+    btn.title = 'Spracheingabe beenden'; btn.setAttribute('aria-label', 'Spracheingabe beenden');
+    try { r.start(); } catch (x) { speechReset(); }
+  }
+  if (SR) {
+    document.querySelectorAll('[data-speech]').forEach(function (b) {
+      b.hidden = false;
+      b.addEventListener('click', function (ev) { ev.preventDefault(); var same = recBtn === b; speechStop(); if (!same) speechStart(b); });
+    });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) speechStop(); });
+    window.addEventListener('pagehide', speechStop);
+  }
 
   /* ---------- Dialog ---------- */
   function dialog(html) {

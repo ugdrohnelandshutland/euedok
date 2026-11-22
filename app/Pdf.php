@@ -182,6 +182,12 @@ final class Pdf
                 }
             }
             $people = array_values($r['personnel']);
+            foreach ($people as &$gp) {
+                if (!empty($gp['guest'])) {
+                    $gp['name'] .= ' (Gast)';
+                }
+            }
+            unset($gp);
             // gleiche Namen (z. B. doppeltes Divera-Konto) mit Kennung unterscheidbar machen
             $count = array_count_values(array_column($people, 'name'));
             foreach ($people as &$pp) {

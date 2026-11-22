@@ -150,6 +150,9 @@ final class Confirmations
     {
         $out = [];
         foreach ($r['personnel'] as $p) {
+            if (!empty($p['guest'])) {
+                continue; // Gäste: keine Bestätigung
+            }
             $n = MasterData::normalizePerson(['name' => $p['name']]);
             $out[$p['id']] = [
                 'id' => $p['id'],
