@@ -474,6 +474,9 @@ dl.facts dd{font-weight:600;overflow-wrap:anywhere}
 .set-nav a{min-height:42px;padding:0 12px;border-radius:var(--r-s);display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;border:1px solid transparent}
 .set-nav a.on{background:var(--fill);color:#fff}
 @media (hover:hover){.set-nav a:not(.on):hover{border-color:var(--line-strong)}}
+/* Speichern & Co.: Desktop so breit wie der Text, Handy volle Breite – egal ob direkt in .stack oder in einem div */
+.set form .btn.pri{align-self:flex-start}
+@media (max-width:760px){.set form .btn.pri{width:100%}}
 @media (max-width:860px){
   .set{grid-template-columns:minmax(0,1fr)}
   .set-nav{position:static;flex-direction:row;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}

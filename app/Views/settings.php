@@ -71,7 +71,7 @@ $listEditor = static function (string $name, array $items, array $cols, bool $so
           <label class="f">Name der Einheit <input class="in" name="name" required value="<?= e($unit['name']) ?>"></label>
           <label class="f">Untertitel <input class="in" name="subtitle" value="<?= e($unit['subtitle']) ?>"></label>
         </div>
-        <label class="f">App-Name auf dem Startbildschirm <input class="in" name="app_name" maxlength="30" value="<?= e($unit['app_name'] ?? '') ?>" placeholder="EÜDOK"><span class="hint">Steht unter dem Symbol, wenn EÜDOK am Handy 
+        <label class="f">App-Name auf dem Startbildschirm <input class="in" name="app_name" maxlength="30" value="<?= e($unit['app_name'] ?? '') ?>" placeholder="EÜDOK"><span class="hint">Steht unter dem Symbol, wenn EÜDOK am Handy zum Startbildschirm hinzugefügt wird. Leer = EÜDOK.</span></label>
         <div class="row">
           <label class="f">Akzentfarbe im PDF <input class="in" type="color" name="accent_color" value="<?= e($unit['accent_color']) ?>" style="padding:4px;max-width:120px"><span class="hint">Kopfzeile des Berichts-PDF</span></label>
           <label class="f">Öffentliche Adresse (für QR-Links, optional) <input class="in" name="public_url" value="<?= e($unit['public_url']) ?>" placeholder="https://berichte.example.de"></label>
@@ -98,8 +98,8 @@ $listEditor = static function (string $name, array $items, array $cols, bool $so
         </div>
         <div class="sec-t" style="margin-top:4px">Vorschau</div>
         <div class="foot-prev" id="footer-preview" data-unit="<?= e($unit['name']) ?>"><div data-prev="left"></div><div data-prev="center"></div><div data-prev="right"></div></div>
+        <label class="f">Hinweis unter „Defekte / Vorfälle“ <input class="in" name="defects_hint" value="<?= e($unit['defects_hint']) ?>"></label>
         <div class="row">
-          <label class="f">Hinweis unter „Defekte / Vorfälle“ <input class="in" name="defects_hint" value="<?= e($unit['defects_hint']) ?>"></label>
           <label class="f">Angemeldet bleiben (Tage) <input class="in" type="number" min="1" max="365" name="remember_days" value="<?= (int) $unit['remember_days'] ?>"></label>
           <label class="f">Zeitzone <input class="in" name="timezone" value="<?= e($unit['timezone']) ?>"></label>
         </div>
@@ -247,10 +247,7 @@ $listEditor = static function (string $name, array $items, array $cols, bool $so
         <div id="list-text_blocks"><?php foreach (array_values($md['text_blocks']) as $i => $b) { echo $tbRow($i, $b); } ?></div>
         <template id="list-text_blocks-tpl"><?= $tbRow('__i__', []) ?></template>
         <button type="button" class="btn sm" data-add-row="list-text_blocks" style="margin-top:10px"><?= icon('plus') ?>Hinzufügen</button>
-        <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">
-          <button class="btn pri"><?= icon('check') ?>Speichern</button>
-          <button class="btn" name="defaults" value="1" data-confirm="Fehlende Standardtexte ergänzen? Eigene Bausteine bleiben unverändert; ungespeicherte Änderungen werden mitgespeichert."><?= icon('plus') ?>Standardtexte ergänzen</button>
-        </div>
+        <div style="margin-top:14px"><button class="btn pri"><?= icon('check') ?>Speichern</button></div>
       </form>
 
 <?php elseif ($section === 'vehicles'): ?>
@@ -733,7 +730,7 @@ $listEditor = static function (string $name, array $items, array $cols, bool $so
         <label class="check"><input type="checkbox" name="skip_selftest" value="1"<?= $skipOn ? ' checked' : '' ?>> Nächstes Update ohne Selbstprüfung installieren</label>
         <p class="hint"><b>Achtung:</b> Startet die neue Version nicht, wird nicht automatisch zurückgesetzt – die Seite ist dann evtl. nur noch per FTP zu reparieren. Nur verwenden, wenn die Selbstprüfung auf diesem Server fälschlich fehlschlägt. Die Option gilt für genau ein Update.</p>
         <?= $pwField ?>
-        <button class="btn"><?= icon('check') ?>Speichern</button>
+        <button class="btn pri"><?= icon('check') ?>Speichern</button>
       </form>
 
       <section class="card stack">

@@ -60,7 +60,7 @@ final class SettingsPage
             'personnel' => self::saveList('personnel', 'name', ['lastname', 'firstname', 'email'], 'Personal'),
             'equipment' => self::saveList('equipment', 'label', [], 'Geräte'),
             'vehicles' => self::saveVehicles(),
-            'textblocks' => self::saveTextBlocks(post_bool('defaults')),
+            'textblocks' => self::saveTextBlocks(),
             'alerts' => self::saveList('alert_sources', 'label', [], 'Alarmierungsquellen'),
             'mail' => self::saveMail(),
             'confirmation' => self::saveConfirmation(),
@@ -282,8 +282,8 @@ final class SettingsPage
         return $title . ' gespeichert.';
     }
 
-    /** Textbausteine: echtes Löschen (anders als saveList); $addDefaults ergänzt zusätzlich fehlende Standardtexte (nach Name). */
-    private static function saveTextBlocks(bool $addDefaults): string
+    /** Textbausteine: echtes Löschen (anders als saveList). */
+    private static function saveTextBlocks(): string
     {
         $old = Settings::masterData();
         $list = [];
@@ -301,22 +301,10 @@ final class SettingsPage
             $ids[] = $id;
             $list[] = ['id' => $id, 'name' => $name, 'group' => self::s($row, 'group', 60) ?: 'Allgemein', 'text' => $text, 'active' => !empty($row['active'])];
         }
-        $added = 0;
-        if ($addDefaults) {
-            $have = array_map('mb_strtolower', array_column($list, 'name'));
-            foreach (Defaults::textBlocks() as $d) {
-                if (!in_array(mb_strtolower($d['name']), $have, true)) {
-                    $d['id'] = unique_id($d['id'], $ids);
-                    $ids[] = $d['id'];
-                    $list[] = $d;
-                    $added++;
-                }
-            }
-        }
         $new = $old;
         $new['text_blocks'] = $list;
-        Settings::save('master-data', $new, 'Textbausteine: ' . count($list) . ' Einträge' . ($addDefaults ? ', ' . $added . ' Standardtexte ergänzt' : ''));
-        return $addDefaults ? 'Standardtexte ergänzt (' . $added . ' neu).' : 'Textbausteine gespeichert.';
+        Settings::save('master-data', $new, 'Textbausteine: ' . count($list) . ' Einträge');
+        return 'Textbausteine gespeichert.';
     }
 
     private static function saveVehicles(): string
