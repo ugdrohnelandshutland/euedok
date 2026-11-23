@@ -6,24 +6,25 @@ namespace Euedok;
 /** Speichert die Bereiche der Einstellungsseite. Jede Änderung landet im Änderungsprotokoll. */
 final class SettingsPage
 {
+    /** Schlüssel => [Bezeichnung, Symbol, Gruppe]; die Reihenfolge bestimmt die Navigation. */
     public const SECTIONS = [
-        'unit' => ['Einheit', 'shield'],
-        'types' => ['Berichtsarten & Nummern', 'file'],
-        'modules' => ['Pflichtfelder & Module', 'check'],
-        'fields' => ['Zusatzfelder', 'sliders'],
-        'personnel' => ['Personal', 'users'],
-        'equipment' => ['Geräte', 'box'],
-        'textblocks' => ['Textbausteine', 'file'],
-        'vehicles' => ['Fahrzeuge', 'truck'],
-        'alerts' => ['Alarmierung', 'radio'],
-        'mail' => ['Mailversand', 'mail'],
-        'confirmation' => ['Einsatzbestätigung', 'send'],
-        'divera' => ['Divera247', 'radio'],
-        'users' => ['Zugänge', 'user'],
-        'qr' => ['QR-Zugänge', 'qr'],
-        'logs' => ['Protokolle', 'server'],
-        'audit' => ['Änderungsprotokoll', 'list'],
-        'update' => ['Update', 'refresh'],
+        'unit' => ['Einheit', 'shield', 'Bericht'],
+        'types' => ['Berichtsarten & Nummern', 'file', 'Bericht'],
+        'modules' => ['Pflichtfelder & Module', 'check', 'Bericht'],
+        'fields' => ['Zusatzfelder', 'sliders', 'Bericht'],
+        'textblocks' => ['Textbausteine', 'file', 'Bericht'],
+        'personnel' => ['Personal', 'users', 'Stammdaten'],
+        'equipment' => ['Geräte', 'box', 'Stammdaten'],
+        'vehicles' => ['Fahrzeuge', 'truck', 'Stammdaten'],
+        'alerts' => ['Alarmierung', 'radio', 'Stammdaten'],
+        'mail' => ['Mailversand', 'mail', 'Versand & Anbindung'],
+        'confirmation' => ['Einsatzbestätigung', 'send', 'Versand & Anbindung'],
+        'divera' => ['Divera247', 'radio', 'Versand & Anbindung'],
+        'users' => ['Zugänge', 'user', 'Zugang & System'],
+        'qr' => ['QR-Zugänge', 'qr', 'Zugang & System'],
+        'logs' => ['Protokolle', 'server', 'Zugang & System'],
+        'audit' => ['Änderungsprotokoll', 'list', 'Zugang & System'],
+        'update' => ['Update', 'refresh', 'Zugang & System'],
     ];
 
     /** Welche Schlüssel haben sich geändert? (für das Protokoll, ohne Werte von Geheimnissen) */

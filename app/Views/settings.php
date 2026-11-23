@@ -53,12 +53,16 @@ $listEditor = static function (string $name, array $items, array $cols, bool $so
     return $out;
 };
 ?>
-<main class="wrap">
-  <h1>Einstellungen</h1>
+<?php $sectionLabel = SettingsPage::SECTIONS[$section][0]; ?>
+<?php /* Am Handy: /settings = nur Übersicht, /settings/<bereich> = nur Inhalt (Umschaltung per CSS); am PC immer beides */ ?>
+<main class="wrap <?= $explicit ? 'is-section' : 'is-index' ?>">
+  <a class="set-back" href="<?= e(base_url('settings')) ?>"><?= icon('cl') ?>Einstellungen</a>
+  <h1><span class="h-desk">Einstellungen</span><span class="h-mob"><?= e($explicit ? $sectionLabel : 'Einstellungen') ?></span></h1>
   <div class="set">
     <nav class="set-nav" aria-label="Bereiche">
-      <?php foreach (SettingsPage::SECTIONS as $k => [$label, $ic]): ?>
-      <a href="<?= e(base_url('settings/' . $k)) ?>" class="<?= $k === $section ? 'on' : '' ?>"><?= icon($ic) ?><?= e($label) ?></a>
+      <?php $grp = null; foreach (SettingsPage::SECTIONS as $k => [$label, $ic, $g]): ?>
+      <?php if ($g !== $grp): $grp = $g; ?><div class="set-grp"><?= e($g) ?></div><?php endif; ?>
+      <a href="<?= e(base_url('settings/' . $k)) ?>" class="<?= $k === $section ? 'on' : '' ?>"><?= icon($ic) ?><span><?= e($label) ?></span><?= icon('cr', 'chev') ?></a>
       <?php endforeach; ?>
     </nav>
     <div class="stack">

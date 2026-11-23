@@ -18,7 +18,8 @@ use Euedok\SettingsPage;
 use Euedok\Updater;
 
 $user = Auth::requireSettingsRight();
-$section = is_string($_GET['s'] ?? null) && isset(SettingsPage::SECTIONS[$_GET['s']]) ? $_GET['s'] : 'unit';
+$explicit = is_string($_GET['s'] ?? null) && isset(SettingsPage::SECTIONS[$_GET['s']]);
+$section = $explicit ? $_GET['s'] : 'unit';
 $action = (string) ($_GET['action'] ?? '');
 $self = 'settings/' . $section;
 
@@ -225,5 +226,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 render('partials/head', ['title' => 'Einstellungen', 'nav' => 'settings']);
-render('settings', ['section' => $section, 'user' => $user]);
+render('settings', ['section' => $section, 'explicit' => $explicit, 'user' => $user]);
 render('partials/foot', ['nav' => 'settings']);

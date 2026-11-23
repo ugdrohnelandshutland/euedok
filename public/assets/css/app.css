@@ -473,14 +473,30 @@ dl.facts dd{font-weight:600;overflow-wrap:anywhere}
 .set-nav{display:flex;flex-direction:column;gap:4px;position:sticky;top:76px}
 .set-nav a{min-height:42px;padding:0 12px;border-radius:var(--r-s);display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;border:1px solid transparent}
 .set-nav a.on{background:var(--fill);color:#fff}
+.set-nav a .chev,.set-back,.h-mob{display:none}
+.set-grp{font-size:12px;font-weight:600;color:var(--quiet);margin:14px 12px 2px}
+.set-grp:first-child{margin-top:0}
 @media (hover:hover){.set-nav a:not(.on):hover{border-color:var(--line-strong)}}
 /* Speichern & Co.: Desktop so breit wie der Text, Handy volle Breite – egal ob direkt in .stack oder in einem div */
 .set form .btn.pri{align-self:flex-start}
 @media (max-width:760px){.set form .btn.pri{width:100%}}
 @media (max-width:860px){
   .set{grid-template-columns:minmax(0,1fr)}
-  .set-nav{position:static;flex-direction:row;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
-  .set-nav a{flex:none;border-color:var(--line-strong)}
+  .set-nav{position:static;gap:0}
+  .h-desk{display:none}.h-mob{display:inline}
+  /* Handy: Übersicht und Bereich getrennt – nie beides gleichzeitig */
+  .is-index .stack{display:none}
+  .is-section .set-nav,.is-section .h-desk{display:none}
+  .is-section .set-back{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin-bottom:-10px;font-weight:600;color:var(--quiet);text-decoration:none;align-self:flex-start}
+  .set-grp{margin:18px 4px 6px}
+  .set-grp:first-child{margin-top:0}
+  .set-nav a{min-height:50px;padding:0 14px;border-radius:0;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--strip);font-size:16px}
+  .set-grp + a{border-top:1px solid var(--line);border-radius:var(--r-m) var(--r-m) 0 0}
+  .set-nav a:has(+ .set-grp),.set-nav a:last-child{border-radius:0 0 var(--r-m) var(--r-m)}
+  .set-grp + a:has(+ .set-grp){border-radius:var(--r-m)}
+  .set-nav a span{flex:1}
+  .set-nav a .chev{display:block;color:var(--muted)}
+  .is-index .set-nav a.on{background:var(--strip);color:var(--text)}
 }
 .ed-row{display:grid;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .ed-row:last-child{border-bottom:0}
